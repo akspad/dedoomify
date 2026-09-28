@@ -67,9 +67,16 @@
       var gap = out[out.length - 2];
       if (seg.original !== undefined && prev && prev.original === undefined &&
           /^\s+$/.test(prev.text) && gap && gap.original !== undefined) {
+        gap.original = [gap.original, seg.original].filter(Boolean).join(" ");
+        if (!seg.text) {
+          // A pure deletion: the space between the two edits is the only
+          // space left before the next word, so keep it.
+          continue;
+        }
         out.pop();
-        gap.text = gap.text + (seg.text ? prev.text + seg.text : "");
-        gap.original = gap.original + (seg.original ? " " + seg.original : "");
+        // If the first edit was a pure deletion, the space before it already
+        // separates the new text from the previous word.
+        gap.text = gap.text ? gap.text + prev.text + seg.text : seg.text;
         continue;
       }
       out.push({ text: seg.text, original: seg.original });
