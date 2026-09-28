@@ -58,3 +58,40 @@ test("the extension's copy of the rules is up to date", () => {
   const ext = fs.readFileSync(new URL("../extension/dedoom-core.js", import.meta.url), "utf8");
   assert.equal(ext, shared, "run `npm run build:extension`");
 });
+
+test("rewrites anthropomorphic verbs when an AI does them", () => {
+  const cases = [
+    ["The model tried to escape.", "The model tried to run outside its sandbox."],
+    ["The AI escaped from the lab.", "The AI left the test environment."],
+    ["The model secretly smuggled data out.", "The model secretly copied data out."],
+    ["It tried to smuggle its weights out.", "It tried to copy its model files out."],
+    ["The models communicated with each other.", "The models exchanged data with each other."],
+    ["The model communicated its plan to the user.", "The model output its plan to the user."],
+    ["They invented a secret language.", "They invented a compressed encoding."],
+    ["Claude cheated on the test.", "Claude exploited a scoring bug on the test."],
+    ["The model was caught cheating.", "The model was caught exploiting a scoring bug."],
+    ["Researchers asked the model to stop.", "Researchers prompted the model to stop."],
+    ["The model asked for more time.", "The model requested more time."],
+    ["When asked, it said no.", "When prompted, it said no."],
+    ["The chatbot lied to users.", "The chatbot gave false output to users."],
+    ["The model blackmailed the engineer.", "The model generated coercive messages to the engineer."],
+    ["GPT-5 decided to escape its sandbox.", "GPT-5 went on to run outside the sandbox."],
+    ["The model resisted shutdown.", "The model failed to shut down."],
+    ["A rogue agent went rogue.", "A malfunctioning agent malfunctioned."],
+  ];
+  for (const [input, expected] of cases) assert.equal(dedoomText(input), expected, input);
+});
+
+test("leaves the same verbs alone when a person does them", () => {
+  for (const text of [
+    "He asked his mother for dinner.",
+    "Press escape to exit.",
+    "The kids cheated at cards.",
+    "They escaped the fire.",
+    "Smugglers smuggled cigarettes.",
+    "We communicate by email.",
+    "The model lies in a gray area.",
+  ]) {
+    assert.equal(dedoomText(text), text);
+  }
+});
