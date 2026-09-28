@@ -23,7 +23,7 @@ async function readJsonBody(req) {
   return JSON.parse(raw || "{}");
 }
 
-// GET  /api/dedoom?url=<article>&mode=auto|claude|rules  (cacheable)
+// GET  /api/dedoom?url=<article>&mode=rules|claude  (cacheable; rules by default)
 // POST /api/dedoom  { "text": "...", "mode": "..." }      (pasted text)
 export default async function handler(req, res, deps = {}) {
   const fetchArticleImpl = deps.fetchArticle ?? fetchArticle;
@@ -32,7 +32,7 @@ export default async function handler(req, res, deps = {}) {
     const params = new URL(req.url, "http://localhost").searchParams;
     if (req.method === "GET") {
       const url = params.get("url");
-      const mode = MODES.has(params.get("mode")) ? params.get("mode") : "auto";
+      const mode = MODES.has(params.get("mode")) ? params.get("mode") : "rules";
       if (!url) return send(res, 400, { error: "Add a link to an article." });
       const article = await fetchArticleImpl(url.trim());
       const result = await dedoomImpl(article, { mode });
@@ -50,7 +50,7 @@ export default async function handler(req, res, deps = {}) {
         return send(res, 400, { error: "The request body wasn't valid JSON." });
       }
       const text = typeof body?.text === "string" ? body.text : "";
-      const mode = MODES.has(body?.mode) ? body.mode : "auto";
+      const mode = MODES.has(body?.mode) ? body.mode : "rules";
       if (!text.trim()) return send(res, 400, { error: "Paste some text to de-doom." });
       if (text.length > MAX_TEXT_CHARS) return send(res, 413, { error: "That text is too long." });
       const result = await dedoomImpl(textToArticle(text), { mode });
