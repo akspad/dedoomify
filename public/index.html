@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>dedoomify: read AI news without the doom</title>
+  <meta name="description" content="Paste a link to an article about AI and read it in calm, concrete engineering language. “Is misaligned” becomes “has a bug”.">
+  <meta property="og:title" content="dedoomify">
+  <meta property="og:description" content="Read AI news without the doom. “Is misaligned” becomes “has a bug”.">
+  <meta property="og:url" content="https://dedoomify.com">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site">
+    <a class="brand" href="/">de<span>doom</span>ify</a>
+    <p class="tagline">Read AI news without the doom.</p>
+  </header>
+
+  <main>
+    <section class="intro" id="intro">
+      <h1>AI headlines, minus the apocalypse.</h1>
+      <p>Give us a link to an article about AI. We'll rewrite the doom framing into the plain language an engineer would use: <q>the model is misaligned</q> becomes <q>the model has a bug</q>. Facts stay the same.</p>
+    </section>
+
+    <form id="form" class="card" autocomplete="off">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" class="tab" id="tab-url" aria-selected="true" aria-controls="panel-url">Link</button>
+        <button type="button" role="tab" class="tab" id="tab-text" aria-selected="false" aria-controls="panel-text">Paste text</button>
+      </div>
+      <div id="panel-url" role="tabpanel" aria-labelledby="tab-url">
+        <label for="url" class="sr-only">Article link</label>
+        <input id="url" name="url" type="url" inputmode="url" placeholder="https://example.com/ai-will-end-us-all" >
+      </div>
+      <div id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden>
+        <label for="text" class="sr-only">Article text</label>
+        <textarea id="text" name="text" rows="7" placeholder="Paste the article text here. Separate paragraphs with a blank line."></textarea>
+      </div>
+      <div class="row">
+        <label class="mode">
+          <span>Rewrite with</span>
+          <select id="mode" name="mode">
+            <option value="auto">Claude (thorough)</option>
+            <option value="rules">Quick phrase rules</option>
+          </select>
+        </label>
+        <button type="submit" class="go" id="go">De-doom it</button>
+      </div>
+      <p class="error" id="error" role="alert" hidden></p>
+    </form>
+
+    <section id="result" class="result" hidden aria-live="polite">
+      <div class="result-bar">
+        <label class="toggle"><input type="checkbox" id="show-changes" checked> Highlight changes</label>
+        <label class="toggle"><input type="checkbox" id="show-original"> Show original</label>
+        <button type="button" id="share" class="link-button">Copy share link</button>
+      </div>
+      <p class="notice" id="notice" hidden></p>
+      <article id="article"></article>
+    </section>
+  </main>
+
+  <footer class="site">
+    <p>dedoomify reframes articles; it doesn't fact-check them. Always read the original too.
+      <a href="https://github.com/akspad/dedoomify">Source on GitHub</a> · <a href="https://github.com/akspad/dedoomify/tree/main/extension">Browser extension</a></p>
+  </footer>
+
+  <script src="/diff.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
