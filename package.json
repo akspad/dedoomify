@@ -1,0 +1,26 @@
+{
+  "name": "dedoomify",
+  "version": "1.0.0",
+  "description": "Read AI news without the doom. Rewrites doom framing about AI into plain engineering language.",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "test": "node --test",
+    "build:extension": "node scripts/build-extension.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
+    "@mozilla/readability": "^0.6.0",
+    "linkedom": "^0.18.13"
+  },
+  "type": "module",
+  "private": true,
+  "homepage": "https://dedoomify.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akspad/dedoomify.git"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

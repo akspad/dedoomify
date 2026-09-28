@@ -1,0 +1,93 @@
+:root {
+  --bg: #f6f3ea;
+  --surface: #fffdf7;
+  --ink: #1f2a24;
+  --muted: #5d6a62;
+  --line: #e2dccb;
+  --accent: #2f6b4f;
+  --accent-ink: #ffffff;
+  --mark: #d9f0dc;
+  --mark-ink: #173d2a;
+  --del: #a8452f;
+  --error: #a8452f;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141a17;
+    --surface: #1b2420;
+    --ink: #e7ece8;
+    --muted: #9fb0a6;
+    --line: #2c3a33;
+    --accent: #6fbf92;
+    --accent-ink: #0f1a14;
+    --mark: #23452f;
+    --mark-ink: #d9f4e0;
+    --del: #e48a74;
+    --error: #e48a74;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.5;
+}
+header.site, main, footer.site {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+header.site { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding-top: 24px; }
+.brand { font-weight: 700; font-size: 1.4rem; color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
+.brand span { text-decoration: line-through; text-decoration-color: var(--accent); text-decoration-thickness: 3px; color: var(--muted); }
+.tagline { margin: 0; color: var(--muted); }
+.intro h1 { font-family: var(--serif); font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 40px 0 12px; }
+.intro p { color: var(--muted); font-size: 1.05rem; margin: 0 0 24px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.tab { font: inherit; border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--bg); color: var(--ink); font-weight: 600; }
+input[type="url"], textarea, select {
+  font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px; width: 100%; padding: 12px;
+}
+textarea { resize: vertical; }
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.row { display: flex; gap: 12px; align-items: end; justify-content: space-between; margin-top: 12px; flex-wrap: wrap; }
+.mode { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+.mode select { width: auto; padding: 8px 10px; }
+.go {
+  font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 11px 20px;
+  background: var(--accent); color: var(--accent-ink); cursor: pointer;
+}
+.go[disabled] { opacity: 0.6; cursor: progress; }
+.error { color: var(--error); margin: 12px 0 0; }
+.result { margin-top: 32px; }
+.result-bar { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 0.9rem; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.link-button { font: inherit; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; margin-left: auto; }
+.notice { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--muted); font-size: 0.9rem; }
+article { font-family: var(--serif); font-size: 1.15rem; line-height: 1.65; overflow-wrap: anywhere; }
+article .meta { font-family: var(--sans); font-size: 0.9rem; color: var(--muted); }
+article .meta a { color: var(--accent); }
+article h1 { font-size: 1.9rem; line-height: 1.2; margin: 24px 0 8px; }
+article h2 { font-size: 1.4rem; margin: 28px 0 8px; }
+article blockquote { margin: 16px 0; padding-left: 16px; border-left: 3px solid var(--line); color: var(--muted); }
+article li { margin-left: 1.2em; display: list-item; }
+mark.dd { background: transparent; color: inherit; }
+.show-changes mark.dd { background: var(--mark); color: var(--mark-ink); border-radius: 4px; padding: 0 2px; cursor: help; }
+del.dd { display: none; }
+.show-changes del.dd { display: inline; color: var(--del); }
+.original { display: none; font-family: var(--sans); font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--del); padding-left: 10px; margin: -6px 0 16px; }
+.show-original .original { display: block; }
+.empty { color: var(--muted); font-family: var(--sans); }
+footer.site { color: var(--muted); font-size: 0.85rem; padding-top: 48px; padding-bottom: 32px; }
+footer.site a { color: var(--accent); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
