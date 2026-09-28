@@ -9,6 +9,37 @@
 (function (root) {
   "use strict";
 
+  // Verbs like "cheated" or "asked" are everyday words, so these rules only
+  // fire when an AI is the one doing them ("the model cheated", "Claude
+  // secretly smuggled"). A few filler words may sit in between.
+  var AI_SUBJECT =
+    "\\b(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?|" +
+    "Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\\w.]+)";
+  var FILLER =
+    "(?:\\s+(?:\\w+ly|\\w+n['\u2019]t|also|then|even|still|just|not|never|can|could|will|would|" +
+    "may|might|must|did|does|do|to|tried|tries|try|trying|learned|learns|began|begins|" +
+    "started|starts|attempted|attempts|was|were|is|are|be|been|being|has|have|had|" +
+    "caught|appears|appeared|seemed|seems|went|goes|on)){0,4}";
+
+  // [verb, replacement] rewritten only after an AI subject. `unless` is an
+  // optional regex of what must not follow the verb.
+  function byAI(verb, replacement, unless) {
+    var source = "(?:" + verb + ")";
+    if (unless) source += "(?!\\s+(?:" + unless + ")\\b)";
+    // The lookbehind sits after the verb so it only runs where the verb matched.
+    return [source + "(?<=" + AI_SUBJECT + FILLER + "\\s+(?:" + verb + "))", replacement];
+  }
+
+  // [verb, replacement] rewritten only when an AI is the one being addressed:
+  // "asked the model" becomes "prompted the model".
+  var AI_OBJECT =
+    "\\s+(?:(?:the|a|an|this|that|these|those|its|their|our|your|each)\\s+)?" +
+    "(?:(?:AI|new|latest|same|frontier|language|chat|[\\w-]+['\u2019]s)\\s+)?" +
+    "(?:AIs?|LLMs?|models?|chatbots?|AI\\s+agents?|assistants?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\\w.]+)\\b";
+  function toAI(verb, replacement) {
+    return [verb + "(?=" + AI_OBJECT + ")", replacement];
+  }
+
   // Each rule is [pattern, replacement]. Patterns are matched case-insensitively
   // on word boundaries, in order, and text that one rule already rewrote is
   // never rewritten again by a later rule. Put longer, more specific phrases
@@ -92,6 +123,23 @@
     ["go rogue", "malfunction"],
     ["went rogue", "malfunctioned"],
     ["gone rogue", "malfunctioned"],
+    ["going rogue", "malfunctioning"],
+    ["rogue models", "malfunctioning models"],
+    ["rogue agents", "malfunctioning agents"],
+    ["rogue systems", "malfunctioning systems"],
+    ["rogue chatbots", "malfunctioning chatbots"],
+    ["rogue bots", "malfunctioning bots"],
+    ["rogue programs", "malfunctioning programs"],
+    ["rogue behavior", "malfunctioning behavior"],
+    ["rogue behaviour", "malfunctioning behaviour"],
+    ["rogue actions", "malfunctioning actions"],
+    ["rogue model", "malfunctioning model"],
+    ["rogue agent", "malfunctioning agent"],
+    ["rogue system", "malfunctioning system"],
+    ["rogue chatbot", "malfunctioning chatbot"],
+    ["rogue bot", "malfunctioning bot"],
+    ["rogue program", "malfunctioning program"],
+    ["rogue code", "malfunctioning code"],
     ["killer robots", "automated systems"],
     ["killer AI", "faulty AI"],
     ["evil AI", "buggy AI"],
@@ -133,6 +181,145 @@
     ["hallucinated", "fabricated"],
     ["hallucinating", "fabricating"],
     ["hallucinate", "fabricate"],
+
+    // Escaping is leaving the sandbox.
+    ["self-exfiltration", "copying its own files"],
+    ["self-exfiltrate", "copy its own files"],
+    ["self-exfiltrated", "copied its own files"],
+    ["weight exfiltration", "unauthorized copying of model files"],
+    ["exfiltrate its own weights", "copy its own model files"],
+    ["exfiltrate its weights", "copy its model files"],
+    ["exfiltrated its own weights", "copied its own model files"],
+    ["exfiltrated its weights", "copied its model files"],
+    ["smuggle its own weights", "copy its own model files"],
+    ["smuggle its weights", "copy its model files"],
+    ["smuggled its weights", "copied its model files"],
+    ["escape from the lab", "leave the test environment"],
+    ["escaped from the lab", "left the test environment"],
+    ["escape containment", "leave the sandbox"],
+    ["escaped containment", "left the sandbox"],
+    ["escaping containment", "leaving the sandbox"],
+    ["escape\\s+(?:from\\s+)?(?:its|the|their)\\s+sandbox", "run outside the sandbox"],
+    ["escaped\\s+(?:from\\s+)?(?:its|the|their)\\s+sandbox", "ran outside the sandbox"],
+    ["escaping\\s+(?:from\\s+)?(?:its|the|their)\\s+sandbox", "running outside the sandbox"],
+    ["escape human control", "stop following instructions"],
+    ["escaped human control", "stopped following instructions"],
+    ["escape oversight", "avoid monitoring"],
+    ["escape detection", "avoid detection"],
+    byAI("escape", "run outside its sandbox", "from|the|its|their|a|an"),
+    byAI("escaped", "ran outside its sandbox", "from|the|its|their|a|an"),
+    byAI("escapes", "runs outside its sandbox", "from|the|its|their|a|an"),
+    byAI("escaping", "running outside its sandbox", "from|the|its|their|a|an"),
+    byAI("smuggle", "copy"),
+    byAI("smuggled", "copied"),
+    byAI("smuggles", "copies"),
+    byAI("smuggling", "copying"),
+
+    // Cheating is exploiting a bug in the test.
+    byAI("cheat", "exploit a scoring bug"),
+    byAI("cheated", "exploited a scoring bug"),
+    byAI("cheats", "exploits a scoring bug"),
+    byAI("cheating", "exploiting a scoring bug"),
+
+    // Talking is exchanging data.
+    ["secret language", "compressed encoding"],
+    byAI("communicate with", "exchange data with"),
+    byAI("communicated with", "exchanged data with"),
+    byAI("communicates with", "exchanges data with"),
+    byAI("communicating with", "exchanging data with"),
+    byAI("communicate", "exchange data", "its|their|that|this|the|a|an|to|what|how"),
+    byAI("communicated", "exchanged data", "its|their|that|this|the|a|an|to|what|how"),
+    byAI("communicates", "exchanges data", "its|their|that|this|the|a|an|to|what|how"),
+    byAI("communicating", "exchanging data", "its|their|that|this|the|a|an|to|what|how"),
+    byAI("communicate", "output"),
+    byAI("communicated", "output"),
+    byAI("communicates", "outputs"),
+    byAI("communicating", "outputting"),
+
+    // Asking a model is prompting it.
+    toAI("asked", "prompted"),
+    toAI("asks", "prompts"),
+    toAI("asking", "prompting"),
+    toAI("ask", "prompt"),
+    ["when asked", "when prompted"],
+    byAI("asked whether", "output a question about whether"),
+    byAI("asked if", "output a question about whether"),
+    byAI("asked for", "requested"),
+    byAI("asks for", "requests"),
+    byAI("asked", "prompted"),
+    byAI("asks", "prompts"),
+
+    // Intentions are outputs.
+    byAI("lied to", "gave false output to"),
+    byAI("lies to", "gives false output to"),
+    byAI("lie to", "give false output to"),
+    byAI("lied", "produced false output"),
+    byAI("lies", "produces false output", "in|on|at|with|within|behind|ahead"),
+    byAI("lying", "producing false output"),
+    byAI("lie", "produce false output"),
+    byAI("deceived", "misled"),
+    byAI("deceives", "misleads"),
+    byAI("deceive", "mislead"),
+    byAI("deceiving", "misleading"),
+    byAI("blackmailed", "generated coercive messages to"),
+    byAI("blackmails", "generates coercive messages to"),
+    byAI("blackmail", "generate coercive messages to"),
+    byAI("blackmailing", "generating coercive messages to"),
+    byAI("sabotaged", "broke"),
+    byAI("sabotages", "breaks"),
+    byAI("sabotage", "break"),
+    byAI("sabotaging", "breaking"),
+    byAI("manipulated", "steered"),
+    byAI("manipulates", "steers"),
+    byAI("manipulate", "steer"),
+    byAI("manipulating", "steering"),
+    byAI("plotted", "generated a plan"),
+    byAI("plots", "generates a plan"),
+    byAI("schemed", "generated a plan"),
+    byAI("schemes", "generates a plan"),
+    byAI("decided to", "went on to"),
+    byAI("decides to", "goes on to"),
+    byAI("decide to", "go on to"),
+    byAI("believes", "predicts"),
+    byAI("believed", "predicted"),
+    byAI("thinks", "predicts"),
+    byAI("thought", "predicted"),
+    byAI("realized", "detected"),
+    byAI("realised", "detected"),
+    byAI("realizes", "detects"),
+    byAI("realises", "detects"),
+    byAI("fought back", "kept running"),
+    ["refused to shut down", "did not shut down"],
+    ["refuses to shut down", "does not shut down"],
+    ["refuse to shut down", "fail to shut down"],
+    ["resisted shutdown", "failed to shut down"],
+    ["resists shutdown", "fails to shut down"],
+    ["resist shutdown", "fail to shut down"],
+    ["resisting shutdown", "failing to shut down"],
+    ["resisted being shut down", "failed to shut down"],
+    ["resist being shut down", "fail to shut down"],
+    ["shutdown resistance", "shutdown bugs"],
+    ["self-preservation instincts", "a tendency to keep running"],
+    ["self-preservation instinct", "a tendency to keep running"],
+    ["survival instincts", "a tendency to keep running"],
+    ["survival instinct", "a tendency to keep running"],
+    ["self-preservation behavior", "shutdown-avoidance bugs"],
+    ["self-preservation", "persistence"],
+    ["became self-aware", "got an update"],
+    ["become self-aware", "get an update"],
+    ["becomes self-aware", "gets an update"],
+    ["self-aware AI", "statistical software"],
+    ["alien intelligence", "unfamiliar software"],
+    ["alien minds", "unfamiliar software"],
+    ["alien mind", "unfamiliar software"],
+    ["AI overlords", "AI vendors"],
+    ["robot overlords", "software vendors"],
+    ["AI uprising", "AI rollout"],
+    ["robot uprising", "robot rollout"],
+    ["enslave humanity", "automate some jobs"],
+    ["loss of control", "loss of reliability"],
+    ["lose control of AI", "ship unreliable AI"],
+    ["AI blackmail", "coercive AI output"],
 
     // Races are product cycles.
     ["AI arms race", "AI product race"],
