@@ -20,7 +20,7 @@
   <main>
     <section class="intro" id="intro">
       <h1>AI headlines, minus the apocalypse.</h1>
-      <p>Give us a link to an article about AI. We'll rewrite the doom framing into the plain language an engineer would use: <q>the model is misaligned</q> becomes <q>the model has a bug</q>. Facts stay the same. Use the instant phrase rules, or a small AI model that runs privately in your browser.</p>
+      <p>Give us a link to an article about AI. We'll rewrite the doom framing into the plain language an engineer would use: <q>the model is misaligned</q> becomes <q>the model has a bug</q>. Facts stay the same, and the page keeps its original look with every change highlighted; hover one to see the original words. Use the instant phrase rules, or a small AI model that runs privately in your browser.</p>
     </section>
 
     <form id="form" class="card" autocomplete="off">
@@ -50,13 +50,21 @@
     </form>
 
     <section id="result" class="result" hidden aria-live="polite">
-      <div class="result-bar">
-        <label class="toggle"><input type="checkbox" id="show-changes" checked> Highlight changes</label>
-        <label class="toggle"><input type="checkbox" id="show-original"> Show original</label>
-        <button type="button" id="share" class="link-button">Copy share link</button>
+      <div class="banner" id="banner">
+        <div class="banner-inner">
+          <p class="summary"><span class="badge">dedoomify</span> <span id="summary"></span></p>
+          <div class="controls">
+            <label class="toggle"><input type="checkbox" id="show-changes" checked> Highlight changes</label>
+            <label class="toggle" id="show-original-wrap"><input type="checkbox" id="show-original"> Show original</label>
+            <button type="button" id="view-toggle" class="link-button">Reader view</button>
+            <a id="original-link" href="#" target="_blank" rel="noopener noreferrer">Open original</a>
+            <button type="button" id="share" class="link-button">Copy share link</button>
+          </div>
+        </div>
+        <p class="notice" id="notice" hidden></p>
       </div>
-      <p class="notice" id="notice" hidden></p>
-      <article id="article"></article>
+      <iframe id="page" title="The article, reframed by dedoomify" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
+      <article id="article" hidden></article>
     </section>
   </main>
 
@@ -68,6 +76,7 @@
   <script src="/diff.js"></script>
   <script src="/vendor/dedoom-core.js"></script>
   <script src="/vendor/dedoom-prompt.js"></script>
+  <script src="/vendor/page-dedoom.js"></script>
   <script type="module" src="/app.js"></script>
 </body>
 </html>

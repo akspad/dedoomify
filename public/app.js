@@ -1,18 +1,26 @@
 import * as localAi from "./local-ai.js";
+import * as tooltip from "./tooltip.js";
 
 const $ = (id) => document.getElementById(id);
 const form = $("form"), go = $("go"), errorEl = $("error");
 const result = $("result"), articleEl = $("article"), notice = $("notice");
+const frame = $("page"), banner = $("banner"), summary = $("summary");
+const viewToggle = $("view-toggle"), originalLink = $("original-link");
 const modeSelect = $("mode");
 const tabUrl = $("tab-url"), tabText = $("tab-text");
 const panelUrl = $("panel-url"), panelText = $("panel-text");
 const { dedoomText } = globalThis.Dedoom;
 const { STYLE_GUIDE } = globalThis.DedoomPrompt;
+const { collectGroups, groupStrings, normalize, rewriteGroup } = globalThis.DedoomPage;
+const { diffEdits } = globalThis.DedoomDiff;
 
 let activeTab = "url";
 let lastShare = null;
-let current = null; // { data, nodes, runId }
 let runCounter = 0;
+// What's showing: a link as the original "page" or in "reader" view, or
+// pasted text (always reader view).
+let source = null; // { url } or { text }
+let view = "page";
 
 function selectTab(which) {
   activeTab = which;
@@ -34,6 +42,10 @@ function showNotice(message) {
   notice.hidden = !message;
 }
 
+function setSummary(text) {
+  summary.textContent = text;
+}
+
 function el(tag, attrs, children) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
@@ -41,20 +53,30 @@ function el(tag, attrs, children) {
   return node;
 }
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const ENGINE_NAMES = { claude: "Claude", rules: "the phrase rules", local: `${localAi.MODEL_LABEL} on your device` };
+const engineName = (engine) => ENGINE_NAMES[engine] || ENGINE_NAMES.rules;
+
+// Keep the frame filling the screen below the sticky banner.
+new ResizeObserver(() => {
+  result.style.setProperty("--banner-h", `${banner.offsetHeight}px`);
+}).observe(banner);
+
+// ---- Reader view: the article's text only ----
+
 function renderSegments(parent, original, rewritten) {
   for (const seg of DedoomDiff.diffSegments(original, rewritten)) {
     if (seg.original === undefined) {
       parent.appendChild(document.createTextNode(seg.text));
     } else if (seg.text) {
-      parent.appendChild(el("mark", { class: "dd", title: seg.original ? "Was: " + seg.original : "Added" }, [seg.text]));
+      parent.appendChild(el("mark", { class: "dd", "data-was": seg.original }, [seg.text]));
     } else if (seg.original) {
-      parent.appendChild(el("del", { class: "dd", title: "Removed" }, [seg.original]));
+      parent.appendChild(el("del", { class: "dd", "data-was": seg.original }, [seg.original]));
     }
   }
 }
 
 const TAGS = { heading: "h2", paragraph: "p", item: "li", quote: "blockquote" };
-const ENGINE_NAMES = { claude: "Claude", rules: "the phrase rules", local: `${localAi.MODEL_LABEL} on your device` };
 
 // A block renders as its text plus a hidden "Original:" line for the toggle.
 function blockNodes(block) {
@@ -65,24 +87,18 @@ function blockNodes(block) {
   return nodes;
 }
 
-function metaText(data) {
+function readerSummary(data) {
   const changed = data.blocks.filter((b) => b.text !== b.original).length;
-  return `Reframed by dedoomify, not the original. ${changed} of ${data.blocks.length} paragraphs changed by ${ENGINE_NAMES[data.engine] || "the phrase rules"}. `;
+  return `Reframed, not the original: ${changed} of ${plural(data.blocks.length, "paragraph")} changed by ${engineName(data.engine)}.`;
 }
 
-function render(data, sourceUrl) {
+function renderReader(data) {
   articleEl.textContent = "";
   const h1 = el("h1", {}, []);
   renderSegments(h1, data.originalTitle || data.title, data.title);
   articleEl.appendChild(h1);
   const parts = [data.siteName, data.byline].filter(Boolean);
   if (parts.length) articleEl.appendChild(el("p", { class: "meta" }, [parts.join(" · ")]));
-  const meta = el("p", { class: "meta" }, []);
-  const metaLine = document.createTextNode(metaText(data));
-  meta.appendChild(metaLine);
-  if (sourceUrl) meta.appendChild(el("a", { href: sourceUrl, rel: "noopener noreferrer", target: "_blank" }, ["Read the original"]));
-  articleEl.appendChild(meta);
-
   const nodes = data.blocks.map((block) => {
     const group = blockNodes(block);
     group.forEach((n) => articleEl.appendChild(n));
@@ -91,59 +107,73 @@ function render(data, sourceUrl) {
   if (!data.blocks.some((b) => b.text !== b.original) && data.engine !== "local") {
     articleEl.appendChild(el("p", { class: "empty" }, ["Good news: we didn't find any doom to remove."]));
   }
+  setSummary(readerSummary(data));
   showNotice(data.notice);
-  result.hidden = false;
-  applyToggles();
-  return { data, nodes, metaLine };
+  return { data, nodes };
 }
 
-function updateBlock(view, i, text) {
-  const block = view.data.blocks[i];
+function updateBlock(readerView, i, text) {
+  const block = readerView.data.blocks[i];
   block.text = text;
   const fresh = blockNodes(block);
-  const old = view.nodes[i];
+  const old = readerView.nodes[i];
   old[0].replaceWith(...fresh);
   old.slice(1).forEach((n) => n.remove());
-  view.nodes[i] = fresh;
-  view.metaLine.textContent = metaText(view.data);
+  readerView.nodes[i] = fresh;
+  setSummary(readerSummary(readerView.data));
 }
 
-function applyToggles() {
-  articleEl.classList.toggle("show-changes", $("show-changes").checked);
-  articleEl.classList.toggle("show-original", $("show-original").checked);
-}
-$("show-changes").addEventListener("change", applyToggles);
-$("show-original").addEventListener("change", applyToggles);
+// ---- Page view: the original page with changes marked in place ----
 
-$("share").addEventListener("click", function () {
-  const link = lastShare || location.href;
-  const btn = this;
-  (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
-    .then(() => { btn.textContent = "Link copied"; })
-    .catch(() => { prompt("Copy this link:", link); })
-    .then(() => setTimeout(() => { btn.textContent = "Copy share link"; }, 2000));
-});
-
-function setBusy(busy, label) {
-  go.disabled = busy;
-  go.textContent = busy ? label || "De-dooming…" : "De-doom it";
+function pageSummary(doc, engine) {
+  const n = doc.querySelectorAll("mark.dd, del.dd").length;
+  if (n === 0 && engine === "rules") return "Good news: we didn't find any doom to remove on this page.";
+  return `Reframed, not the original: ${plural(n, "phrase")} changed by ${engineName(engine)}. Hover a highlight to see the original words.`;
 }
 
-// Rewrites the paragraphs that need it with the on-device model, updating the
-// page as each one finishes. The phrase-rules version stays for any paragraph
-// the model gets wrong.
-async function rewriteLocally(view, runId) {
+// Resolves with the frame's new document once it has been parsed, without
+// waiting for every image to load.
+function loadFrame(src, runId) {
+  const old = frame.contentDocument;
+  frame.src = src;
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const timer = setInterval(() => {
+      let doc = null;
+      try { doc = frame.contentDocument; } catch {}
+      const ready = doc && doc !== old && doc.location.pathname === "/api/page" && doc.readyState !== "loading" && doc.body;
+      if (runId !== runCounter || ready || Date.now() - started > 45_000) {
+        clearInterval(timer);
+        resolve(runId === runCounter && ready ? doc : null);
+      }
+    }, 50);
+  });
+}
+
+async function showPage(url, runId) {
+  setSummary("Loading the page…");
+  const doc = await loadFrame("/api/page?url=" + encodeURIComponent(url), runId);
+  if (runId !== runCounter) return;
+  if (!doc) throw new Error("That page took too long to load. Try reader view.");
+  const failed = doc.querySelector('meta[name="dedoomify-error"]');
+  if (failed) throw new Error(failed.getAttribute("content"));
+  tooltip.attach(doc, { frame, enabled: () => !doc.documentElement.classList.contains("dd-off") });
+  applyHighlight();
+  setSummary(pageSummary(doc, "rules"));
+  if (modeSelect.value === "local") await rewritePageLocally(doc, runId);
+}
+
+// ---- On-device model ----
+
+// Rewrites each item's `original` with the on-device model, calling
+// apply(item, text) as each one finishes. Items the model gets wrong keep the
+// phrase-rules version. Returns whether the model loaded.
+async function rewriteWithModel(items, runId, apply, what) {
   const stale = () => runId !== runCounter;
-  const { data } = view;
-  const title = { original: data.originalTitle || data.title, text: data.title };
-  const todo = [];
-  if (localAi.needsModel(title.original, title.text)) todo.push(-1);
-  data.blocks.forEach((b, i) => { if (localAi.needsModel(b.original, b.text)) todo.push(i); });
-  if (todo.length === 0) {
+  if (items.length === 0) {
     showNotice("No doom framing found, so the on-device model had nothing to do.");
-    return;
+    return false;
   }
-
   let engine;
   try {
     showNotice("Loading the on-device model…");
@@ -155,29 +185,18 @@ async function rewriteLocally(view, runId) {
   } catch (err) {
     console.error(err);
     if (!stale()) showNotice("The on-device model couldn't load in this browser, so this uses the quick phrase rules.");
-    return;
+    return false;
   }
-
-  data.engine = "local";
   let done = 0, kept = 0;
-  for (const i of todo) {
-    if (stale()) return;
-    showNotice(`Rewriting on your device: ${done} of ${todo.length} paragraphs done.`);
-    const original = i === -1 ? title.original : data.blocks[i].original;
+  for (const item of items) {
+    if (stale()) return true;
+    showNotice(`Rewriting on your device: ${done} of ${plural(items.length, what)} done.`);
     try {
-      const output = await localAi.rewriteParagraph(engine, STYLE_GUIDE, original);
-      if (stale()) return;
-      if (localAi.acceptRewrite(original, output)) {
+      const output = await localAi.rewriteParagraph(engine, STYLE_GUIDE, item.original);
+      if (stale()) return true;
+      if (localAi.acceptRewrite(item.original, output)) {
         // The rules catch anything the model left behind.
-        const text = dedoomText(output);
-        if (i === -1) {
-          data.title = text;
-          const h1 = articleEl.querySelector("h1");
-          h1.textContent = "";
-          renderSegments(h1, title.original, text);
-        } else {
-          updateBlock(view, i, text);
-        }
+        apply(item, dedoomText(output));
       } else {
         kept++;
       }
@@ -187,42 +206,137 @@ async function rewriteLocally(view, runId) {
     }
     done++;
   }
-  view.metaLine.textContent = metaText(data);
   showNotice(
     `Rewritten on your device by ${localAi.MODEL_LABEL}; nothing was sent to a server.` +
-      (kept ? ` ${kept} paragraph${kept === 1 ? "" : "s"} kept the phrase-rules version because the model's rewrite didn't match the original's facts.` : ""),
+      (kept ? ` ${plural(kept, what)} kept the phrase-rules version because the model's rewrite didn't match the original's facts.` : ""),
   );
+  return true;
 }
 
-async function run(request, sourceUrl) {
+function rewriteReaderLocally(readerView, runId) {
+  const { data } = readerView;
+  const items = [{ index: -1, original: data.originalTitle || data.title, current: data.title }]
+    .concat(data.blocks.map((b, index) => ({ index, original: b.original, current: b.text })))
+    .filter((item) => localAi.needsModel(item.original, item.current));
+  return rewriteWithModel(items, runId, (item, text) => {
+    data.engine = "local";
+    if (item.index === -1) {
+      data.title = text;
+      const h1 = articleEl.querySelector("h1");
+      h1.textContent = "";
+      renderSegments(h1, item.original, text);
+    } else {
+      updateBlock(readerView, item.index, text);
+    }
+  }, "paragraph");
+}
+
+// Pages can be long, so only the first paragraphs with doom framing go to the model.
+const MAX_MODEL_GROUPS = 60;
+
+async function rewritePageLocally(doc, runId) {
+  const items = collectGroups(doc.body)
+    .map((nodes) => {
+      const { original, current } = groupStrings(nodes);
+      return { nodes, original: normalize(original).text, current: normalize(current).text };
+    })
+    .filter((g) => g.original.length >= 20 && g.original.length <= 2000 && localAi.needsModel(g.original, g.current))
+    .slice(0, MAX_MODEL_GROUPS);
+  const loaded = await rewriteWithModel(items, runId, (item, text) => {
+    if (text !== item.current) rewriteGroup(item.nodes, doc, text, diffEdits);
+    setSummary(pageSummary(doc, "local"));
+  }, "paragraph");
+  if (loaded && runId === runCounter) setSummary(pageSummary(doc, "local"));
+}
+
+// ---- Controls ----
+
+function applyHighlight() {
+  const on = $("show-changes").checked;
+  articleEl.classList.toggle("show-changes", on);
+  articleEl.classList.toggle("show-original", $("show-original").checked);
+  frame.contentDocument?.documentElement?.classList.toggle("dd-off", !on);
+  tooltip.hide();
+}
+$("show-changes").addEventListener("change", applyHighlight);
+$("show-original").addEventListener("change", applyHighlight);
+tooltip.attach(document, { enabled: () => articleEl.classList.contains("show-changes") });
+
+$("share").addEventListener("click", function () {
+  const link = lastShare || location.href;
+  const btn = this;
+  (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
+    .then(() => { btn.textContent = "Link copied"; })
+    .catch(() => { prompt("Copy this link:", link); })
+    .then(() => setTimeout(() => { btn.textContent = "Copy share link"; }, 2000));
+});
+
+viewToggle.addEventListener("click", () => {
+  view = view === "page" ? "reader" : "page";
+  start();
+});
+
+function setBusy(busy) {
+  go.disabled = busy;
+  go.textContent = busy ? "De-dooming…" : "De-doom it";
+}
+
+function layout() {
+  const page = view === "page";
+  result.classList.toggle("page-view", page);
+  frame.hidden = !page;
+  articleEl.hidden = page;
+  $("show-original-wrap").hidden = page;
+  viewToggle.hidden = !source.url;
+  viewToggle.textContent = page ? "Reader view" : "Original layout";
+  originalLink.hidden = !source.url;
+  if (source.url) originalLink.href = source.url;
+  $("share").hidden = !source.url;
+}
+
+async function showReader(runId) {
+  setSummary("Loading…");
+  const request = source.url
+    ? ["/api/dedoom?url=" + encodeURIComponent(source.url) + "&mode=rules", {}]
+    : ["/api/dedoom", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: source.text, mode: "rules" }) }];
+  const r = await fetch(...request);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.error || "Something went wrong. Please try again.");
+  if (runId !== runCounter) return;
+  const readerView = renderReader(body);
+  applyHighlight();
+  if (modeSelect.value === "local") await rewriteReaderLocally(readerView, runId);
+}
+
+// Show `source` in the current view. Each call supersedes the previous one.
+async function start() {
   const runId = ++runCounter;
   showError("");
+  showNotice("");
+  tooltip.hide();
   setBusy(true);
+  layout();
+  result.hidden = false;
+  result.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
-    const r = await fetch(request.url, request.init);
-    const body = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(body.error || "Something went wrong. Please try again.");
-    if (runId !== runCounter) return;
-    const view = render(body, body.url || sourceUrl);
-    $("share").hidden = !sourceUrl;
-    result.scrollIntoView({ behavior: "smooth", block: "start" });
-    if (modeSelect.value === "local") {
-      setBusy(true, "Rewriting…");
-      await rewriteLocally(view, runId);
-    }
+    if (view === "page") await showPage(source.url, runId);
+    else await showReader(runId);
   } catch (err) {
+    if (runId !== runCounter) return;
+    result.hidden = true;
     showError(err.message || "Couldn't reach dedoomify. Check your connection.");
   } finally {
     if (runId === runCounter) setBusy(false);
   }
 }
 
-// The server always does the free part: fetching and the phrase rules.
 function runUrl(url) {
   const qs = "url=" + encodeURIComponent(url);
   lastShare = location.origin + "/?" + qs;
   history.replaceState(null, "", "/?" + qs);
-  return run({ url: "/api/dedoom?" + qs + "&mode=rules", init: {} }, url);
+  source = { url };
+  view = "page";
+  start();
 }
 
 form.addEventListener("submit", (e) => {
@@ -237,10 +351,9 @@ form.addEventListener("submit", (e) => {
     if (!text.trim()) return showError("Paste some text to de-doom.");
     lastShare = null;
     history.replaceState(null, "", "/");
-    run({
-      url: "/api/dedoom",
-      init: { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, mode: "rules" }) },
-    }, null);
+    source = { text };
+    view = "reader";
+    start();
   }
 });
 

@@ -32,7 +32,7 @@
       } else {
         var mark = document.createElement("mark");
         mark.className = "dedoomify";
-        mark.title = "Was: " + seg.original;
+        mark.setAttribute("data-was", seg.original);
         mark.textContent = seg.text;
         frag.appendChild(mark);
         count++;
@@ -40,6 +40,40 @@
     });
     node.parentNode.replaceChild(frag, node);
   });
+
+  // A hover card with the original words, added once per page.
+  if (!window.__dedoomifyTip) {
+    var tip = document.createElement("div");
+    tip.className = "dedoomify-tip";
+    tip.setAttribute("role", "tooltip");
+    var label = document.createElement("span");
+    label.className = "dedoomify-tip-label";
+    label.textContent = "Original text";
+    var text = document.createElement("span");
+    text.className = "dedoomify-tip-text";
+    tip.appendChild(label);
+    tip.appendChild(text);
+    document.documentElement.appendChild(tip);
+    window.__dedoomifyTip = tip;
+    var hide = function () { tip.style.display = "none"; };
+    document.addEventListener("mouseover", function (e) {
+      var mark = e.target.closest && e.target.closest("mark.dedoomify");
+      if (!mark) return;
+      text.textContent = "\u201c" + mark.getAttribute("data-was").replace(/\s+/g, " ").trim() + "\u201d";
+      tip.style.display = "block";
+      var r = mark.getClientRects()[0] || mark.getBoundingClientRect();
+      var left = Math.min(Math.max(r.left + r.width / 2 - tip.offsetWidth / 2, 8), window.innerWidth - tip.offsetWidth - 8);
+      var top = r.top - tip.offsetHeight - 10;
+      if (top < 8) top = r.bottom + 10;
+      tip.style.left = left + "px";
+      tip.style.top = top + "px";
+    });
+    document.addEventListener("mouseout", function (e) {
+      var mark = e.target.closest && e.target.closest("mark.dedoomify");
+      if (mark && !mark.contains(e.relatedTarget)) hide();
+    });
+    window.addEventListener("scroll", hide, { passive: true });
+  }
 
   return count;
 })();

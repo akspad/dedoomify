@@ -12,17 +12,18 @@ language an engineer would use about software with defects:
 | Labs are racing toward **superintelligence** | Labs are racing toward **very capable software** |
 | What's your **p(doom)**? | What's your **estimated failure rate**? |
 
-Facts, names and numbers stay the same; only the framing changes. Every change
-is highlighted, and you can show the original next to each paragraph.
+Facts, names and numbers stay the same; only the framing changes. The article
+keeps its original look, with every change highlighted in place; hover a
+highlight to see the original words. A reader view shows just the text.
 
 ![dedoomify rewriting an article](docs/screenshot.png)
 
 ## How it works
 
 ```
-browser ──► /api/dedoom?url=… ──► fetch page ──► extract article ──► phrase rules ──► JSON
-                                   (public hosts   (Readability)
-                                    only)
+browser ──► /api/page?url=…   ──► fetch page ──► strip scripts ──► phrase rules ──► HTML in a sandboxed frame
+                                   (public hosts                    (marked in place)
+browser ──► /api/dedoom?url=… ──►  only)      ──► extract article ──► phrase rules ──► JSON (reader view)
    │
    └─► optional: rewrite the doom-y paragraphs with a small model in the browser
 ```
@@ -44,9 +45,15 @@ Visitors pick one of two engines:
 Files:
 
 - **`public/`** is the static site: `index.html`, `app.js`, `styles.css`,
-  `diff.js` (highlights what changed), `local-ai.js` and `llm-worker.js` (the
+  `diff.js` (highlights what changed), `tooltip.js` (the hover card with the
+  original words), `local-ai.js` and `llm-worker.js` (the
   on-device model).
-- **`api/dedoom.js`** is one serverless function. `GET ?url=` fetches and
+- **`api/page.js`** returns the original page with its scripts, frames and
+  event handlers removed and the phrase rules applied in place
+  (`lib/page.js`, `shared/page-dedoom.js`). It is only served into
+  dedoomify's own sandboxed frame, under a policy that allows no scripts;
+  opening it directly redirects to the site.
+- **`api/dedoom.js`** extracts the article text for reader view. `GET ?url=` fetches and
   rewrites an article (responses are cacheable at the CDN for a day);
   `POST {text}` rewrites pasted text.
 - **`lib/fetch-article.js`** fetches the page, refusing private and internal

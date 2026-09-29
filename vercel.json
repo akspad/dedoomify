@@ -5,11 +5,14 @@
   "functions": {
     "api/dedoom.js": {
       "maxDuration": 60
+    },
+    "api/page.js": {
+      "maxDuration": 30
     }
   },
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api/page).*)",
       "headers": [
         {
           "key": "X-Content-Type-Options",
