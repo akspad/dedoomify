@@ -45,6 +45,16 @@ test("rejects rewrites that drop, add or restyle quotation marks", () => {
   assert.ok(!acceptRewrite("The model is misaligned, she said.", "\"The model has a bug,\" she said."));
 });
 
+test("rejects rewrites that add, drop or change periods", () => {
+  const original = "The model is misaligned. Dr. Lee said so.";
+  assert.ok(acceptRewrite(original, "The model has a bug. Dr. Lee said so."));
+  assert.ok(!acceptRewrite(original, "The model has a bug. Dr Lee said so."));
+  assert.ok(!acceptRewrite(original, "The model has a bug, Dr. Lee said so."));
+  assert.ok(!acceptRewrite(original, "The model has a bug. Dr. Lee said so"));
+  assert.ok(!acceptRewrite(original, "The model has a bug! Dr. Lee said so."));
+  assert.ok(!acceptRewrite("The model is misaligned", "The model has a bug."));
+});
+
 test("accepts rewrites that only change the doom framing", () => {
   assert.ok(acceptRewrite(
     "Experts warn the model is misaligned and could go rogue by 2030.",
