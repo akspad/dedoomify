@@ -157,7 +157,6 @@ async function showPage(url, runId) {
   if (!doc) throw new Error("That page took too long to load. Try reader view.");
   const failed = doc.querySelector('meta[name="dedoomify-error"]');
   if (failed) throw new Error(failed.getAttribute("content"));
-  tooltip.attach(doc, { frame, enabled: () => !doc.documentElement.classList.contains("dd-off") });
   applyHighlight();
   setSummary(pageSummary(doc, "rules"));
   if (modeSelect.value === "local") await rewritePageLocally(doc, runId);
@@ -255,7 +254,10 @@ function applyHighlight() {
   const on = $("show-changes").checked;
   articleEl.classList.toggle("show-changes", on);
   articleEl.classList.toggle("show-original", $("show-original").checked);
-  frame.contentDocument?.documentElement?.classList.toggle("dd-off", !on);
+  const pageRoot = frame.contentDocument?.documentElement;
+  pageRoot?.classList.toggle("dd-off", !on);
+  // The frame draws its own hover card (see lib/page.js); hide it too.
+  pageRoot?.querySelector("#dd-tip")?.setAttribute("hidden", "");
   tooltip.hide();
 }
 $("show-changes").addEventListener("change", applyHighlight);
@@ -368,12 +370,12 @@ modeSelect.addEventListener("change", () => {
 
 async function init() {
   const localOption = modeSelect.querySelector('option[value="local"]');
-  localOption.textContent = `On-device AI (private; downloads ${localAi.MODEL_SIZE} once)`;
+  localOption.textContent = `On-device AI (private, ${localAi.MODEL_SIZE.replace("about ", "~")})`;
   if (await localAi.isSupported()) {
     if (savedMode() === "local") modeSelect.value = "local";
   } else {
     localOption.disabled = true;
-    localOption.textContent = "On-device AI (needs a browser with WebGPU)";
+    localOption.textContent = "On-device AI (needs WebGPU)";
   }
   // Shared links: dedoomify.com/?url=... runs straight away.
   const params = new URLSearchParams(location.search);
