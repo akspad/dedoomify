@@ -134,6 +134,7 @@ del.dd { display: none; }
 .original { display: none; font-family: var(--sans); font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--del); padding-left: 10px; margin: -6px 0 16px; }
 .show-original .original { display: block; }
 .empty { color: var(--muted); font-family: var(--sans); }
-footer.site { color: var(--muted); font-size: 0.85rem; padding-top: 48px; padding-bottom: 32px; }
+footer.site { color: var(--muted); font-size: 0.8rem; padding-top: 12px; padding-bottom: 12px; }
+footer.site p { margin: 0; }
 footer.site a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

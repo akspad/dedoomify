@@ -167,11 +167,12 @@ async function showPage(url, runId) {
 
 // Rewrites each item's `original` with the on-device model, calling
 // apply(item, text) as each one finishes. Items the model gets wrong keep the
-// phrase-rules version. Returns whether the model loaded.
+// phrase-rules version. The notice line shows progress and clears when done,
+// so the banner stays one line. Returns whether the model loaded.
 async function rewriteWithModel(items, runId, apply, what) {
   const stale = () => runId !== runCounter;
   if (items.length === 0) {
-    showNotice("No doom framing found, so the on-device model had nothing to do.");
+    showNotice("");
     return false;
   }
   const key = localModelKey();
@@ -189,7 +190,7 @@ async function rewriteWithModel(items, runId, apply, what) {
     if (!stale()) showNotice("The on-device model couldn't load in this browser, so this uses the quick phrase rules.");
     return false;
   }
-  let done = 0, kept = 0;
+  let done = 0;
   for (const item of items) {
     if (stale()) return true;
     showNotice(`Rewriting on your device: ${done} of ${plural(items.length, what)} done.`);
@@ -199,19 +200,13 @@ async function rewriteWithModel(items, runId, apply, what) {
       if (localAi.acceptRewrite(item.original, output)) {
         // The rules catch anything the model left behind.
         apply(item, dedoomText(output));
-      } else {
-        kept++;
       }
     } catch (err) {
       console.error(err);
-      kept++;
     }
     done++;
   }
-  showNotice(
-    `Rewritten on your device by ${model.label}; nothing was sent to a server.` +
-      (kept ? ` ${plural(kept, what)} kept the phrase-rules version because the model's rewrite didn't match the original's facts.` : ""),
-  );
+  showNotice("");
   return true;
 }
 

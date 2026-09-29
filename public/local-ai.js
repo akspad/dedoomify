@@ -52,6 +52,12 @@ function quoteMarks(text) {
   return (text.match(/["\u201c\u201d\u00ab\u00bb\u201e]/g) || []).join("");
 }
 
+// Sentence punctuation in order, so a rewrite can't add, drop or swap a
+// period, question mark or exclamation mark.
+function stops(text) {
+  return (text.match(/[.!?\u2026]/g) || []).join("");
+}
+
 function numbersIn(text) {
   return (text.match(/\d[\d,.]*\d|\d/g) || []).map((n) => n.replace(/[.,]$/, ""));
 }
@@ -79,7 +85,7 @@ function allowedNewWords() {
 
 // Accept a rewrite only if it plausibly kept the facts. Small models sometimes
 // invent details ("deceived its creators"), drop who said what, or drop and
-// straighten quotation marks, so besides
+// straighten quotation marks or periods, so besides
 // the shape checks, every content word must survive unless it's doom framing
 // the rules also change, and every new word must be one the rules use.
 // Otherwise the caller keeps the phrase-rules version.
@@ -91,6 +97,7 @@ export function acceptRewrite(original, rewritten) {
   const have = new Set(numbersIn(rewritten));
   if (!numbersIn(original).every((n) => have.has(n))) return false;
   if (quoteMarks(rewritten) !== quoteMarks(original)) return false;
+  if (stops(rewritten) !== stops(original)) return false;
 
   const doomWords = new Set();
   for (const seg of globalThis.Dedoom.dedoomSegments(original)) {
@@ -129,7 +136,7 @@ export function buildMessages(styleGuide, paragraph) {
       role: "system",
       content:
         styleGuide +
-        "\n- You get one paragraph at a time. Reply with only the rewritten paragraph, with no preface or notes and no quotation marks around it. Keep every quotation mark inside the paragraph exactly as written.",
+        "\n- You get one paragraph at a time. Reply with only the rewritten paragraph, with no preface or notes and no quotation marks around it. Keep every quotation mark and period exactly as written.",
     },
   ];
   for (const [input, output] of EXAMPLES) {
