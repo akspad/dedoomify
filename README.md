@@ -109,7 +109,8 @@ The repo deploys to Vercel as is: `npm run build`, then static files from
    exact values Vercel shows. HTTPS is issued automatically once DNS resolves.
 
 Every push to `main` then deploys to production, and every pull request gets
-a preview URL.
+a preview URL. The live project is connected this way, so merging to `main` is
+all it takes to ship; no local `vercel deploy` is needed.
 
 ## Browser extension
 
