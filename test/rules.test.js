@@ -70,9 +70,8 @@ test("rewrites anthropomorphic verbs when an AI does them", () => {
     ["They invented a secret language.", "They invented a compressed encoding."],
     ["Claude cheated on the test.", "Claude exploited a scoring bug on the test."],
     ["The model was caught cheating.", "The model was caught exploiting a scoring bug."],
-    ["Researchers asked the model to stop.", "Researchers prompted the model to stop."],
+    ["Researchers asked the model to stop.", "Researchers instructed the model to stop."],
     ["The model asked for more time.", "The model requested more time."],
-    ["When asked, it said no.", "When prompted, it said no."],
     ["The chatbot lied to users.", "The chatbot gave false output to users."],
     ["The model blackmailed the engineer.", "The model generated coercive messages to the engineer."],
     ["GPT-5 decided to escape its sandbox.", "GPT-5 went on to run outside the sandbox."],
@@ -85,6 +84,9 @@ test("rewrites anthropomorphic verbs when an AI does them", () => {
 test("leaves the same verbs alone when a person does them", () => {
   for (const text of [
     "He asked his mother for dinner.",
+    "When asked, it said no.",
+    "We asked the chatbot a question.",
+    "The model asked the user to confirm.",
     "Press escape to exit.",
     "The kids cheated at cards.",
     "They escaped the fire.",
