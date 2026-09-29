@@ -1,10 +1,20 @@
-// On-device rewriting with a small open model (Qwen2.5 1.5B Instruct, Apache
-// 2.0) running in the browser through WebLLM and WebGPU. Nothing is sent to a
+// On-device rewriting with a small open model (Qwen2.5 0.5B Instruct, Apache
+// 2.0) running in the browser through WebLLM and WebGPU. It is the smallest
+// model that still rewrites sentences reasonably, so the one-time download
+// stays around 10 seconds on a fast home connection. Nothing is sent to a
 // server: the model downloads once from Hugging Face and is cached by the
 // browser. The pure helpers at the top are also imported by the tests.
 
-export const MODEL_ID = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
-export const MODEL_LABEL = "Qwen2.5 1.5B";
+// The f16 build is smaller and faster; GPUs without 16-bit float support in
+// WebGPU (including some Safari setups) need the f32 build.
+export const MODEL_IDS = {
+  f16: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
+  f32: "Qwen2.5-0.5B-Instruct-q4f32_1-MLC",
+};
+export const MODEL_LABEL = "Qwen2.5 0.5B";
+export const MODEL_SIZE = "about 300 MB";
+
+let modelId = MODEL_IDS.f16;
 
 // Paragraphs worth sending to the model: the rules already found something,
 // or the text uses a word that often carries doom framing.
@@ -75,7 +85,10 @@ export function buildMessages(styleGuide, paragraph) {
 export async function isSupported() {
   try {
     if (!("gpu" in navigator)) return false;
-    return Boolean(await navigator.gpu.requestAdapter());
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) return false;
+    modelId = adapter.features.has("shader-f16") ? MODEL_IDS.f16 : MODEL_IDS.f32;
+    return true;
   } catch {
     return false;
   }
@@ -89,7 +102,7 @@ async function library() {
 
 export async function isCached() {
   try {
-    return await (await library()).hasModelInCache(MODEL_ID);
+    return await (await library()).hasModelInCache(modelId);
   } catch {
     return false;
   }
@@ -102,7 +115,7 @@ export function loadEngine(onProgress) {
   enginePromise ??= (async () => {
     const { CreateWebWorkerMLCEngine } = await library();
     const worker = new Worker(new URL("./llm-worker.js", import.meta.url), { type: "module" });
-    return CreateWebWorkerMLCEngine(worker, MODEL_ID, {
+    return CreateWebWorkerMLCEngine(worker, modelId, {
       initProgressCallback: (report) => onProgress?.(report),
     });
   })();

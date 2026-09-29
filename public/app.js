@@ -150,7 +150,7 @@ async function rewriteLocally(view, runId) {
     engine = await localAi.loadEngine((report) => {
       if (stale()) return;
       const pct = Math.round((report.progress || 0) * 100);
-      showNotice(`Loading ${localAi.MODEL_LABEL} on your device: ${pct}%. This is a one-time download of about 1 GB; next time it loads from your browser's cache.`);
+      showNotice(`Loading ${localAi.MODEL_LABEL} on your device: ${pct}%. This is a one-time download of ${localAi.MODEL_SIZE}; next time it loads from your browser's cache.`);
     });
   } catch (err) {
     console.error(err);
@@ -255,6 +255,7 @@ modeSelect.addEventListener("change", () => {
 
 async function init() {
   const localOption = modeSelect.querySelector('option[value="local"]');
+  localOption.textContent = `On-device AI (private; downloads ${localAi.MODEL_SIZE} once)`;
   if (await localAi.isSupported()) {
     if (savedMode() === "local") modeSelect.value = "local";
   } else {

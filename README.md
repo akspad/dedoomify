@@ -30,10 +30,12 @@ browser ──► /api/dedoom?url=… ──► fetch page ──► extract art
 Visitors pick one of two engines:
 
 - **Quick phrase rules** (default): instant, and runs on the server for free.
-- **On-device AI**: [Qwen2.5 1.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct)
+- **On-device AI**: [Qwen2.5 0.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
   (Apache 2.0) runs in the visitor's browser through
   [WebLLM](https://github.com/mlc-ai/web-llm) and WebGPU. The model downloads
-  once (about 1 GB, from Hugging Face) and the browser caches it. Only
+  once (about 300 MB, from Hugging Face, so around 10 seconds on a fast home
+  connection) and the browser caches it. The phrase-rules version shows
+  straight away while it loads. Only
   paragraphs with doom framing go to the model, one at a time, and a rewrite
   that changes a number or the paragraph's shape is thrown away in favour of
   the phrase-rules version. Nothing is sent to our server, and it costs
