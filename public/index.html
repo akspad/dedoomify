@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>dedoomify: read AI news without the doom</title>
+  <title>dedoomify: AI news without the doom</title>
   <meta name="description" content="Paste a link to an article about AI and read it in calm, concrete engineering language. “Is misaligned” becomes “has a bug”.">
-  <meta property="og:title" content="dedoomify">
+  <meta property="og:title" content="dedoomify: AI news without the doom">
   <meta property="og:description" content="Read AI news without the doom. “Is misaligned” becomes “has a bug”.">
   <meta property="og:url" content="https://dedoomify.com">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -14,13 +14,13 @@
 <body>
   <header class="site">
     <a class="brand" href="/">de<span>doom</span>ify</a>
-    <p class="tagline">Read AI news without the doom.</p>
+    <p class="tagline">AI news without the doom.</p>
   </header>
 
   <main>
     <section class="intro" id="intro">
       <h1>AI headlines, minus the apocalypse.</h1>
-      <p>Give us a link to an article about AI. We'll rewrite the doom framing into the plain language an engineer would use: <q>the model is misaligned</q> becomes <q>the model has a bug</q>. Facts stay the same, and the page keeps its original look with every change highlighted; hover one to see the original words. Use the instant phrase rules, or a small AI model that runs privately in your browser.</p>
+      <p>Give us a link to an article about AI. We'll rewrite the doom framing into the plain language an engineer would use: <q>the model is misaligned</q> becomes <q>the model has a bug</q>. Facts stay the same, and the page keeps its original look with every change highlighted; hover one to see the original words. Use the instant phrase rules, or a small AI model that runs privately in your browser (pick the lighter one if the download is too big).</p>
     </section>
 
     <form id="form" class="card" autocomplete="off">
@@ -41,7 +41,8 @@
           <span>Rewrite with</span>
           <select id="mode" name="mode">
             <option value="rules">Quick phrase rules</option>
-            <option value="local">On-device AI (private, ~300 MB)</option>
+            <option value="local">On-device AI: Qwen2.5 0.5B (private, ~300 MB)</option>
+            <option value="local-small">On-device AI: SmolLM2 360M (private, lighter, ~200 MB)</option>
           </select>
         </label>
         <button type="submit" class="go" id="go">De-doom it</button>

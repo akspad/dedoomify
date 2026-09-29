@@ -1,7 +1,7 @@
 {
   "name": "dedoomify",
   "version": "1.0.0",
-  "description": "Read AI news without the doom. Rewrites doom framing about AI into plain engineering language.",
+  "description": "AI news without the doom. Rewrites doom framing about AI into plain engineering language.",
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs && node scripts/dev-server.mjs",

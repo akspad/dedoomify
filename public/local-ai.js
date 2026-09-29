@@ -1,20 +1,32 @@
-// On-device rewriting with a small open model (Qwen2.5 0.5B Instruct, Apache
-// 2.0) running in the browser through WebLLM and WebGPU. It is the smallest
-// model that still rewrites sentences reasonably, so the one-time download
-// stays around 10 seconds on a fast home connection. Nothing is sent to a
-// server: the model downloads once from Hugging Face and is cached by the
-// browser. The pure helpers at the top are also imported by the tests.
-
-// The f16 build is smaller and faster; GPUs without 16-bit float support in
-// WebGPU (including some Safari setups) need the f32 build.
-export const MODEL_IDS = {
-  f16: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
-  f32: "Qwen2.5-0.5B-Instruct-q4f32_1-MLC",
+// On-device rewriting with a small open model running in the browser through
+// WebLLM and WebGPU. Nothing is sent to a server: the model downloads once
+// from Hugging Face and is cached by the browser. The pure helpers at the top
+// are also imported by the tests.
+//
+// Qwen2.5 0.5B Instruct (Apache 2.0) is the default: the smallest model that
+// still rewrites sentences reasonably, about 10 seconds to download on a fast
+// home connection. SmolLM2 360M Instruct (Apache 2.0) is a lighter choice for
+// slow connections or small GPUs; it follows the style guide less often, so
+// more paragraphs keep the phrase-rules version.
+//
+// Each model has an f16 build, smaller and faster, and an f32 build for GPUs
+// without 16-bit float support in WebGPU (including some Safari setups).
+export const MODELS = {
+  qwen: {
+    label: "Qwen2.5 0.5B",
+    size: "about 300 MB",
+    ids: { f16: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC", f32: "Qwen2.5-0.5B-Instruct-q4f32_1-MLC" },
+  },
+  smol: {
+    label: "SmolLM2 360M",
+    size: "about 200 MB",
+    ids: { f16: "SmolLM2-360M-Instruct-q4f16_1-MLC", f32: "SmolLM2-360M-Instruct-q4f32_1-MLC" },
+  },
 };
-export const MODEL_LABEL = "Qwen2.5 0.5B";
-export const MODEL_SIZE = "about 300 MB";
+export const DEFAULT_MODEL = "qwen";
 
-let modelId = MODEL_IDS.f16;
+let precision = "f16";
+const modelId = (key) => (MODELS[key] || MODELS[DEFAULT_MODEL]).ids[precision];
 
 // Paragraphs worth sending to the model: the rules already found something,
 // or the text uses a word that often carries doom framing.
@@ -124,7 +136,7 @@ export async function isSupported() {
     if (!("gpu" in navigator)) return false;
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) return false;
-    modelId = adapter.features.has("shader-f16") ? MODEL_IDS.f16 : MODEL_IDS.f32;
+    precision = adapter.features.has("shader-f16") ? "f16" : "f32";
     return true;
   } catch {
     return false;
@@ -137,29 +149,36 @@ async function library() {
   return webllm;
 }
 
-export async function isCached() {
+export async function isCached(key = DEFAULT_MODEL) {
   try {
-    return await (await library()).hasModelInCache(modelId);
+    return await (await library()).hasModelInCache(modelId(key));
   } catch {
     return false;
   }
 }
 
-let enginePromise = null;
+// One model is loaded at a time, in its own worker; switching models frees the
+// previous one's GPU memory.
+let loaded = null; // { key, worker, promise }
 
 // Loads the model once per page. onProgress gets { progress: 0..1, text }.
-export function loadEngine(onProgress) {
-  enginePromise ??= (async () => {
+export function loadEngine(key, onProgress) {
+  if (loaded?.key === key) return loaded.promise;
+  loaded?.worker.terminate();
+  const worker = new Worker(new URL("./llm-worker.js", import.meta.url), { type: "module" });
+  const current = { key, worker };
+  current.promise = (async () => {
     const { CreateWebWorkerMLCEngine } = await library();
-    const worker = new Worker(new URL("./llm-worker.js", import.meta.url), { type: "module" });
-    return CreateWebWorkerMLCEngine(worker, modelId, {
+    return CreateWebWorkerMLCEngine(worker, modelId(key), {
       initProgressCallback: (report) => onProgress?.(report),
     });
   })();
-  enginePromise.catch(() => {
-    enginePromise = null;
+  current.promise.catch(() => {
+    worker.terminate();
+    if (loaded === current) loaded = null;
   });
-  return enginePromise;
+  loaded = current;
+  return current.promise;
 }
 
 export async function rewriteParagraph(engine, styleGuide, paragraph) {

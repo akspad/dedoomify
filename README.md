@@ -1,6 +1,6 @@
 # dedoomify
 
-**Read AI news without the doom.** Paste a link to an article about AI and
+**AI news without the doom.** Paste a link to an article about AI and
 [dedoomify.com](https://dedoomify.com) rewrites the doom framing into the plain
 language an engineer would use about software with defects:
 
@@ -28,7 +28,7 @@ browser ──► /api/dedoom?url=… ──►  only)      ──► extract ar
    └─► optional: rewrite the doom-y paragraphs with a small model in the browser
 ```
 
-Visitors pick one of two engines:
+Visitors pick an engine:
 
 - **Quick phrase rules** (default): instant, and runs on the server for free.
 - **On-device AI**: [Qwen2.5 0.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
@@ -41,6 +41,11 @@ Visitors pick one of two engines:
   that changes a number or the paragraph's shape is thrown away in favour of
   the phrase-rules version. Nothing is sent to our server, and it costs
   nothing per request. Browsers without WebGPU get the phrase rules.
+- **Lighter on-device AI**: [SmolLM2 360M Instruct](https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct)
+  (Apache 2.0), the same way, for slow connections or small GPUs. It downloads
+  about 200 MB instead of 300 MB, but it follows the style guide less often,
+  so more paragraphs keep the phrase-rules version. The models are listed in
+  `MODELS` in `public/local-ai.js`.
 
 Files:
 
