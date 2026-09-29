@@ -37,6 +37,14 @@ test("rejects rewrites that invent or drop details", () => {
   ));
 });
 
+test("rejects rewrites that drop, add or restyle quotation marks", () => {
+  const original = "\u201cThe model is misaligned,\u201d she said, calling it \"rogue.\"";
+  assert.ok(acceptRewrite(original, "\u201cThe model has a bug,\u201d she said, calling it \"rogue.\""));
+  assert.ok(!acceptRewrite(original, "The model has a bug, she said, calling it \"rogue.\""));
+  assert.ok(!acceptRewrite(original, "\"The model has a bug,\" she said, calling it \"rogue.\""));
+  assert.ok(!acceptRewrite("The model is misaligned, she said.", "\"The model has a bug,\" she said."));
+});
+
 test("accepts rewrites that only change the doom framing", () => {
   assert.ok(acceptRewrite(
     "Experts warn the model is misaligned and could go rogue by 2030.",

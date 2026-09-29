@@ -30,14 +30,15 @@
     return [source + "(?<=" + AI_SUBJECT + FILLER + "\\s+(?:" + verb + "))", replacement];
   }
 
-  // [verb, replacement] rewritten only when an AI is the one being addressed:
-  // "asked the model" becomes "prompted the model".
+  // [verb, replacement] rewritten only when an AI is the one being addressed
+  // and told to do something: "asked the model to" becomes "instructed the
+  // model to". Other uses ("asked the model a question") read fine as is.
   var AI_OBJECT =
     "\\s+(?:(?:the|a|an|this|that|these|those|its|their|our|your|each)\\s+)?" +
     "(?:(?:AI|new|latest|same|frontier|language|chat|[\\w-]+['\u2019]s)\\s+)?" +
     "(?:AIs?|LLMs?|models?|chatbots?|AI\\s+agents?|assistants?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\\w.]+)\\b";
   function toAI(verb, replacement) {
-    return [verb + "(?=" + AI_OBJECT + ")", replacement];
+    return [verb + "(?=" + AI_OBJECT + "\\s+to\\b)", replacement];
   }
 
   // Each rule is [pattern, replacement]. Patterns are matched case-insensitively
@@ -236,18 +237,15 @@
     byAI("communicates", "outputs"),
     byAI("communicating", "outputting"),
 
-    // Asking a model is prompting it.
-    toAI("asked", "prompted"),
-    toAI("asks", "prompts"),
-    toAI("asking", "prompting"),
-    toAI("ask", "prompt"),
-    ["when asked", "when prompted"],
+    // Asking a model to do something is instructing it.
+    toAI("asked", "instructed"),
+    toAI("asks", "instructs"),
+    toAI("asking", "instructing"),
+    toAI("ask", "instruct"),
     byAI("asked whether", "output a question about whether"),
     byAI("asked if", "output a question about whether"),
     byAI("asked for", "requested"),
     byAI("asks for", "requests"),
-    byAI("asked", "prompted"),
-    byAI("asks", "prompts"),
 
     // Intentions are outputs.
     byAI("lied to", "gave false output to"),

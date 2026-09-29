@@ -57,11 +57,6 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 // Which on-device model each "Rewrite with" option uses.
 const LOCAL_MODES = { local: "qwen", "local-small": "smol" };
 const localModelKey = () => LOCAL_MODES[modeSelect.value];
-// The model behind the latest on-device rewrite, for the summary line.
-let usedModel = localAi.MODELS[localAi.DEFAULT_MODEL];
-const ENGINE_NAMES = { claude: "Claude", rules: "the phrase rules" };
-const engineName = (engine) =>
-  engine === "local" ? `${usedModel.label} on your device` : ENGINE_NAMES[engine] || ENGINE_NAMES.rules;
 
 // Keep the frame filling the screen below the sticky banner.
 new ResizeObserver(() => {
@@ -95,7 +90,7 @@ function blockNodes(block) {
 
 function readerSummary(data) {
   const changed = data.blocks.filter((b) => b.text !== b.original).length;
-  return `Reframed, not the original: ${changed} of ${plural(data.blocks.length, "paragraph")} changed by ${engineName(data.engine)}.`;
+  return `${changed} of ${plural(data.blocks.length, "paragraph")} changed`;
 }
 
 function renderReader(data) {
@@ -133,8 +128,8 @@ function updateBlock(readerView, i, text) {
 
 function pageSummary(doc, engine) {
   const n = doc.querySelectorAll("mark.dd, del.dd").length;
-  if (n === 0 && engine === "rules") return "Good news: we didn't find any doom to remove on this page.";
-  return `Reframed, not the original: ${plural(n, "phrase")} changed by ${engineName(engine)}. Hover a highlight to see the original words.`;
+  if (n === 0 && engine === "rules") return "No doom phrases found on this page";
+  return `${plural(n, "doom phrase")} changed`;
 }
 
 // Resolves with the frame's new document once it has been parsed, without
@@ -194,7 +189,6 @@ async function rewriteWithModel(items, runId, apply, what) {
     if (!stale()) showNotice("The on-device model couldn't load in this browser, so this uses the quick phrase rules.");
     return false;
   }
-  usedModel = model;
   let done = 0, kept = 0;
   for (const item of items) {
     if (stale()) return true;
