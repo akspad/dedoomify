@@ -4,7 +4,8 @@ import { parseHTML } from "linkedom";
 import "../shared/dedoom-core.js";
 import "../shared/page-dedoom.js";
 import "../public/diff.js";
-import { renderPage, PAGE_CSP } from "../lib/page.js";
+import { createHash } from "node:crypto";
+import { renderPage, PAGE_CSP, PAGE_SCRIPT } from "../lib/page.js";
 import handler from "../api/page.js";
 
 const { collectGroups, groupStrings, rewriteGroup, dedoomElement } = globalThis.DedoomPage;
@@ -57,7 +58,8 @@ test("keeps the page's markup and marks changed phrases in place", () => {
 test("strips scripts and anything that could run code or navigate", () => {
   const { html } = renderPage(PAGE, "https://example.com/news/story");
   const { document } = parseHTML(html);
-  assert.equal(document.querySelectorAll("script, iframe, meta[http-equiv]").length, 0);
+  assert.equal(document.querySelectorAll("iframe, meta[http-equiv]").length, 0);
+  assert.doesNotMatch(html, /alert\(1\)/);
   assert.equal(document.querySelector('link[rel="preload"]'), null);
   assert.ok(document.querySelector('link[rel="stylesheet"]'));
   assert.equal(document.querySelector("[onclick]"), null);
@@ -74,11 +76,18 @@ test("strips scripts and anything that could run code or navigate", () => {
   assert.match(html, /^<!DOCTYPE html>/);
 });
 
-test("the frame's policy forbids scripts", () => {
+test("the frame's policy allows only the hover card's script", () => {
   assert.match(PAGE_CSP, /default-src 'none'/);
-  assert.doesNotMatch(PAGE_CSP, /script-src/);
-  assert.match(PAGE_CSP, /sandbox allow-same-origin/);
-  assert.doesNotMatch(PAGE_CSP, /allow-scripts/);
+  const scriptSrc = PAGE_CSP.split("; ").find((d) => d.startsWith("script-src"));
+  const hash = createHash("sha256").update(PAGE_SCRIPT).digest("base64");
+  assert.equal(scriptSrc, `script-src 'sha256-${hash}'`);
+  // The page carries exactly that script and no other.
+  const { html } = renderPage(PAGE, "https://example.com/news/story");
+  const { document } = parseHTML(html);
+  const scripts = [...document.querySelectorAll("script")];
+  assert.equal(scripts.length, 1);
+  assert.equal(scripts[0].textContent, PAGE_SCRIPT);
+  assert.equal(scripts[0].attributes.length, 0);
 });
 
 test("groups break at block elements but not inline ones", () => {
