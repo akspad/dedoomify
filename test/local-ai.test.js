@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import "../shared/dedoom-prompt.js";
 import "../shared/dedoom-core.js";
-import { acceptRewrite, buildMessages, cleanOutput, needsModel, MODEL_IDS } from "../public/local-ai.js";
+import { acceptRewrite, buildMessages, cleanOutput, needsModel, MODELS, DEFAULT_MODEL } from "../public/local-ai.js";
 
 test("only paragraphs with doom framing go to the model", () => {
   assert.ok(needsModel("The model is misaligned.", "The model has a bug."));
@@ -60,7 +60,10 @@ test("the model gets the shared style guide and the paragraph last", () => {
   assert.deepEqual(messages.at(-1), { role: "user", content: "The model is misaligned." });
 });
 
-test("both model builds are ones WebLLM ships", () => {
+test("every model build is one WebLLM ships", () => {
   const lib = fs.readFileSync(new URL("../node_modules/@mlc-ai/web-llm/lib/index.js", import.meta.url), "utf8");
-  for (const id of Object.values(MODEL_IDS)) assert.ok(lib.includes(`model_id: "${id}"`), id);
+  assert.ok(MODELS[DEFAULT_MODEL]);
+  for (const model of Object.values(MODELS)) {
+    for (const id of Object.values(model.ids)) assert.ok(lib.includes(`model_id: "${id}"`), id);
+  }
 });

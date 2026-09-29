@@ -54,8 +54,14 @@ function el(tag, attrs, children) {
 }
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-const ENGINE_NAMES = { claude: "Claude", rules: "the phrase rules", local: `${localAi.MODEL_LABEL} on your device` };
-const engineName = (engine) => ENGINE_NAMES[engine] || ENGINE_NAMES.rules;
+// Which on-device model each "Rewrite with" option uses.
+const LOCAL_MODES = { local: "qwen", "local-small": "smol" };
+const localModelKey = () => LOCAL_MODES[modeSelect.value];
+// The model behind the latest on-device rewrite, for the summary line.
+let usedModel = localAi.MODELS[localAi.DEFAULT_MODEL];
+const ENGINE_NAMES = { claude: "Claude", rules: "the phrase rules" };
+const engineName = (engine) =>
+  engine === "local" ? `${usedModel.label} on your device` : ENGINE_NAMES[engine] || ENGINE_NAMES.rules;
 
 // Keep the frame filling the screen below the sticky banner.
 new ResizeObserver(() => {
@@ -159,7 +165,7 @@ async function showPage(url, runId) {
   if (failed) throw new Error(failed.getAttribute("content"));
   applyHighlight();
   setSummary(pageSummary(doc, "rules"));
-  if (modeSelect.value === "local") await rewritePageLocally(doc, runId);
+  if (localModelKey()) await rewritePageLocally(doc, runId);
 }
 
 // ---- On-device model ----
@@ -173,19 +179,22 @@ async function rewriteWithModel(items, runId, apply, what) {
     showNotice("No doom framing found, so the on-device model had nothing to do.");
     return false;
   }
+  const key = localModelKey();
+  const model = localAi.MODELS[key];
   let engine;
   try {
     showNotice("Loading the on-device model…");
-    engine = await localAi.loadEngine((report) => {
+    engine = await localAi.loadEngine(key, (report) => {
       if (stale()) return;
       const pct = Math.round((report.progress || 0) * 100);
-      showNotice(`Loading ${localAi.MODEL_LABEL} on your device: ${pct}%. This is a one-time download of ${localAi.MODEL_SIZE}; next time it loads from your browser's cache.`);
+      showNotice(`Loading ${model.label} on your device: ${pct}%. This is a one-time download of ${model.size}; next time it loads from your browser's cache.`);
     });
   } catch (err) {
     console.error(err);
     if (!stale()) showNotice("The on-device model couldn't load in this browser, so this uses the quick phrase rules.");
     return false;
   }
+  usedModel = model;
   let done = 0, kept = 0;
   for (const item of items) {
     if (stale()) return true;
@@ -206,7 +215,7 @@ async function rewriteWithModel(items, runId, apply, what) {
     done++;
   }
   showNotice(
-    `Rewritten on your device by ${localAi.MODEL_LABEL}; nothing was sent to a server.` +
+    `Rewritten on your device by ${model.label}; nothing was sent to a server.` +
       (kept ? ` ${plural(kept, what)} kept the phrase-rules version because the model's rewrite didn't match the original's facts.` : ""),
   );
   return true;
@@ -307,7 +316,7 @@ async function showReader(runId) {
   if (runId !== runCounter) return;
   const readerView = renderReader(body);
   applyHighlight();
-  if (modeSelect.value === "local") await rewriteReaderLocally(readerView, runId);
+  if (localModelKey()) await rewriteReaderLocally(readerView, runId);
 }
 
 // Show `source` in the current view. Each call supersedes the previous one.
@@ -369,13 +378,14 @@ modeSelect.addEventListener("change", () => {
 });
 
 async function init() {
-  const localOption = modeSelect.querySelector('option[value="local"]');
-  localOption.textContent = `On-device AI (private, ${localAi.MODEL_SIZE.replace("about ", "~")})`;
+  const localOptions = Object.keys(LOCAL_MODES).map((mode) => modeSelect.querySelector(`option[value="${mode}"]`));
   if (await localAi.isSupported()) {
-    if (savedMode() === "local") modeSelect.value = "local";
+    if (LOCAL_MODES[savedMode()]) modeSelect.value = savedMode();
   } else {
-    localOption.disabled = true;
-    localOption.textContent = "On-device AI (needs WebGPU)";
+    for (const option of localOptions) {
+      option.disabled = true;
+      option.textContent = `On-device AI: ${localAi.MODELS[LOCAL_MODES[option.value]].label} (needs WebGPU)`;
+    }
   }
   // Shared links: dedoomify.com/?url=... runs straight away.
   const params = new URLSearchParams(location.search);
