@@ -85,5 +85,79 @@
     return out;
   }
 
-  root.DedoomDiff = { diffSegments: diffSegments };
+  // The same diff as edits over `before`: [{ start, end, text }], where
+  // before.slice(start, end) becomes text. Used to mark changes in place on a
+  // page without touching its markup.
+  function diffEdits(before, after) {
+    if (before === after) return [];
+    var a = tokenize(before);
+    var b = tokenize(after);
+    if (a.length > MAX_TOKENS || b.length > MAX_TOKENS) {
+      return trimSpace(before, [{ start: 0, end: before.length, text: after }]);
+    }
+    var offsets = [];
+    var pos = 0;
+    for (var t = 0; t < a.length; t++) {
+      offsets.push(pos);
+      pos += a[t].length;
+    }
+    offsets.push(pos);
+    var n = a.length, m = b.length;
+    var dp = new Array(n + 1);
+    for (var i = 0; i <= n; i++) dp[i] = new Uint16Array(m + 1);
+    for (i = n - 1; i >= 0; i--) {
+      for (var j = m - 1; j >= 0; j--) {
+        dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    var edits = [];
+    var cur = null;
+    i = 0; j = 0;
+    while (i < n || j < m) {
+      if (i < n && j < m && a[i] === b[j]) {
+        cur = null;
+        i++; j++;
+        continue;
+      }
+      if (!cur) {
+        cur = { start: offsets[i], end: offsets[i], text: "" };
+        edits.push(cur);
+      }
+      if (j < m && (i >= n || dp[i][j + 1] >= dp[i + 1][j])) {
+        cur.text += b[j++];
+      } else {
+        cur.end = offsets[++i];
+      }
+    }
+    // Edits separated only by a space read as one change.
+    var merged = [];
+    edits.forEach(function (edit) {
+      var prev = merged[merged.length - 1];
+      if (prev && /^\s+$/.test(before.slice(prev.end, edit.start))) {
+        prev.text += before.slice(prev.end, edit.start) + edit.text;
+        prev.end = edit.end;
+      } else {
+        merged.push(edit);
+      }
+    });
+    return trimSpace(before, merged);
+  }
+
+  // Keep whitespace both sides share outside the change.
+  function trimSpace(before, edits) {
+    return edits.filter(function (edit) {
+      while (edit.text && edit.start < edit.end && /\s/.test(edit.text[0]) && before[edit.start] === edit.text[0]) {
+        edit.text = edit.text.slice(1);
+        edit.start++;
+      }
+      while (edit.text && edit.start < edit.end && /\s/.test(edit.text[edit.text.length - 1]) &&
+             before[edit.end - 1] === edit.text[edit.text.length - 1]) {
+        edit.text = edit.text.slice(0, -1);
+        edit.end--;
+      }
+      return edit.text !== before.slice(edit.start, edit.end);
+    });
+  }
+
+  root.DedoomDiff = { diffSegments: diffSegments, diffEdits: diffEdits };
 })(typeof globalThis !== "undefined" ? globalThis : this);

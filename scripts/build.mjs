@@ -1,5 +1,5 @@
 // Copies browser-side files into public/vendor/ so the site serves them itself:
-// the shared rules and prompt, and the WebLLM library for the on-device model.
+// the shared rules, prompt and page rewriter, and the WebLLM library for the on-device model.
 // Runs as Vercel's build command and before `npm run dev`.
 import fs from "node:fs";
 
@@ -9,6 +9,7 @@ fs.mkdirSync(out, { recursive: true });
 const copies = [
   ["../shared/dedoom-core.js", "dedoom-core.js"],
   ["../shared/dedoom-prompt.js", "dedoom-prompt.js"],
+  ["../shared/page-dedoom.js", "page-dedoom.js"],
   ["../node_modules/@mlc-ai/web-llm/lib/index.js", "web-llm.js"],
 ];
 for (const [from, to] of copies) {
