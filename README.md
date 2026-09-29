@@ -20,24 +20,45 @@ is highlighted, and you can show the original next to each paragraph.
 ## How it works
 
 ```
-browser ──► /api/dedoom?url=… ──► fetch page ──► extract article ──► rewrite ──► JSON
-                                   (public hosts   (Readability)     Claude, or the
-                                    only)                            phrase rules
+browser ──► /api/dedoom?url=… ──► fetch page ──► extract article ──► phrase rules ──► JSON
+                                   (public hosts   (Readability)
+                                    only)
+   │
+   └─► optional: rewrite the doom-y paragraphs with a small model in the browser
 ```
 
-- **`public/`** is the static site: `index.html`, `app.js`, `styles.css`, and
-  `diff.js`, which highlights what changed in each paragraph.
+Visitors pick one of two engines:
+
+- **Quick phrase rules** (default): instant, and runs on the server for free.
+- **On-device AI**: [Qwen2.5 0.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
+  (Apache 2.0) runs in the visitor's browser through
+  [WebLLM](https://github.com/mlc-ai/web-llm) and WebGPU. The model downloads
+  once (about 300 MB, from Hugging Face, so around 10 seconds on a fast home
+  connection) and the browser caches it. The phrase-rules version shows
+  straight away while it loads. Only
+  paragraphs with doom framing go to the model, one at a time, and a rewrite
+  that changes a number or the paragraph's shape is thrown away in favour of
+  the phrase-rules version. Nothing is sent to our server, and it costs
+  nothing per request. Browsers without WebGPU get the phrase rules.
+
+Files:
+
+- **`public/`** is the static site: `index.html`, `app.js`, `styles.css`,
+  `diff.js` (highlights what changed), `local-ai.js` and `llm-worker.js` (the
+  on-device model).
 - **`api/dedoom.js`** is one serverless function. `GET ?url=` fetches and
-  rewrites an article (responses are cacheable at the CDN for a day, so a
-  popular link costs one rewrite); `POST {text}` rewrites pasted text.
+  rewrites an article (responses are cacheable at the CDN for a day);
+  `POST {text}` rewrites pasted text.
 - **`lib/fetch-article.js`** fetches the page, refusing private and internal
   addresses (including on redirects), with size and time limits, and extracts
   the article with Mozilla Readability.
-- **`lib/llm.js`** asks Claude to rewrite the paragraphs when
-  `ANTHROPIC_API_KEY` is set. If Claude isn't configured or fails, the site
-  falls back to the phrase rules, and says so on the page.
-- **`shared/dedoom-core.js`** holds the phrase rules. The same file powers the
-  API fallback and the browser extension. Add or tune rules there.
+- **`shared/dedoom-core.js`** holds the phrase rules, and
+  **`shared/dedoom-prompt.js`** the style guide models follow. Both are shared
+  by the server, the browser and (for the rules) the extension. Add or tune
+  rules there.
+- **`lib/llm.js`** is an optional server-side Claude rewrite. The website no
+  longer uses it; it only runs if `ANTHROPIC_API_KEY` is set and a caller asks
+  the API for `mode=claude`.
 - **`extension/`** is a Manifest V3 browser extension that rewrites the page
   you're reading, using the phrase rules only.
 
@@ -51,29 +72,28 @@ npm test
 npm run dev            # http://localhost:3000
 ```
 
-Without an API key the site uses the phrase rules. To try the Claude rewrite:
+`npm run dev` (and Vercel's build) runs `npm run build`, which copies the
+shared scripts and the WebLLM library into `public/vendor/` so the site serves
+them itself. The on-device model needs a browser with WebGPU, such as current
+Chrome, Edge or Safari.
 
-```sh
-ANTHROPIC_API_KEY=sk-ant-... npm run dev
-```
+The optional Claude API mode:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | unset | Turns on the Claude rewrite. |
-| `DEDOOMIFY_MODEL` | `claude-opus-5-5` | Which Claude model rewrites articles. |
-| `DEDOOMIFY_LLM` | on | Set to `off` to use the rules only without removing the key. |
+| `ANTHROPIC_API_KEY` | unset | Allows `GET /api/dedoom?url=…&mode=claude`. The website doesn't call it. |
+| `DEDOOMIFY_MODEL` | `claude-opus-5-5` | Which Claude model that mode uses. |
+| `DEDOOMIFY_LLM` | on | Set to `off` to disable that mode without removing the key. |
 
 ## Deploy to dedoomify.com (Vercel)
 
-The repo deploys to Vercel as is: static files from `public/` and the function
-in `api/`. No build step.
+The repo deploys to Vercel as is: `npm run build`, then static files from
+`public/` and the function in `api/` (both set in `vercel.json`).
 
 1. Sign in at [vercel.com](https://vercel.com) with GitHub and choose
    **Add New → Project**, then import `akspad/dedoomify`. Leave the framework
-   preset as **Other** and the build command empty.
-2. Under **Settings → Environment Variables**, add `ANTHROPIC_API_KEY` (from
-   [console.anthropic.com](https://console.anthropic.com)). Set a monthly spend
-   limit on that key in the Anthropic Console, since the site is public.
+   preset as **Other**.
+2. No environment variables are needed.
 3. Deploy. You'll get a `*.vercel.app` URL to check.
 4. Under **Settings → Domains**, add `dedoomify.com` and `www.dedoomify.com`.
    Vercel shows the DNS records to create at your registrar. Usually that's an

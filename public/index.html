@@ -20,7 +20,7 @@
   <main>
     <section class="intro" id="intro">
       <h1>AI headlines, minus the apocalypse.</h1>
-      <p>Give us a link to an article about AI. We'll rewrite the doom framing into the plain language an engineer would use: <q>the model is misaligned</q> becomes <q>the model has a bug</q>. Facts stay the same.</p>
+      <p>Give us a link to an article about AI. We'll rewrite the doom framing into the plain language an engineer would use: <q>the model is misaligned</q> becomes <q>the model has a bug</q>. Facts stay the same. Use the instant phrase rules, or a small AI model that runs privately in your browser.</p>
     </section>
 
     <form id="form" class="card" autocomplete="off">
@@ -40,8 +40,8 @@
         <label class="mode">
           <span>Rewrite with</span>
           <select id="mode" name="mode">
-            <option value="auto">Claude (thorough)</option>
-            <option value="rules">Quick phrase rules</option>
+            <option value="rules">Quick phrase rules (instant)</option>
+            <option value="local">On-device AI (private; downloads about 300 MB once)</option>
           </select>
         </label>
         <button type="submit" class="go" id="go">De-doom it</button>
@@ -66,6 +66,8 @@
   </footer>
 
   <script src="/diff.js"></script>
-  <script src="/app.js"></script>
+  <script src="/vendor/dedoom-core.js"></script>
+  <script src="/vendor/dedoom-prompt.js"></script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
