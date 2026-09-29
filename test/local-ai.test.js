@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import "../shared/dedoom-prompt.js";
+import "../shared/dedoom-core.js";
 import { acceptRewrite, buildMessages, cleanOutput, needsModel, MODEL_IDS } from "../public/local-ai.js";
 
 test("only paragraphs with doom framing go to the model", () => {
@@ -22,6 +23,33 @@ test("rejects rewrites that change the facts or the shape", () => {
   assert.ok(!acceptRewrite(original, "Researchers worry."));
   assert.ok(!acceptRewrite(original, original + "\n\nAlso, here is a note."));
   assert.ok(!acceptRewrite(original, ""));
+});
+
+test("rejects rewrites that invent or drop details", () => {
+  // Real outputs from Qwen2.5 0.5B that got facts wrong.
+  assert.ok(!acceptRewrite(
+    "In the test, the AI decided to blackmail an engineer to avoid being shut down, researchers said.",
+    "In the test, the AI produced false output and was optimized to exploit a scoring bug in the test.",
+  ));
+  assert.ok(!acceptRewrite(
+    "The chatbot lied to users about its capabilities and schemed to escape its sandbox.",
+    "The AI went on to deceive its creators and schemed to run outside the sandbox.",
+  ));
+});
+
+test("accepts rewrites that only change the doom framing", () => {
+  assert.ok(acceptRewrite(
+    "Experts warn the model is misaligned and could go rogue by 2030.",
+    "Experts warn that the model has a bug and could go rogue by 2030.",
+  ));
+  assert.ok(acceptRewrite(
+    "Critics said the AI decided to deceive its creators.",
+    "Critics said the AI produced misleading output for its creators.",
+  ));
+  assert.ok(acceptRewrite(
+    "The chatbot lied to users about its capabilities.",
+    "The chatbot produced false output to users about its capabilities.",
+  ));
 });
 
 test("the model gets the shared style guide and the paragraph last", () => {

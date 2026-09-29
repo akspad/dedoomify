@@ -38,16 +38,53 @@ function numbersIn(text) {
   return (text.match(/\d[\d,.]*\d|\d/g) || []).map((n) => n.replace(/[.,]$/, ""));
 }
 
-// Accept a rewrite only if it plausibly kept the facts: same numbers, one
-// paragraph, and roughly the same length. Otherwise the caller keeps the
-// phrase-rules version.
+const STOPWORDS = new Set(
+  ("that this these those with from into onto over under about after before than then there their they them " +
+   "which while where when what who whom whose will would could should might must have been being were also " +
+   "some just only very more most such each other said says").split(" "),
+);
+
+// Words we compare on: four letters or more, lowercased and lightly stemmed so
+// "users" matches "user" and "decided" matches "decide".
+function contentWords(text) {
+  return (text.toLowerCase().match(/[a-z][a-z'-]{3,}/g) || [])
+    .filter((w) => !STOPWORDS.has(w))
+    .map((w) => w.replace(/'s$/, "").replace(/(ies|es|s|ed|ing|ly)$/, "").slice(0, 7));
+}
+
+let replacementVocab = null;
+function allowedNewWords() {
+  // Words the phrase rules themselves introduce ("bug", "output", "malfunction").
+  replacementVocab ??= new Set(globalThis.Dedoom.RULES.flatMap(([, replacement]) => contentWords(replacement)));
+  return replacementVocab;
+}
+
+// Accept a rewrite only if it plausibly kept the facts. Small models sometimes
+// invent details ("deceived its creators") or drop who said what, so besides
+// the shape checks, every content word must survive unless it's doom framing
+// the rules also change, and every new word must be one the rules use.
+// Otherwise the caller keeps the phrase-rules version.
 export function acceptRewrite(original, rewritten) {
   if (!rewritten) return false;
   if (/\n\s*\n/.test(rewritten)) return false;
   const ratio = rewritten.length / Math.max(original.length, 1);
   if (ratio < 0.6 || ratio > 1.7) return false;
   const have = new Set(numbersIn(rewritten));
-  return numbersIn(original).every((n) => have.has(n));
+  if (!numbersIn(original).every((n) => have.has(n))) return false;
+
+  const doomWords = new Set();
+  for (const seg of globalThis.Dedoom.dedoomSegments(original)) {
+    if (seg.original !== undefined) contentWords(seg.original).forEach((w) => doomWords.add(w));
+  }
+  for (const m of original.matchAll(new RegExp(DOOM_HINTS.source, "gi"))) {
+    contentWords(m[0]).forEach((w) => doomWords.add(w));
+  }
+  const before = new Set(contentWords(original));
+  const after = new Set(contentWords(rewritten));
+  for (const w of before) if (!after.has(w) && !doomWords.has(w)) return false;
+  const vocab = allowedNewWords();
+  for (const w of after) if (!before.has(w) && !vocab.has(w)) return false;
+  return true;
 }
 
 // Few-shot examples teach the small model the edit size we want.
@@ -61,8 +98,8 @@ const EXAMPLES = [
     "The company reported revenue of $4 billion for the year, up 12 percent.",
   ],
   [
-    "Critics said the AI decided to deceive its creators to avoid being shut down.",
-    "Critics said the AI produced misleading output and failed to shut down.",
+    "Critics said the AI decided to deceive its creators.",
+    "Critics said the AI produced misleading output for its creators.",
   ],
 ];
 
