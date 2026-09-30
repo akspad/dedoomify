@@ -23,7 +23,7 @@ and run `npm run build:extension`.
 **Name:** dedoomify
 
 **Summary** (Chrome, 132 characters max; also the manifest description):
-Rewrites doom framing about AI on the page you're reading into plain engineering language.
+Rewrites AI doom framing into reasonable facts :)
 
 **Subtitle** (App Store, 30 characters max): AI news, minus the doom
 
