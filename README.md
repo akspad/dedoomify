@@ -1,6 +1,6 @@
 # dedoomify
 
-**AI news without the doom.** Paste a link to an article about AI and
+**AI news, minus the doom :)** Paste a link to an article about AI and
 [dedoomify.com](https://dedoomify.com) rewrites the doom framing into the plain
 language an engineer would use about software with defects:
 
@@ -16,7 +16,12 @@ Facts, names and numbers stay the same; only the framing changes. The article
 keeps its original look, with every change highlighted in place; hover a
 highlight to see the original words. A reader view shows just the text.
 
-![dedoomify rewriting an article](docs/screenshot.png)
+[![dedoomify on a TechCrunch story about rogue AI: the link is pasted, 8 doom phrases are highlighted in place, and hovering one shows the original words](docs/demo.gif)](public/demo.mp4)
+
+*dedoomify on TechCrunch's [OpenAI still doesn't seem to have a handle on all
+of its rogue AI activity](https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/)
+(Sept 28, 2026), with the quick phrase rules. The same clip plays on the
+homepage; click it for the [MP4](public/demo.mp4).*
 
 ## How it works
 
@@ -52,7 +57,8 @@ Files:
 - **`public/`** is the static site: `index.html`, `app.js`, `styles.css`,
   `diff.js` (highlights what changed), `tooltip.js` (the hover card with the
   original words), `local-ai.js` and `llm-worker.js` (the
-  on-device model).
+  on-device model), `privacy.html`, and the homepage demo clip (`demo.mp4`,
+  with `demo.webm` for browsers without H.264, and `demo-poster.jpg`).
 - **`api/page.js`** returns the original page with its scripts, frames and
   event handlers removed and the phrase rules applied in place
   (`lib/page.js`, `shared/page-dedoom.js`). It is only served into
