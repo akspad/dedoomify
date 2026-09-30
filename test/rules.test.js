@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import "../shared/dedoom-core.js";
 
-const { dedoomText, dedoomSegments } = globalThis.Dedoom;
+const { dedoomText, dedoomSegments, hasDoom } = globalThis.Dedoom;
 
 test("the headline example", () => {
   assert.equal(dedoomText("The model is misaligned."), "The model has a bug.");
@@ -95,5 +95,20 @@ test("leaves the same verbs alone when a person does them", () => {
     "The model lies in a gray area.",
   ]) {
     assert.equal(dedoomText(text), text);
+  }
+});
+
+test("hasDoom agrees with the rewrite", () => {
+  for (const text of ["The model is misaligned.", "What is your p(doom)?", "A calm day at the office.", "Alignment of the table legs."]) {
+    assert.equal(hasDoom(text), dedoomText(text) !== text, text);
+  }
+});
+
+test("every plain phrase rule can find its own phrase", () => {
+  // Rules are skipped when their key word is missing, so each must still match its phrase.
+  for (const [pattern] of globalThis.Dedoom.RULES) {
+    if (pattern.includes("\\")) continue;
+    assert.ok(hasDoom(pattern), pattern);
+    assert.ok(hasDoom(pattern.toUpperCase()), pattern.toUpperCase());
   }
 });

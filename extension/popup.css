@@ -29,3 +29,6 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .status:empty { margin: 0; min-height: 0; }
 .small { font-size: 12px; color: var(--muted); margin: 12px 0 0; }
 a { color: var(--accent); }
+.setting { display: flex; gap: 8px; align-items: flex-start; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); cursor: pointer; }
+.setting strong { color: var(--ink); font-size: 13px; font-weight: 600; }
+.setting input { accent-color: var(--accent); margin: 2px 0 0; flex: none; }

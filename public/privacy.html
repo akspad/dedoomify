@@ -22,7 +22,8 @@
 
     <h2>The browser extension</h2>
     <p>The dedoomify extension for Chrome, Edge and Safari collects no data. It has no servers, no analytics, no accounts and no tracking, and it never sends anything over the network.</p>
-    <p>It only runs when you click its button. It then reads the text of the tab you're on, rewrites doom framing about AI with phrase rules built into the extension, and highlights each change, all inside your browser. It uses the <code>activeTab</code> and <code>scripting</code> permissions for this, which let it touch only the tab you clicked it on, only at that moment. It can't see your other tabs, your browsing history, or any page you haven't clicked it on. Nothing is stored; reloading the page undoes everything.</p>
+    <p>By default it only runs when you click its button. It then reads the text of the tab you're on, rewrites doom framing about AI with phrase rules built into the extension, and highlights each change, all inside your browser. It uses the <code>activeTab</code> and <code>scripting</code> permissions for this, which let it touch only the tab you clicked it on, only at that moment. Nothing is stored; reloading the page undoes everything.</p>
+    <p>If you turn on <strong>De-doom automatically</strong>, the extension asks your browser for access to the sites you visit. With that access, it reads a short sample of each page you open (its title, description and the start of its text) to check, on your device, whether it talks about AI doom, and rewrites the page if it does. The sample and the page are never stored or sent anywhere. Turning the setting off, or removing the extension's site access in your browser, stops this.</p>
     <p>The popup's link to dedoomify.com includes the address of the page you're on, so the site can open it. That only happens if you click the link.</p>
 
     <h2>The website</h2>

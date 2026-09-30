@@ -337,8 +337,66 @@
     return {
       re: new RegExp("(^|[^\\w-])(" + source + ")(?![\\w-])", "gi"),
       replacement: rule[1],
+      word: requiredWord(source),
     };
   });
+
+  // The longest run of letters that every match of a pattern contains
+  // (lowercased), or "" if there is none. A rule is only tried on text that
+  // contains its word, which skips most rules for most text and keeps
+  // browsers from compiling regexes that can't match.
+  function requiredWord(source) {
+    var best = "";
+    function scan(s) {
+      var run = "";
+      function flush() {
+        if (run.length > best.length) best = run;
+        run = "";
+      }
+      for (var i = 0; i < s.length; i++) {
+        var c = s.charAt(i);
+        if (c === "\\") {
+          flush();
+          i++;
+        } else if (c === "(") {
+          // Only a plain group that is neither optional nor split by | is
+          // certain to match; lookarounds don't consume text.
+          var depth = 1, j = i + 1, split = false;
+          for (; j < s.length && depth; j++) {
+            if (s.charAt(j) === "\\") j++;
+            else if (s.charAt(j) === "(") depth++;
+            else if (s.charAt(j) === ")") depth--;
+            else if (s.charAt(j) === "|" && depth === 1) split = true;
+          }
+          var inner = s.slice(i + 1, j - 1);
+          var after = s.charAt(j);
+          var optional = after === "?" || after === "*" || (after === "{" && s.charAt(j + 1) === "0");
+          flush();
+          if (!split && !optional && !/^\?[=!<]/.test(inner)) scan(inner.replace(/^\?:/, ""));
+          i = j - 1;
+        } else if (c === "[") {
+          flush();
+          while (i < s.length && s.charAt(i) !== "]") i += s.charAt(i) === "\\" ? 2 : 1;
+        } else if (c === "?" || c === "*" || (c === "{" && s.charAt(i + 1) === "0")) {
+          run = run.slice(0, -1);
+          flush();
+        } else if (c === "|") {
+          return false;
+        } else if (/[A-Za-z]/.test(c)) {
+          run += c.toLowerCase();
+        } else {
+          flush();
+        }
+      }
+      flush();
+      return true;
+    }
+    return scan(source) ? best : "";
+  }
+
+  function mayMatch(rule, lower) {
+    return !rule.word || lower.indexOf(rule.word) >= 0;
+  }
 
   // Carry the capitalisation of the matched text over to the replacement.
   function matchCase(original, replacement) {
@@ -358,7 +416,11 @@
   // { text, original } for rewritten text. Joining the texts gives the result.
   function dedoomSegments(input) {
     var segments = [{ text: String(input) }];
+    // Rules only rewrite untouched parts of the input, so the input decides
+    // which rules can match.
+    var lower = segments[0].text.toLowerCase();
     COMPILED.forEach(function (rule) {
+      if (!mayMatch(rule, lower)) return;
       var next = [];
       segments.forEach(function (seg) {
         if (seg.original !== undefined) {
@@ -393,9 +455,21 @@
       .join("");
   }
 
+  // Whether any rule would change the text, stopping at the first match.
+  function hasDoom(input) {
+    var text = String(input);
+    var lower = text.toLowerCase();
+    return COMPILED.some(function (rule) {
+      if (!mayMatch(rule, lower)) return false;
+      rule.re.lastIndex = 0;
+      return rule.re.test(text);
+    });
+  }
+
   root.Dedoom = {
     RULES: RULES,
     dedoomSegments: dedoomSegments,
     dedoomText: dedoomText,
+    hasDoom: hasDoom,
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

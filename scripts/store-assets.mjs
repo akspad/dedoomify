@@ -44,6 +44,7 @@ async function popup(state) {
     window.chrome = {
       tabs: { query: async () => [tab] },
       scripting: { executeScript: async () => [{ result: state }], insertCSS: async () => {} },
+      permissions: { contains: async () => false },
     };
   }, state);
   await p.goto(url("extension/popup.html").href);
@@ -62,6 +63,7 @@ async function article(path, { dedoom = false, hover = null } = {}) {
   if (dedoom) {
     await p.addStyleTag({ content: read("extension/content.css") });
     await p.addScriptTag({ content: read("extension/dedoom-core.js") });
+    await p.addScriptTag({ content: read("extension/dedoomify-page.js") });
     await p.addScriptTag({ content: read("extension/content.js") });
   }
   if (hover) await p.hover(hover);
