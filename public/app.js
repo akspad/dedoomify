@@ -9,6 +9,14 @@ const viewToggle = $("view-toggle"), originalLink = $("original-link");
 const modeSelect = $("mode");
 const tabUrl = $("tab-url"), tabText = $("tab-text");
 const panelUrl = $("panel-url"), panelText = $("panel-text");
+const demo = $("demo");
+// With reduced motion, the demo waits for a press instead of autoplaying.
+if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const video = demo.querySelector("video");
+  video.removeAttribute("autoplay");
+  video.pause();
+  video.controls = true;
+}
 const { dedoomText } = globalThis.Dedoom;
 const { STYLE_GUIDE } = globalThis.DedoomPrompt;
 const { collectGroups, groupStrings, normalize, rewriteGroup } = globalThis.DedoomPage;
@@ -312,6 +320,8 @@ async function start() {
   setBusy(true);
   layout();
   result.hidden = false;
+  demo.hidden = true;
+  demo.querySelector("video").pause();
   result.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
     if (view === "page") await showPage(source.url, runId);
@@ -319,6 +329,7 @@ async function start() {
   } catch (err) {
     if (runId !== runCounter) return;
     result.hidden = true;
+    demo.hidden = false;
     showError(err.message || "Couldn't reach dedoomify. Check your connection.");
   } finally {
     if (runId === runCounter) setBusy(false);
