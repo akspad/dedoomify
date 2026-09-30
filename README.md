@@ -1,6 +1,8 @@
 # dedoomify
 
-**AI news, minus the doom :)** Paste a link to an article about AI and
+**AI news, minus the doom :)**
+
+Paste a link to an article about AI and
 [dedoomify.com](https://dedoomify.com) rewrites the doom framing into the plain
 language an engineer would use about software with defects:
 
@@ -79,49 +81,6 @@ Files:
   the API for `mode=claude`.
 - **`extension/`** is a Manifest V3 browser extension that rewrites the page
   you're reading, using the phrase rules only.
-
-## Run it locally
-
-Needs Node 20 or newer.
-
-```sh
-npm install
-npm test
-npm run dev            # http://localhost:3000
-```
-
-`npm run dev` (and Vercel's build) runs `npm run build`, which copies the
-shared scripts and the WebLLM library into `public/vendor/` so the site serves
-them itself. The on-device model needs a browser with WebGPU, such as current
-Chrome, Edge or Safari.
-
-The optional Claude API mode:
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `ANTHROPIC_API_KEY` | unset | Allows `GET /api/dedoom?url=…&mode=claude`. The website doesn't call it. |
-| `DEDOOMIFY_MODEL` | `claude-opus-5-5` | Which Claude model that mode uses. |
-| `DEDOOMIFY_LLM` | on | Set to `off` to disable that mode without removing the key. |
-
-## Deploy to dedoomify.com (Vercel)
-
-The repo deploys to Vercel as is: `npm run build`, then static files from
-`public/` and the function in `api/` (both set in `vercel.json`).
-
-1. Sign in at [vercel.com](https://vercel.com) with GitHub and choose
-   **Add New → Project**, then import `akspad/dedoomify`. Leave the framework
-   preset as **Other**.
-2. No environment variables are needed.
-3. Deploy. You'll get a `*.vercel.app` URL to check.
-4. Under **Settings → Domains**, add `dedoomify.com` and `www.dedoomify.com`.
-   Vercel shows the DNS records to create at your registrar. Usually that's an
-   `A` record for `@` pointing to Vercel's IP and a `CNAME` for `www` pointing
-   to Vercel, or you can switch the domain's nameservers to Vercel. Use the
-   exact values Vercel shows. HTTPS is issued automatically once DNS resolves.
-
-Every push to `main` then deploys to production, and every pull request gets
-a preview URL. The live project is connected this way, so merging to `main` is
-all it takes to ship; no local `vercel deploy` is needed.
 
 ## Browser extension
 
