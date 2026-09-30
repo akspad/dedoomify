@@ -48,8 +48,8 @@ header.site { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; pa
 .brand { display: inline-flex; align-items: center; font-weight: 700; font-size: 2rem; color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
 .brand img { width: 40px; height: 40px; margin-right: 10px; border-radius: 9px; }
 .brand span { text-decoration: line-through; text-decoration-color: var(--accent); text-decoration-thickness: 3px; color: var(--muted); }
-.intro h1 { font-family: var(--serif); font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 16px 0 12px; }
-.intro p { color: var(--muted); font-size: 1.05rem; margin: 0 0 24px; }
+.intro h1 { font-family: var(--serif); font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 32px 0 12px; }
+.intro p { color: var(--muted); font-size: 1.05rem; margin: 0 0 40px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
 .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
 .tab { font: inherit; border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
