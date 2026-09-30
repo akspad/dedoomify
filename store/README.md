@@ -47,7 +47,7 @@ Rewrites AI doom framing into reasonable facts :)
 
 **Keywords** (App Store, 100 characters max): AI,news,doom,reader,rewrite,calm,artificial intelligence,headlines,anxiety,tech news
 
-**Category:** Chrome: Tools. Edge: Productivity. App Store: News (secondary: Productivity).
+**Category:** Chrome: News & Weather (or Tools). Edge: Productivity. App Store: News (secondary: Productivity).
 
 **Website / support URL:** https://dedoomify.com (support: https://github.com/akspad/dedoomify/issues)
 
