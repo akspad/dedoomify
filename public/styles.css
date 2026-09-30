@@ -135,6 +135,11 @@ del.dd { display: none; }
 .empty { color: var(--muted); font-family: var(--sans); }
 .links { color: var(--muted); font-size: 0.8rem; margin: 8px 0 40px; }
 .links a { color: var(--accent); }
+.demo { margin: 0 0 56px; }
+.demo[hidden] { display: none; }
+.demo video { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08); }
+.demo figcaption { color: var(--muted); font-size: 0.8rem; margin-top: 8px; text-align: center; }
+.demo figcaption a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* Plain text pages, such as the privacy policy. */
 .prose { padding-bottom: 80px; }
