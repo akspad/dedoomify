@@ -120,19 +120,27 @@ all it takes to ship; no local `vercel deploy` is needed.
 ## Browser extension
 
 The extension rewrites the page you're on, in place, when you click its
-button. It needs no API key and sends nothing anywhere; it asks only for
-`activeTab` and `scripting`, so it can touch a page only after you click.
+button. Changes are highlighted like on the site, with the same hover card
+showing the original words; the popup can hide the highlights or undo them.
+It needs no API key and sends nothing anywhere; it asks only for `activeTab`
+and `scripting`, so it can touch a page only after you click. It uses the
+phrase rules; for the on-device model, its popup links to the same page on
+dedoomify.com.
 
 To try it in Chrome, Edge or Brave:
 
-1. Run `npm run build:extension` (copies the latest rules into `extension/`).
+1. Run `npm run build:extension` (copies the latest rules into `extension/`
+   and writes the store zip to `dist/`).
 2. Open `chrome://extensions`, turn on **Developer mode**, click
    **Load unpacked**, and pick the `extension/` folder.
 3. Open an article about AI and click the dedoomify button.
 
-To publish it, zip the `extension/` folder and upload it to the
-[Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole)
-(one-time $5 registration fee).
+On a Mac with Xcode, `npm run build:safari` wraps it in a Safari app.
+
+Publishing to the Chrome Web Store, Edge Add-ons and the Mac App Store is
+described step by step in [`store/README.md`](store/README.md), with the
+listing text, screenshots and icons. The privacy policy is
+[dedoomify.com/privacy.html](https://dedoomify.com/privacy.html).
 
 ## Contributing
 

@@ -2,15 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <title>dedoomify</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <h1>de<span>doom</span>ify</h1>
-  <p>Rewrite doom framing about AI on this page into plain engineering language.</p>
-  <button id="run" type="button">De-doom this page</button>
-  <p id="status" role="status"></p>
-  <p class="small">Changes are highlighted; hover one to see the original. Reload the page to undo.
-    For a more thorough rewrite, open the page on <a id="site" href="https://dedoomify.com" target="_blank" rel="noopener">dedoomify.com</a>.</p>
+  <header class="brand"><img src="icons/128.png" alt="" width="28" height="28">de<span>doom</span>ify</header>
+  <p class="lede">Rewrite doom framing about AI on this page into plain engineering language. <q>Is misaligned</q> becomes <q>has a bug</q>.</p>
+  <button id="run" class="go" type="button">De-doom this page</button>
+  <div id="result" class="card" hidden>
+    <p class="summary"><span class="badge">dedoomify</span> <span id="summary" role="status"></span></p>
+    <div class="controls">
+      <label class="toggle"><input type="checkbox" id="show" checked> Highlight changes</label>
+      <button id="undo" class="link-button" type="button">Undo</button>
+    </div>
+  </div>
+  <p id="status" class="status" role="status"></p>
+  <p class="small">Hover a highlight to see the original words. The page is rewritten on your device and nothing is sent anywhere.
+    For a rewrite by an on-device AI model, open this page on <a id="site" href="https://dedoomify.com" target="_blank" rel="noopener">dedoomify.com</a>.</p>
   <script src="popup.js"></script>
 </body>
 </html>

@@ -1,19 +1,32 @@
+/* Highlights and the hover card, matching dedoomify.com. Everything is
+   scoped to dedoomify's own class names so the page's styles stay intact. */
 mark.dedoomify {
-  background: #fff0a0;
-  color: #3a2e00;
-  border-radius: 3px;
-  padding: 0 1px;
-  cursor: help;
-  text-decoration: none !important;
-  box-shadow: none !important;
+  background: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
   border: 0 !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
   background-image: none !important;
+}
+.dedoomify-show mark.dedoomify {
+  background: #fff0a0 !important;
+  color: #3a2e00 !important;
+  border-radius: 4px;
+  padding: 0 2px !important;
+  cursor: help;
+}
+.dedoomify-show mark.dedoomify.dedoomify-active {
+  outline: 2px solid #e0b400;
+  outline-offset: 1px;
 }
 .dedoomify-tip {
   display: none;
   position: fixed;
   z-index: 2147483647;
+  box-sizing: border-box;
   max-width: min(340px, calc(100vw - 16px));
+  margin: 0;
   background: #1f2a24;
   color: #f3f5f2;
   border-radius: 10px;
@@ -22,7 +35,20 @@ mark.dedoomify {
   pointer-events: none;
   font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   text-align: left;
+  letter-spacing: normal;
+  text-transform: none;
 }
+.dedoomify-tip::after {
+  content: "";
+  position: absolute;
+  left: var(--dedoomify-arrow-x, 50%);
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+}
+.dedoomify-tip[data-place="above"]::after { bottom: -5px; }
+.dedoomify-tip[data-place="below"]::after { top: -5px; }
 .dedoomify-tip-label {
   display: block;
   font-size: 11px;
@@ -34,7 +60,11 @@ mark.dedoomify {
 }
 .dedoomify-tip-text {
   display: block;
-  font-family: Georgia, serif;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   font-size: 16px;
   line-height: 1.35;
+}
+@media (prefers-color-scheme: dark) {
+  .dedoomify-tip { background: #e7ece8; color: #141a17; }
+  .dedoomify-tip-label { color: #8a6d00; }
 }
