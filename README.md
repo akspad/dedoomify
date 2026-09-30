@@ -129,8 +129,9 @@ The popup's **De-doom automatically** setting asks for access to all sites
 (an optional permission) and then rewrites articles about AI doom as they
 load. `background.js` registers `auto.js` for every page while that access is
 granted. `auto.js` first checks the page's title, description and the start of
-its text with a few cheap patterns plus the phrase rules (about a millisecond),
-so pages without AI doom are left alone. It uses the
+its text for a mention of AI and any phrase the rules would change (a few
+milliseconds at most, since each rule is skipped unless its key word is in the
+text), so pages without AI doom are left alone. It uses the
 phrase rules; for the on-device model, its popup links to the same page on
 dedoomify.com.
 

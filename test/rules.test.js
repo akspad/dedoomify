@@ -103,3 +103,12 @@ test("hasDoom agrees with the rewrite", () => {
     assert.equal(hasDoom(text), dedoomText(text) !== text, text);
   }
 });
+
+test("every plain phrase rule can find its own phrase", () => {
+  // Rules are skipped when their key word is missing, so each must still match its phrase.
+  for (const [pattern] of globalThis.Dedoom.RULES) {
+    if (pattern.includes("\\")) continue;
+    assert.ok(hasDoom(pattern), pattern);
+    assert.ok(hasDoom(pattern.toUpperCase()), pattern.toUpperCase());
+  }
+});

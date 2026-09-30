@@ -48,6 +48,7 @@ test("automatic mode picks out articles with AI doom", () => {
   assert.ok(looksDoomy("Experts warn a rogue AI could wipe out humanity."));
   assert.ok(looksDoomy("The chatbot is misaligned, researchers say."));
   assert.ok(looksDoomy("What's your p(doom)? Superintelligence is coming, says OpenAI."));
+  assert.ok(looksDoomy("In a test, the AI blackmailed the engineer."));
 });
 
 test("automatic mode leaves other pages alone", () => {

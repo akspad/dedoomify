@@ -3,18 +3,15 @@
 (function (root) {
   "use strict";
 
-  // A quick first pass for automatic mode: does this text talk about AI, and
-  // use words that doom framing is made of? Cheap regexes over a sample, so
-  // most pages are ruled out in about a millisecond. The short forms of "AI"
-  // must be capitalised, since "ai" turns up inside ordinary words.
+  // Automatic mode's check: does this text talk about AI, and would the
+  // phrase rules change it? The rules skip any phrase whose key word isn't in
+  // the text, so a page is judged in a few milliseconds at most. The short
+  // forms of "AI" must be capitalised, since "ai" turns up inside ordinary words.
   var AI_SHORT = /\b(?:AI|A\.I\.|AGI|LLMs?)\b/;
   var AI_LONG = /artificial intelligence|chatbot|language model|superintelligen|machine learning|neural net|\bGPT|OpenAI|Anthropic|DeepMind/i;
-  var DOOM = /misalign|alignment|existential|extinction|rogue|superintelligen|doom|apocalyp|takeover|take over the world|wipe out|destroy humanity|kill (?:us all|everyone)|god-?like|sentient|conscious AI|catastrophic risk|x-risk|end of (?:humanity|the world)|hallucinat|scheming|deceptive AI|evil AI|killer robot|skynet|terminator|paperclip|shoggoth|foom|singularity/i;
 
-  // Only then are the full phrase rules tried on the sample.
   function looksDoomy(text) {
-    if (!text || !DOOM.test(text)) return false;
-    if (!AI_SHORT.test(text) && !AI_LONG.test(text)) return false;
+    if (!text || (!AI_SHORT.test(text) && !AI_LONG.test(text))) return false;
     return root.Dedoom.hasDoom(text);
   }
 
@@ -50,15 +47,7 @@
     var nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
 
-    // Most text has nothing to change, so test nodes in batches first and
-    // only rewrite node by node inside batches with a match.
-    var candidates = [];
-    for (var i = 0; i < nodes.length; i += 64) {
-      var batch = nodes.slice(i, i + 64);
-      if (root.Dedoom.hasDoom(batch.map(function (n) { return n.nodeValue; }).join("\u0000"))) candidates.push.apply(candidates, batch);
-    }
-
-    candidates.forEach(function (node) {
+    nodes.forEach(function (node) {
       var segments = root.Dedoom.dedoomSegments(node.nodeValue);
       if (!segments.some(function (s) { return s.original !== undefined; })) return;
       var frag = document.createDocumentFragment();
