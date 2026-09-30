@@ -133,7 +133,7 @@ del.dd { display: none; }
 .original { display: none; font-family: var(--sans); font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--del); padding-left: 10px; margin: -6px 0 16px; }
 .show-original .original { display: block; }
 .empty { color: var(--muted); font-family: var(--sans); }
-.links { color: var(--muted); font-size: 0.8rem; margin: 8px 0 80px; }
+.links { color: var(--muted); font-size: 0.8rem; margin: 8px 0 40px; }
 .links a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* Plain text pages, such as the privacy policy. */
