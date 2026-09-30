@@ -136,3 +136,11 @@ del.dd { display: none; }
 .links { color: var(--muted); font-size: 0.8rem; margin: 8px 0 80px; }
 .links a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Plain text pages, such as the privacy policy. */
+.prose { padding-bottom: 80px; }
+.prose h1 { font-family: var(--serif); font-size: clamp(1.8rem, 5vw, 2.4rem); line-height: 1.15; margin: 32px 0 4px; }
+.prose h2 { font-size: 1.15rem; margin: 32px 0 8px; }
+.prose p { margin: 0 0 14px; }
+.prose a { color: var(--accent); }
+.prose code { font-size: 0.9em; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; }
+.prose .updated { color: var(--muted); font-size: 0.9rem; }

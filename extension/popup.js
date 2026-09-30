@@ -1,38 +1,93 @@
+// The toolbar popup. Rewriting only happens when the button is pressed, using
+// the activeTab permission that opening the popup grants for the current tab.
 (function () {
   "use strict";
-  var button = document.getElementById("run");
+  var api = typeof browser !== "undefined" && browser.scripting ? browser : chrome;
+  var run = document.getElementById("run");
+  var result = document.getElementById("result");
+  var summary = document.getElementById("summary");
+  var show = document.getElementById("show");
+  var undo = document.getElementById("undo");
   var status = document.getElementById("status");
   var site = document.getElementById("site");
+  var tabId = null;
 
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+  api.tabs.query({ active: true, currentWindow: true }).then(function (tabs) {
     var tab = tabs[0];
-    if (tab && /^https?:/.test(tab.url || "")) {
+    if (!tab) return;
+    tabId = tab.id;
+    if (/^https?:/.test(tab.url || "")) {
       site.href = "https://dedoomify.com/?url=" + encodeURIComponent(tab.url);
     }
-  });
-
-  button.addEventListener("click", function () {
-    button.disabled = true;
-    status.textContent = "Working…";
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      var tab = tabs[0];
-      if (!tab) return done("No page to de-doom.");
-      chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["content.css"] })
-        .then(function () {
-          return chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["dedoom-core.js", "content.js"] });
-        })
-        .then(function (results) {
-          var count = results && results[results.length - 1] ? results[results.length - 1].result : 0;
-          done(count ? "Rewrote " + count + (count === 1 ? " phrase." : " phrases.") : "No doom found on this page.");
-        })
-        .catch(function () {
-          done("This page can't be changed by extensions.");
-        });
+    // If this page was de-doomed earlier, show where it stands.
+    inPage(function () {
+      var total = document.querySelectorAll("mark.dedoomify").length;
+      return total ? { total: total, shown: document.documentElement.classList.contains("dedoomify-show") } : null;
+    }).then(function (state) {
+      if (state) render(state.total, state.shown);
+    }, function () {
+      cannot();
     });
   });
 
-  function done(message) {
-    status.textContent = message;
-    button.disabled = false;
+  run.addEventListener("click", function () {
+    if (tabId === null) return cannot();
+    run.disabled = true;
+    status.textContent = "Working…";
+    api.scripting.insertCSS({ target: { tabId: tabId }, files: ["content.css"] })
+      .then(function () {
+        return api.scripting.executeScript({ target: { tabId: tabId }, files: ["dedoom-core.js", "content.js"] });
+      })
+      .then(function (results) {
+        var last = results && results[results.length - 1];
+        var counts = (last && last.result) || { added: 0, total: 0 };
+        run.disabled = false;
+        status.textContent = "";
+        if (!counts.total) {
+          status.textContent = "No doom found on this page.";
+          return;
+        }
+        render(counts.total, true);
+        if (!counts.added) status.textContent = "Nothing new to rewrite.";
+      })
+      .catch(cannot);
+  });
+
+  show.addEventListener("change", function () {
+    inPage(function (on) {
+      document.documentElement.classList.toggle("dedoomify-show", on);
+    }, [show.checked]);
+  });
+
+  undo.addEventListener("click", function () {
+    inPage(function () {
+      document.querySelectorAll("mark.dedoomify").forEach(function (mark) {
+        var parent = mark.parentNode;
+        parent.replaceChild(document.createTextNode(mark.getAttribute("data-was")), mark);
+        parent.normalize();
+      });
+      document.documentElement.classList.remove("dedoomify-show");
+    }).then(function () {
+      result.hidden = true;
+      run.hidden = false;
+      status.textContent = "Restored the original text.";
+    });
+  });
+
+  function inPage(func, args) {
+    return api.scripting.executeScript({ target: { tabId: tabId }, func: func, args: args || [] })
+      .then(function (results) { return results && results[0] ? results[0].result : null; });
+  }
+
+  function render(total, shown) {
+    summary.textContent = "Rewrote " + total + (total === 1 ? " phrase" : " phrases") + " on this page.";
+    show.checked = shown;
+    result.hidden = false;
+    run.hidden = true;
+  }
+
+  function cannot() {
+    run.disabled = true;
+    status.textContent = "This page can't be changed by extensions. Try it on an article.";
   }
 })();

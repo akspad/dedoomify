@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy · dedoomify</title>
+  <meta name="description" content="What dedoomify's website and browser extension do with your data: the extension collects nothing, and the website keeps no record of what you read.">
+  <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png?v=2" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site">
+    <a class="brand" href="/"><img src="/favicon.svg?v=2" alt="" width="40" height="40">de<span>doom</span>ify</a>
+  </header>
+
+  <main class="prose">
+    <h1>Privacy</h1>
+    <p class="updated">Last updated September 30, 2026</p>
+
+    <h2>The browser extension</h2>
+    <p>The dedoomify extension for Chrome, Edge and Safari collects no data. It has no servers, no analytics, no accounts and no tracking, and it never sends anything over the network.</p>
+    <p>It only runs when you click its button. It then reads the text of the tab you're on, rewrites doom framing about AI with phrase rules built into the extension, and highlights each change, all inside your browser. It uses the <code>activeTab</code> and <code>scripting</code> permissions for this, which let it touch only the tab you clicked it on, only at that moment. It can't see your other tabs, your browsing history, or any page you haven't clicked it on. Nothing is stored; reloading the page undoes everything.</p>
+    <p>The popup's link to dedoomify.com includes the address of the page you're on, so the site can open it. That only happens if you click the link.</p>
+
+    <h2>The website</h2>
+    <p>When you give dedoomify.com a link, our server (hosted on <a href="https://vercel.com/legal/privacy-policy">Vercel</a>) fetches that page, rewrites it and sends it back to you. We don't keep a copy of the page or a record of which pages you asked for. Like most hosts, Vercel keeps short-lived request logs (such as the address requested and your IP address) for operating and securing the service. Rewritten pages may be cached at Vercel's network for up to a day, without any information about who asked for them.</p>
+    <p>Text you paste is sent to our server to be rewritten, and is not stored.</p>
+    <p>If you choose the on-device AI option, your browser downloads an open model from Hugging Face and its runtime files from GitHub, and the rewriting happens on your device. Those downloads go to <a href="https://huggingface.co/privacy">Hugging Face</a> and <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub</a> under their own policies; the article text isn't sent to them or to us.</p>
+    <p>The site uses no cookies, analytics or ads. It remembers which rewrite option you picked in your browser's local storage, which never leaves your device.</p>
+
+    <h2>Contact</h2>
+    <p>dedoomify is open source. Questions or concerns: open an issue at <a href="https://github.com/akspad/dedoomify/issues">github.com/akspad/dedoomify</a>.</p>
+  </main>
+</body>
+</html>
