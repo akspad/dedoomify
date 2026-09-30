@@ -94,11 +94,10 @@ body { overflow-x: clip; }
 .link-button { font: inherit; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; }
 .notice { max-width: 1100px; margin: 8px auto 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; color: var(--muted); font-size: 0.88rem; }
 .notice[hidden] { display: none; }
-#page {
-  display: block; width: 100%; border: 0; background: #fff;
-  height: calc(100vh - var(--banner-h, 90px));
-  height: calc(100dvh - var(--banner-h, 90px));
-}
+/* The banner and frame fill exactly one screen, so the page height never
+   changes when the banner grows or shrinks and the scroll stays put. */
+.result.page-view:not([hidden]) { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+#page { display: block; width: 100%; border: 0; background: #fff; flex: 1 1 auto; min-height: 0; }
 #page[hidden], article[hidden] { display: none; }
 .dd-tip {
   position: fixed; z-index: 50; max-width: min(340px, calc(100vw - 16px));
