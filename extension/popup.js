@@ -10,7 +10,22 @@
   var undo = document.getElementById("undo");
   var status = document.getElementById("status");
   var site = document.getElementById("site");
+  var auto = document.getElementById("auto");
+  var ALL_SITES = { origins: ["<all_urls>"] };
   var tabId = null;
+
+  // Automatic mode is on while the extension has access to all sites;
+  // background.js registers the page script when access is granted.
+  api.permissions.contains(ALL_SITES).then(function (on) { auto.checked = on; });
+  auto.addEventListener("change", function () {
+    var change = auto.checked ? api.permissions.request(ALL_SITES) : api.permissions.remove(ALL_SITES).then(function () { return false; });
+    change.then(function (on) {
+      auto.checked = !!on;
+      status.textContent = on ? "Articles about AI doom will be rewritten as they load." : "";
+    }, function () {
+      auto.checked = false;
+    });
+  });
 
   api.tabs.query({ active: true, currentWindow: true }).then(function (tabs) {
     var tab = tabs[0];
@@ -36,7 +51,7 @@
     status.textContent = "Working…";
     api.scripting.insertCSS({ target: { tabId: tabId }, files: ["content.css"] })
       .then(function () {
-        return api.scripting.executeScript({ target: { tabId: tabId }, files: ["dedoom-core.js", "content.js"] });
+        return api.scripting.executeScript({ target: { tabId: tabId }, files: ["dedoom-core.js", "dedoomify-page.js", "content.js"] });
       })
       .then(function (results) {
         var last = results && results[results.length - 1];

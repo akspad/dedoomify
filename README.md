@@ -123,7 +123,14 @@ The extension rewrites the page you're on, in place, when you click its
 button. Changes are highlighted like on the site, with the same hover card
 showing the original words; the popup can hide the highlights or undo them.
 It needs no API key and sends nothing anywhere; it asks only for `activeTab`
-and `scripting`, so it can touch a page only after you click. It uses the
+and `scripting`, so it can touch a page only after you click.
+
+The popup's **De-doom automatically** setting asks for access to all sites
+(an optional permission) and then rewrites articles about AI doom as they
+load. `background.js` registers `auto.js` for every page while that access is
+granted. `auto.js` first checks the page's title, description and the start of
+its text with a few cheap patterns plus the phrase rules (about a millisecond),
+so pages without AI doom are left alone. It uses the
 phrase rules; for the on-device model, its popup links to the same page on
 dedoomify.com.
 

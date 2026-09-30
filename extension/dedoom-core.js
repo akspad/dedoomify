@@ -393,9 +393,19 @@
       .join("");
   }
 
+  // Whether any rule would change the text, stopping at the first match.
+  function hasDoom(input) {
+    var text = String(input);
+    return COMPILED.some(function (rule) {
+      rule.re.lastIndex = 0;
+      return rule.re.test(text);
+    });
+  }
+
   root.Dedoom = {
     RULES: RULES,
     dedoomSegments: dedoomSegments,
     dedoomText: dedoomText,
+    hasDoom: hasDoom,
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

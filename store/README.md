@@ -39,7 +39,9 @@ Rewrites AI doom framing into reasonable facts :)
 >
 > Facts, names and numbers stay the same; only the framing changes. Every change is highlighted in place, and hovering a highlight shows the original words. Turn the highlights off for a clean read, or undo everything with one click.
 >
-> Private by design: the rewriting happens entirely in your browser with built-in phrase rules. The extension collects no data, sends nothing over the network, and only touches the page you click it on.
+> Turn on "De-doom automatically" and articles about AI doom are rewritten as they load. A quick check on your device picks them out, so other pages load exactly as before.
+>
+> Private by design: the rewriting happens entirely in your browser with built-in phrase rules. The extension collects no data and sends nothing over the network. Until you turn on automatic mode, it only touches the page you click it on.
 >
 > For a fuller rewrite by a small AI model that runs on your own device, the popup links straight to the same page on dedoomify.com.
 >
@@ -56,7 +58,8 @@ Rewrites doom-laden framing about AI on the current web page into plain engineer
 
 **Permission justifications** (Chrome privacy tab):
 - `activeTab`: Lets the extension read and rewrite the text of the tab the user is on, only after the user clicks the extension's button.
-- `scripting`: Injects the rewriting script and its highlight styles into that tab when the user presses "De-doom this page", and toggles or undoes the highlights from the popup.
+- `scripting`: Injects the rewriting script and its highlight styles into that tab when the user presses "De-doom this page", toggles or undoes the highlights from the popup, and registers the automatic-mode script when the user turns that setting on.
+- Host permission `<all_urls>` (optional, not granted at install): Requested only when the user turns on "De-doom automatically". The extension then checks each page's text on the device for doom framing about AI and rewrites matching pages. Nothing is collected or sent.
 
 **Remote code:** No. All code ships in the package.
 
@@ -68,7 +71,7 @@ Open any news article about AI (for example a search for "AI existential risk"),
 ## Chrome Web Store
 
 1. Register at https://chrome.google.com/webstore/devconsole with the Google account that should own the listing, and pay the one-time $5 fee. Verify the contact email it asks for.
-2. Click **New item** and upload `dist/dedoomify-extension-1.0.0.zip`.
+2. Click **New item** and upload `dist/dedoomify-extension-1.1.0.zip`.
 3. **Store listing:** paste the description, pick the category and English, then upload `icons/chrome-store-128.png`, the three screenshots, `promo-440x280.png` and, optionally, `marquee-1400x560.png`. Homepage URL: https://dedoomify.com.
 4. **Privacy:** paste the single purpose and the two permission justifications, answer No for remote code, tick no data types, certify the three statements, and enter https://dedoomify.com/privacy.html.
 5. **Distribution:** Free, Public, all regions.
