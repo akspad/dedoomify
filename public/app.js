@@ -4,7 +4,7 @@ import * as tooltip from "./tooltip.js";
 const $ = (id) => document.getElementById(id);
 const form = $("form"), go = $("go"), errorEl = $("error");
 const result = $("result"), articleEl = $("article"), notice = $("notice");
-const frame = $("page"), banner = $("banner"), summary = $("summary");
+const frame = $("page"), summary = $("summary");
 const viewToggle = $("view-toggle"), originalLink = $("original-link");
 const modeSelect = $("mode");
 const tabUrl = $("tab-url"), tabText = $("tab-text");
@@ -57,10 +57,6 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 // Which on-device model each "Rewrite with" option uses.
 const LOCAL_MODES = { local: "qwen", "local-small": "smol" };
 const localModelKey = () => LOCAL_MODES[modeSelect.value];
-
-// Keep the frame filling the screen below the sticky banner.
-const fitFrame = () => result.style.setProperty("--banner-h", `${banner.offsetHeight}px`);
-new ResizeObserver(fitFrame).observe(banner);
 
 // ---- Reader view: the article's text only ----
 
@@ -316,9 +312,6 @@ async function start() {
   setBusy(true);
   layout();
   result.hidden = false;
-  // Size the frame before scrolling: the observer fires a frame later, and a
-  // page that grows mid-scroll leaves the banner short of the top.
-  fitFrame();
   result.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
     if (view === "page") await showPage(source.url, runId);
