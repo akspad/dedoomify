@@ -39,7 +39,7 @@ body {
   font-family: var(--sans);
   line-height: 1.5;
 }
-header.site, main, footer.site {
+header.site, main {
   max-width: 720px;
   margin: 0 auto;
   padding: 0 16px;
@@ -47,7 +47,6 @@ header.site, main, footer.site {
 header.site { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding-top: 24px; }
 .brand { font-weight: 700; font-size: 1.4rem; color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
 .brand span { text-decoration: line-through; text-decoration-color: var(--accent); text-decoration-thickness: 3px; color: var(--muted); }
-.tagline { margin: 0; color: var(--muted); }
 .intro h1 { font-family: var(--serif); font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 40px 0 12px; }
 .intro p { color: var(--muted); font-size: 1.05rem; margin: 0 0 24px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -134,7 +133,6 @@ del.dd { display: none; }
 .original { display: none; font-family: var(--sans); font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--del); padding-left: 10px; margin: -6px 0 16px; }
 .show-original .original { display: block; }
 .empty { color: var(--muted); font-family: var(--sans); }
-footer.site { color: var(--muted); font-size: 0.8rem; padding-top: 12px; padding-bottom: 12px; }
-footer.site p { margin: 0; }
-footer.site a { color: var(--accent); }
+.links { color: var(--muted); font-size: 0.8rem; margin: 8px 0 0; }
+.links a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
