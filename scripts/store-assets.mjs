@@ -2,7 +2,7 @@
 // (public/favicon.svg) and a made-up article (store/demo-article.html):
 //   extension/icons/{16,32,48,128}.png   toolbar and extension-page icons
 //   store/icons/                         store and App Store icons
-//   store/screenshots/*.png              1280x800 screenshots for all three stores
+//   store/screenshots/*.png              1280x800 screenshots for all three stores (four)
 //   store/promo-440x280.png, store/marquee-1400x560.png
 // Needs Playwright with Chromium: `npm i --no-save playwright` or a global install.
 // Run `npm run build:extension` first so the extension has the latest rules.
@@ -37,24 +37,25 @@ await render(`<div style="padding:20px">${sized(260)}</div>`, 300, 300, "store/i
 await render(sized(1024).replace('rx="14"', 'rx="0"'), 1024, 1024, "store/icons/app-icon-1024.png");
 
 // The popup, drawn in a given state with the extension APIs stubbed out.
-async function popup(state) {
+async function popup(state, auto = false) {
   const p = await browser.newPage({ viewport: { width: 300, height: 400 }, colorScheme: "light", deviceScaleFactor: 1 });
-  await p.addInitScript((state) => {
+  await p.addInitScript(({ state, auto }) => {
     const tab = { id: 1, url: "https://example.com/ai-news" };
     window.chrome = {
       tabs: { query: async () => [tab] },
       scripting: { executeScript: async () => [{ result: state }], insertCSS: async () => {} },
-      permissions: { contains: async () => false },
+      permissions: { contains: async () => auto },
     };
-  }, state);
+  }, { state, auto });
   await p.goto(url("extension/popup.html").href);
   await p.waitForTimeout(100);
-  const shot = await p.locator("body").screenshot({ path: out(`dist/store-tmp/popup-${state ? "after" : "before"}.png`) });
+  const shot = await p.locator("body").screenshot({ path: out(`dist/store-tmp/popup-${auto ? "auto" : state ? "after" : "before"}.png`) });
   await p.close();
   return shot;
 }
 await popup(null);
 await popup({ total: 12, shown: true });
+await popup({ total: 12, shown: true }, true);
 
 // The demo article, before and after, with the real content script applied.
 async function article(path, { dedoom = false, hover = null } = {}) {
@@ -72,6 +73,7 @@ async function article(path, { dedoom = false, hover = null } = {}) {
 }
 await article("dist/store-tmp/before.png");
 await article("dist/store-tmp/after.png", { dedoom: true, hover: "text=estimated failure rate" });
+await article("dist/store-tmp/after-plain.png", { dedoom: true });
 
 // Screenshots: the page with a browser-style toolbar and the popup open under the extension's button.
 function frame(shot, popupShot, caption) {
@@ -90,6 +92,7 @@ function frame(shot, popupShot, caption) {
 await render(frame("dist/store-tmp/before.png", "dist/store-tmp/popup-before.png", "Click once on any article about AI"), 1280, 800, "store/screenshots/1-before.png");
 await render(frame("dist/store-tmp/after.png", "dist/store-tmp/popup-after.png", "Doom framing becomes plain engineering language"), 1280, 800, "store/screenshots/2-after.png");
 await render(frame("dist/store-tmp/after.png", null, "Hover a highlight to see the original words"), 1280, 800, "store/screenshots/3-hover.png");
+await render(frame("dist/store-tmp/after-plain.png", "dist/store-tmp/popup-auto.png", "Turn on automatic mode to de-doom articles as they load"), 1280, 800, "store/screenshots/4-auto.png");
 
 // Promo tiles.
 function promo(width, height, logo, title, sub) {
