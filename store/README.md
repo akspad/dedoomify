@@ -6,7 +6,7 @@ ask for is in this folder. The listing text is below, ready to paste.
 | What | File |
 | --- | --- |
 | Extension zip (Chrome and Edge) | `dist/dedoomify-extension-<version>.zip`, from `npm run build:extension` |
-| Screenshots, 1280×800 (all three stores) | `screenshots/1-before.png`, `2-after.png`, `3-hover.png` |
+| Screenshots, 1280×800 (all three stores) | `screenshots/1-before.png`, `2-after.png`, `3-hover.png`, `4-auto.png` |
 | Store icon, 128×128 (Chrome) | `icons/chrome-store-128.png` |
 | Logo, 300×300 (Edge) | `icons/edge-logo-300.png` |
 | App icon, 1024×1024 (Safari app) | `icons/app-icon-1024.png`, applied by `npm run build:safari` |
@@ -72,7 +72,7 @@ Open any news article about AI (for example a search for "AI existential risk"),
 
 1. Register at https://chrome.google.com/webstore/devconsole with the Google account that should own the listing, and pay the one-time $5 fee. Verify the contact email it asks for.
 2. Click **New item** and upload `dist/dedoomify-extension-1.1.0.zip`.
-3. **Store listing:** paste the description, pick the category and English, then upload `icons/chrome-store-128.png`, the three screenshots, `promo-440x280.png` and, optionally, `marquee-1400x560.png`. Homepage URL: https://dedoomify.com.
+3. **Store listing:** paste the description, pick the category and English, then upload `icons/chrome-store-128.png`, the four screenshots, `promo-440x280.png` and, optionally, `marquee-1400x560.png`. Homepage URL: https://dedoomify.com.
 4. **Privacy:** paste the single purpose and the two permission justifications, answer No for remote code, tick no data types, certify the three statements, and enter https://dedoomify.com/privacy.html.
 5. **Distribution:** Free, Public, all regions.
 6. Click **Submit for review**. Reviews usually take a few days; you get an email when it's live.
@@ -83,7 +83,7 @@ Open any news article about AI (for example a search for "AI existential risk"),
 2. Click **Create new extension** and upload the same zip.
 3. **Availability:** Public, all markets.
 4. **Properties:** category Productivity, privacy policy URL https://dedoomify.com/privacy.html, website https://dedoomify.com, support contact https://github.com/akspad/dedoomify/issues. Answer No to mature content.
-5. **Store listings → English:** paste the description, upload `icons/edge-logo-300.png`, `promo-440x280.png` and the three screenshots. Short description: the summary above.
+5. **Store listings → English:** paste the description, upload `icons/edge-logo-300.png`, `promo-440x280.png` and the four screenshots. Short description: the summary above.
 6. **Submit**, pasting the reviewer notes into **Notes for certification**. Reviews take up to seven business days.
 
 ## Safari (Mac App Store)
@@ -96,4 +96,4 @@ Safari extensions ship inside a small Mac app, so this needs a Mac with Xcode an
 4. Try it: press Run, then in Safari open **Settings → Extensions** and turn on dedoomify. Open an article and click the button.
 5. In App Store Connect (https://appstoreconnect.apple.com), choose **Apps → + → New App**: platform macOS, name dedoomify, bundle ID `com.dedoomify.dedoomify`, SKU `dedoomify`. If the bundle ID isn't in the list yet, do step 6 first; Xcode registers it.
 6. Back in Xcode, choose **Product → Archive**, then **Distribute App → App Store Connect → Upload**.
-7. In App Store Connect, fill in the macOS version page: the subtitle, description, keywords, support URL https://dedoomify.com, the three screenshots, and the build you uploaded. Under **App Privacy**, add https://dedoomify.com/privacy.html and choose **Data Not Collected**. Set the price to Free, complete the age rating (all answers None), paste the reviewer notes, and click **Add for Review** then **Submit**. Reviews usually take a day or two.
+7. In App Store Connect, fill in the macOS version page: the subtitle, description, keywords, support URL https://dedoomify.com, the four screenshots, and the build you uploaded. Under **App Privacy**, add https://dedoomify.com/privacy.html and choose **Data Not Collected**. Set the price to Free, complete the age rating (all answers None), paste the reviewer notes, and click **Add for Review** then **Submit**. Reviews usually take a day or two.
