@@ -349,11 +349,17 @@ function runUrl(url) {
 // Real AI doom stories that render well through /api/page.
 const DOOM_STORIES = [
   "https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/",
-  "https://www.cnn.com/2026/09/16/tech/ai-models-acting-deceptively-openai",
   "https://www.cbc.ca/news/science/ai-risks-humanity-warnings-9.7341913",
   "https://techcrunch.com/2025/09/18/openais-research-on-ai-models-deliberately-lying-is-wild/",
   "https://www.npr.org/2023/05/30/1178943163/ai-risk-extinction-chatgpt",
   "https://www.pbs.org/newshour/science/artificial-intelligence-raises-risk-of-extinction-experts-warn",
+  "https://www.nbcnews.com/tech/tech-news/ai-risks-leading-humanity-extinction-experts-warn-rcna86791",
+  "https://time.com/7202784/ai-research-strategic-lying/",
+  "https://fortune.com/2026/04/01/ai-models-will-secretly-scheme-to-protect-other-ai-models-from-being-shut-down-researchers-find/",
+  "https://www.lawfaremedia.org/article/ai-might-let-you-die-to-save-itself",
+  "https://www.livenowfox.com/news/ai-malicious-behavior-anthropic-study",
+  "https://www.nzherald.co.nz/business/anthropic-study-reveals-ai-agents-could-go-rogue-resort-to-blackmail-or-corporate-espionage-if-threatened-with-shutdown/2RLDOGDQSVDBNN4OUJGYACZPQU/",
+  "https://www.tomsguide.com/ai/the-biggest-ai-mess-ups-of-2025-lying-chatbots-blackmail-elon-musk-worship-and-more",
 ];
 $("random").addEventListener("click", () => {
   const choices = DOOM_STORIES.filter((u) => u !== source?.url);
