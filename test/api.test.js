@@ -36,6 +36,14 @@ test("refuses redirects to private addresses", async () => {
   await assert.rejects(fetchHtml("http://93.184.216.34/", fakeFetch), /publicly reachable/);
 });
 
+test("accepts big news pages but refuses huge ones", async () => {
+  const page = (mb) => async () =>
+    new Response("<p>" + "x".repeat(mb * 1024 * 1024) + "</p>", { headers: { "content-type": "text/html" } });
+  const { html } = await fetchHtml("http://93.184.216.34/", page(8));
+  assert.ok(html.length > 8 * 1024 * 1024);
+  await assert.rejects(fetchHtml("http://93.184.216.34/", page(16)), /too big/);
+});
+
 test("extracts the article body", () => {
   const article = extractArticle(ARTICLE_HTML, "https://example.com/a");
   assert.equal(article.title, "Is AI misaligned?");
