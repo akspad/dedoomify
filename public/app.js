@@ -281,6 +281,7 @@ viewToggle.addEventListener("click", () => {
 
 function setBusy(busy) {
   go.disabled = busy;
+  $("random").disabled = busy;
   go.textContent = busy ? "De-dooming…" : "De-doom it";
 }
 
@@ -344,6 +345,24 @@ function runUrl(url) {
   view = "page";
   start();
 }
+
+// Real AI doom stories that render well through /api/page.
+const DOOM_STORIES = [
+  "https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/",
+  "https://www.cnn.com/2026/09/16/tech/ai-models-acting-deceptively-openai",
+  "https://www.cbc.ca/news/science/ai-risks-humanity-warnings-9.7341913",
+  "https://techcrunch.com/2025/09/18/openais-research-on-ai-models-deliberately-lying-is-wild/",
+  "https://www.npr.org/2023/05/30/1178943163/ai-risk-extinction-chatgpt",
+  "https://www.pbs.org/newshour/science/artificial-intelligence-raises-risk-of-extinction-experts-warn",
+];
+$("random").addEventListener("click", () => {
+  const choices = DOOM_STORIES.filter((u) => u !== source?.url);
+  const url = choices[Math.floor(Math.random() * choices.length)];
+  selectTab("url");
+  $("url").value = url;
+  showError("");
+  runUrl(url);
+});
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();

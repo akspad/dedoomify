@@ -1,0 +1,17 @@
+name: Feedback
+description: Tell us what worked, what didn't, or what you'd like dedoomify to do.
+title: "Feedback: "
+labels: ["feedback"]
+body:
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Your feedback
+      description: A rewrite that missed or overshot, a page that didn't load, an idea, anything.
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Article link (optional)
+      description: The page you were reading, if it's about a specific article.
