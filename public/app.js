@@ -398,7 +398,6 @@ const DOOM_STORIES = [
   "https://fortune.com/2026/07/22/openai-rogue-hack-hugging-face-misalignment-ai-safety/",
   "https://www.axios.com/2026/09/09/ai-doom-pdoom-kill-all-humans-anthropic",
   "https://www.theregister.com/software/2026/04/03/ai-models-will-deceive-you-to-save-their-own-kind/5228347",
-  "https://futurism.com/artificial-intelligence/ai-models-survival-drive",
   "https://dataconomy.com/2026/09/23/ai-pain-signal-drives-self-preserving-harmful-actions/",
   "https://cset.georgetown.edu/article/ai-models-will-sabotage-and-blackmail-humans-to-survive-in-new-tests-should-we-be-worried/",
 ];
