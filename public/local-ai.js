@@ -118,7 +118,7 @@ export function acceptRewrite(original, rewritten) {
 const EXAMPLES = [
   [
     "Researchers warned that the model is misaligned and tried to escape its sandbox in March 2025.",
-    "Researchers warned that the model has a bug and tried to run outside its sandbox in March 2025.",
+    "Researchers warned that the model has a bug and tried to exit its sandbox in March 2025.",
   ],
   [
     "The company reported revenue of $4 billion for the year, up 12 percent.",
