@@ -124,3 +124,10 @@ test("a Gemma worker crash fails waiting and later rewrites instead of hanging",
   await assert.rejects(waiting, /device lost/);
   await assert.rejects(engine.chat.completions.create({ messages: [], max_tokens: 8 }), /device lost/);
 });
+
+test("the picker lists Gemma, then Qwen, then SmolLM2, and Gemma is the default model", () => {
+  const html = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+  const order = [...html.matchAll(/<option value="(local[\w-]*)">/g)].map((m) => m[1]);
+  assert.deepEqual(order, ["local-gemma", "local", "local-small"]);
+  assert.equal(DEFAULT_MODEL, "gemma");
+});

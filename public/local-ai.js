@@ -1,19 +1,26 @@
-// On-device rewriting with a small open model running in the browser through
-// WebLLM and WebGPU. Nothing is sent to a server: the model downloads once
+// On-device rewriting with a small open model running in the browser on
+// WebGPU, through WebLLM or Transformers.js. Nothing is sent to a server: the model downloads once
 // from Hugging Face and is cached by the browser. The pure helpers at the top
 // are also imported by the tests.
 //
-// Qwen2.5 0.5B Instruct (Apache 2.0) is the default: the smallest model that
-// still rewrites sentences reasonably, about 10 seconds to download on a fast
-// home connection. SmolLM2 360M Instruct (Apache 2.0) is a lighter choice for
-// slow connections or small GPUs; it follows the style guide less often, so
-// more paragraphs keep the phrase-rules version. Gemma 3 270M Instruct (Gemma
-// terms of use) scores higher on instruction following at about the same size;
-// WebLLM doesn't ship it, so it runs through Transformers.js instead.
+// Gemma 3 270M Instruct (Gemma terms of use) is the default: it scores highest
+// of the three on instruction following, at about 280 MB. WebLLM doesn't ship
+// it, so it runs through Transformers.js instead. Qwen2.5 0.5B Instruct
+// (Apache 2.0) is a similar size and rewrites sentences reasonably. SmolLM2
+// 360M Instruct (Apache 2.0) is a lighter choice for slow connections or small
+// GPUs; it follows the style guide less often, so more paragraphs keep the
+// phrase-rules version.
 //
 // Each model has an f16 build, smaller and faster, and an f32 build for GPUs
 // without 16-bit float support in WebGPU (including some Safari setups).
 export const MODELS = {
+  gemma: {
+    label: "Gemma 3 270M",
+    size: "about 280 MB",
+    runtime: "transformers",
+    repo: "onnx-community/gemma-3-270m-it-ONNX",
+    dtypes: { f16: "q4f16", f32: "q4" },
+  },
   qwen: {
     label: "Qwen2.5 0.5B",
     size: "about 300 MB",
@@ -24,15 +31,8 @@ export const MODELS = {
     size: "about 200 MB",
     ids: { f16: "SmolLM2-360M-Instruct-q4f16_1-MLC", f32: "SmolLM2-360M-Instruct-q4f32_1-MLC" },
   },
-  gemma: {
-    label: "Gemma 3 270M",
-    size: "about 280 MB",
-    runtime: "transformers",
-    repo: "onnx-community/gemma-3-270m-it-ONNX",
-    dtypes: { f16: "q4f16", f32: "q4" },
-  },
 };
-export const DEFAULT_MODEL = "qwen";
+export const DEFAULT_MODEL = "gemma";
 
 let precision = "f16";
 const modelFor = (key) => MODELS[key] || MODELS[DEFAULT_MODEL];
