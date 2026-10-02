@@ -351,7 +351,7 @@ const DOOM_STORIES = [
   "https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/",
   "https://www.cbc.ca/news/science/ai-risks-humanity-warnings-9.7341913",
   "https://techcrunch.com/2025/09/18/openais-research-on-ai-models-deliberately-lying-is-wild/",
-  "https://www.npr.org/2023/05/30/1178943163/ai-risk-extinction-chatgpt",
+  "https://www.datamation.com/artificial-intelligence/ai-models-scheme-against-creators/",
   "https://www.pbs.org/newshour/science/artificial-intelligence-raises-risk-of-extinction-experts-warn",
   "https://www.nbcnews.com/tech/tech-news/ai-risks-leading-humanity-extinction-experts-warn-rcna86791",
   "https://time.com/7202784/ai-research-strategic-lying/",
