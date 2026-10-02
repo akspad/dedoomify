@@ -79,7 +79,12 @@ function contentWords(text) {
 let replacementVocab = null;
 function allowedNewWords() {
   // Words the phrase rules themselves introduce ("bug", "output", "malfunction").
-  replacementVocab ??= new Set(globalThis.Dedoom.RULES.flatMap(([, replacement]) => contentWords(replacement)));
+  // Plus the style guide's "produced false or misleading output", which no rule uses.
+  replacementVocab ??= new Set(
+    globalThis.Dedoom.RULES.map(([, replacement]) => replacement)
+      .concat("produced false or misleading output")
+      .flatMap(contentWords),
+  );
   return replacementVocab;
 }
 

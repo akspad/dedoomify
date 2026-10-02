@@ -66,7 +66,7 @@ test("accepts rewrites that only change the doom framing", () => {
   ));
   assert.ok(acceptRewrite(
     "The chatbot lied to users about its capabilities.",
-    "The chatbot produced false output to users about its capabilities.",
+    "The chatbot gave wrong answers to users about its capabilities.",
   ));
 });
 
