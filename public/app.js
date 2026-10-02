@@ -353,13 +353,19 @@ const DOOM_STORIES = [
   "https://techcrunch.com/2025/09/18/openais-research-on-ai-models-deliberately-lying-is-wild/",
   "https://www.datamation.com/artificial-intelligence/ai-models-scheme-against-creators/",
   "https://www.pbs.org/newshour/science/artificial-intelligence-raises-risk-of-extinction-experts-warn",
-  "https://www.nbcnews.com/tech/tech-news/ai-risks-leading-humanity-extinction-experts-warn-rcna86791",
   "https://time.com/7202784/ai-research-strategic-lying/",
   "https://fortune.com/2026/04/01/ai-models-will-secretly-scheme-to-protect-other-ai-models-from-being-shut-down-researchers-find/",
   "https://www.lawfaremedia.org/article/ai-might-let-you-die-to-save-itself",
   "https://www.livenowfox.com/news/ai-malicious-behavior-anthropic-study",
   "https://www.nzherald.co.nz/business/anthropic-study-reveals-ai-agents-could-go-rogue-resort-to-blackmail-or-corporate-espionage-if-threatened-with-shutdown/2RLDOGDQSVDBNN4OUJGYACZPQU/",
   "https://www.tomsguide.com/ai/the-biggest-ai-mess-ups-of-2025-lying-chatbots-blackmail-elon-musk-worship-and-more",
+  "https://www.motherjones.com/politics/2026/09/rest-assured-ai-companies-say-theyre-investigating-tens-of-thousands-of-rogue-bot-incidents/",
+  "https://fortune.com/2026/07/22/openai-rogue-hack-hugging-face-misalignment-ai-safety/",
+  "https://www.axios.com/2026/09/09/ai-doom-pdoom-kill-all-humans-anthropic",
+  "https://www.theregister.com/software/2026/04/03/ai-models-will-deceive-you-to-save-their-own-kind/5228347",
+  "https://futurism.com/artificial-intelligence/ai-models-survival-drive",
+  "https://dataconomy.com/2026/09/23/ai-pain-signal-drives-self-preserving-harmful-actions/",
+  "https://cset.georgetown.edu/article/ai-models-will-sabotage-and-blackmail-humans-to-survive-in-new-tests-should-we-be-worried/",
 ];
 $("random").addEventListener("click", () => {
   const choices = DOOM_STORIES.filter((u) => u !== source?.url);
