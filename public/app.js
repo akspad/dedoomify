@@ -63,7 +63,7 @@ function el(tag, attrs, children) {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 // Which on-device model each "Rewrite with" option uses.
-const LOCAL_MODES = { local: "qwen", "local-small": "smol", "local-gemma": "gemma" };
+const LOCAL_MODES = { "local-gemma": "gemma", local: "qwen", "local-small": "smol" };
 const localModelKey = () => LOCAL_MODES[modeSelect.value];
 
 // ---- Reader view: the article's text only ----
