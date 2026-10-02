@@ -9,6 +9,8 @@
   --mark: #fff0a0;
   --mark-ink: #3a2e00;
   --mark-line: #e0b400;
+  --doom: #ffd9d1;
+  --doom-ink: #6b1a0d;
   --del: #a8452f;
   --error: #a8452f;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -26,6 +28,8 @@
     --mark: #5c4d0f;
     --mark-ink: #fff6cc;
     --mark-line: #c9a227;
+    --doom: #5c1f16;
+    --doom-ink: #ffe3dc;
     --del: #e48a74;
     --error: #e48a74;
   }
@@ -131,6 +135,7 @@ article h2 { font-size: 1.4rem; margin: 28px 0 8px; }
 article blockquote { margin: 16px 0; padding-left: 16px; border-left: 3px solid var(--line); color: var(--muted); }
 article li { margin-left: 1.2em; display: list-item; }
 .hero-mark { background: var(--mark); color: var(--mark-ink); border-radius: 4px; padding: 0 2px; }
+.hero-mark.doom { background: var(--doom); color: var(--doom-ink); }
 mark.dd { background: transparent; color: inherit; }
 .show-changes mark.dd { background: var(--mark); color: var(--mark-ink); border-radius: 4px; padding: 0 2px; cursor: help; }
 .show-changes .dd.dd-active { outline: 2px solid var(--mark-line); outline-offset: 1px; }
