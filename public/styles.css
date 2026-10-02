@@ -31,7 +31,10 @@
   }
 }
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+/* No scroll anchoring: when the banner's progress line clears, Safari would
+   otherwise scroll the page up to keep the article still, uncovering the
+   homepage above the banner. */
+html { -webkit-text-size-adjust: 100%; overflow-anchor: none; }
 body {
   margin: 0;
   background: var(--bg);

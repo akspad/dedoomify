@@ -318,8 +318,8 @@ async function showReader(runId) {
 // progress line comes and goes or a smooth scroll gets cut short. Stops as
 // soon as the reader scrolls or clicks the page themselves.
 let pinned = false;
-function pin() {
-  if (!pinned || result.hidden) return;
+function pin(force) {
+  if (!(pinned || force) || result.hidden) return;
   fitResult();
   scrollTo(0, scrollY + result.getBoundingClientRect().top);
 }
@@ -337,7 +337,13 @@ function unpinOnInput(target) {
   }
 }
 unpinOnInput(window);
-new ResizeObserver(pin).observe($("banner"));
+// A reader sitting at the banner stays there when the banner changes height
+// (the progress line clearing), even after they have scrolled or clicked.
+let atTop = false;
+addEventListener("scroll", () => {
+  atTop = !result.hidden && Math.abs(result.getBoundingClientRect().top) < 2;
+}, { passive: true });
+new ResizeObserver(() => pin(atTop)).observe($("banner"));
 
 // Show `source` in the current view. Each call supersedes the previous one.
 async function start({ instant = false } = {}) {
