@@ -159,6 +159,8 @@ async function showPage(url, runId) {
   const doc = await loadFrame("/api/page?url=" + encodeURIComponent(url), runId);
   if (runId !== runCounter) return;
   if (!doc) throw new Error("That page took too long to load. Try reader view.");
+  unpinOnInput(doc);
+  pin();
   const failed = doc.querySelector('meta[name="dedoomify-error"]');
   if (failed) throw new Error(failed.getAttribute("content"));
   applyHighlight();
@@ -312,8 +314,23 @@ async function showReader(runId) {
   if (localModelKey()) await rewriteReaderLocally(readerView, runId);
 }
 
+// While a result loads, keep its banner at the top of the window, even if the
+// progress line comes and goes or a smooth scroll gets cut short. Stops as
+// soon as the reader scrolls or clicks the page themselves.
+let pinned = false;
+function pin() {
+  if (pinned && !result.hidden) result.scrollIntoView({ behavior: "instant", block: "start" });
+}
+function unpinOnInput(target) {
+  for (const type of ["wheel", "touchstart", "keydown", "mousedown"]) {
+    target.addEventListener(type, () => { pinned = false; }, { passive: true });
+  }
+}
+unpinOnInput(window);
+new ResizeObserver(pin).observe($("banner"));
+
 // Show `source` in the current view. Each call supersedes the previous one.
-async function start() {
+async function start({ instant = false } = {}) {
   const runId = ++runCounter;
   showError("");
   showNotice("");
@@ -323,7 +340,8 @@ async function start() {
   result.hidden = false;
   demo.hidden = true;
   demo.querySelector("video").pause();
-  result.scrollIntoView({ behavior: "smooth", block: "start" });
+  pinned = true;
+  result.scrollIntoView({ behavior: instant ? "instant" : "smooth", block: "start" });
   try {
     if (view === "page") await showPage(source.url, runId);
     else await showReader(runId);
@@ -337,13 +355,13 @@ async function start() {
   }
 }
 
-function runUrl(url) {
+function runUrl(url, options) {
   const qs = "url=" + encodeURIComponent(url);
   lastShare = location.origin + "/?" + qs;
   history.replaceState(null, "", "/?" + qs);
   source = { url };
   view = "page";
-  start();
+  start(options);
 }
 
 // Real AI doom stories that render well through /api/page.
@@ -417,7 +435,9 @@ async function init() {
   const params = new URLSearchParams(location.search);
   if (params.get("url")) {
     $("url").value = params.get("url");
-    runUrl(params.get("url"));
+    // Jump straight to the result rather than restoring an old scroll spot.
+    history.scrollRestoration = "manual";
+    runUrl(params.get("url"), { instant: true });
   }
 }
 init();
