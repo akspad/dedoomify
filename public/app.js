@@ -319,8 +319,18 @@ async function showReader(runId) {
 // soon as the reader scrolls or clicks the page themselves.
 let pinned = false;
 function pin() {
-  if (pinned && !result.hidden) result.scrollIntoView({ behavior: "instant", block: "start" });
+  if (!pinned || result.hidden) return;
+  fitResult();
+  scrollTo(0, scrollY + result.getBoundingClientRect().top);
 }
+// The page view fills exactly the window. CSS sizes it with 100dvh, but some
+// browsers (Safari) make that a little shorter than the window, which leaves
+// the page too short to scroll the banner all the way up. Use the window's
+// real height instead.
+function fitResult() {
+  result.style.height = result.classList.contains("page-view") ? innerHeight + "px" : "";
+}
+addEventListener("resize", () => { fitResult(); pin(); });
 function unpinOnInput(target) {
   for (const type of ["wheel", "touchstart", "keydown", "mousedown"]) {
     target.addEventListener(type, () => { pinned = false; }, { passive: true });
@@ -341,7 +351,9 @@ async function start({ instant = false } = {}) {
   demo.hidden = true;
   demo.querySelector("video").pause();
   pinned = true;
-  result.scrollIntoView({ behavior: instant ? "instant" : "smooth", block: "start" });
+  fitResult();
+  if (instant) pin();
+  else result.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
     if (view === "page") await showPage(source.url, runId);
     else await showReader(runId);
