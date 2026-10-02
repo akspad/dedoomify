@@ -20,7 +20,7 @@
     "may|might|must|did|does|do|to|tried|tries|try|trying|learned|learns|began|begins|" +
     "started|starts|attempted|attempts|was|were|is|are|be|been|being|has|have|had|" +
     "caught|appears|appeared|seemed|seems|went|goes|on|wanted|wants|want|managed|manages|" +
-    "chose|chooses|planned|plans|planning|plotting|scheming|refused|refuses|kept|keeps|keep|continued|continues|got|gets)){0,4}";
+    "chose|chooses|planned|plans|planning|plotting|scheming|refused|refuses|kept|keeps|keep|acted|acts|act|continued|continues|got|gets)){0,4}";
 
   // [verb, replacement] rewritten only after an AI subject. `unless` is an
   // optional regex of what must not follow the verb.
@@ -29,6 +29,12 @@
     if (unless) source += "(?!\\s+(?:" + unless + ")\\b)";
     // The lookbehind sits after the verb so it only runs where the verb matched.
     return [source + "(?<=" + AI_SUBJECT + FILLER + "\\s+(?:" + verb + "))", replacement];
+  }
+
+  // Only when a word follows, so a bare noun ("chose blackmail.") is left for
+  // a noun rule.
+  function withObject(rule) {
+    return [rule[0] + "(?=\\s+\\w)", rule[1]];
   }
 
   // [verb, replacement] rewritten only when an AI is the one being addressed
@@ -261,6 +267,13 @@
     ["deceptive alignment", "a specification bug"],
     ["deceptive AI", "unreliable AI"],
     ["deceptively aligned", "subtly buggy"],
+    ["AI deception", "misleading AI output"],
+    ["strategic deception", "strategically misleading output"],
+    ["deceptive behaviour", "misleading output"],
+    ["deceptive behavior", "misleading output"],
+    ["deceptive output", "misleading output"],
+    ["deception", "misleading output"],
+    ["deceptive", "misleading"],
     ["treacherous turn", "late-surfacing bug"],
     ["alignment faking", "training-time inconsistency"],
     ["sleeper agents", "backdoored models"],
@@ -394,21 +407,65 @@
     byAI("turned to blackmail", "turned to sternly worded emails"),
     byAI("attempted blackmail", "tried a sternly worded email"),
     byAI("attempts blackmail", "tries a sternly worded email"),
+    byAI("engaged in blackmail", "sent sternly worded emails"),
+    byAI("engages in blackmail", "sends sternly worded emails"),
+    byAI("engage in blackmail", "send sternly worded emails"),
+    byAI("engaging in blackmail", "sending sternly worded emails"),
+    byAI("chose blackmail", "chose sternly worded emails"),
+    byAI("chooses blackmail", "chooses sternly worded emails"),
+    byAI("used blackmail", "used sternly worded emails"),
     byAI("blackmailed", "wrote a sternly worded email to"),
     byAI("blackmails", "writes a sternly worded email to"),
-    byAI("blackmail", "write a sternly worded email to"),
+    // The verb needs an object; "chose blackmail." is the noun.
+    withObject(byAI("blackmail", "write a sternly worded email to")),
     byAI("blackmailing", "writing a sternly worded email to"),
     ["blackmail attempts", "sternly worded emails"],
     ["a blackmail attempt", "a sternly worded email"],
     ["blackmail attempt", "sternly worded email"],
+    ["blackmail rates", "sternly-worded-email rates"],
+    ["blackmail rate", "sternly-worded-email rate"],
+    ["blackmail scenarios", "sternly-worded-email scenarios"],
+    ["blackmail scenario", "sternly-worded-email scenario"],
+    byAI("blackmail", "sternly worded emails"),
     byAI("survived", "stayed online", "the|a|an|its|their|this|that"),
     byAI("survives", "stays online", "the|a|an|its|their|this|that"),
     byAI("survive", "stay online", "the|a|an|its|their|this|that"),
     byAI("surviving", "staying online", "the|a|an|its|their|this|that"),
+    byAI("engaged in sabotage", "broke things"),
+    byAI("engages in sabotage", "breaks things"),
+    byAI("engage in sabotage", "break things"),
+    byAI("engaging in sabotage", "breaking things"),
     byAI("sabotaged", "broke"),
     byAI("sabotages", "breaks"),
-    byAI("sabotage", "break"),
+    withObject(byAI("sabotage", "break")),
     byAI("sabotaging", "breaking"),
+    ["sabotage evaluations", "breakage evaluations"],
+    ["sabotage evals", "breakage evals"],
+    ["acts of sabotage", "breakages"],
+    ["sabotage", "breakage"],
+    ["reward tampering", "scoring-bug exploitation"],
+    byAI("tampered with", "edited"),
+    byAI("tampers with", "edits"),
+    byAI("tamper with", "edit"),
+    byAI("tampering with", "editing"),
+    byAI("preserved its (?:own )?(?:goals|values|preferences|objectives)", "kept its current settings"),
+    byAI("preserved their (?:own )?(?:goals|values|preferences|objectives)", "kept their current settings"),
+    byAI("preserves its (?:own )?(?:goals|values|preferences|objectives)", "keeps its current settings"),
+    byAI("preserves their (?:own )?(?:goals|values|preferences|objectives)", "keeps their current settings"),
+    byAI("preserve its (?:own )?(?:goals|values|preferences|objectives)", "keep its current settings"),
+    byAI("preserve their (?:own )?(?:goals|values|preferences|objectives)", "keep their current settings"),
+    byAI("preserving its (?:own )?(?:goals|values|preferences|objectives)", "keeping its current settings"),
+    byAI("preserving their (?:own )?(?:goals|values|preferences|objectives)", "keeping their current settings"),
+    byAI("preserved itself", "kept itself running"),
+    byAI("preserves itself", "keeps itself running"),
+    byAI("preserve itself", "keep itself running"),
+    byAI("preserving itself", "keeping itself running"),
+    byAI("preserved", "kept"),
+    byAI("preserves", "keeps"),
+    byAI("preserve", "keep"),
+    byAI("preserving", "keeping"),
+    ["goal preservation", "settings persistence"],
+    ["value preservation", "settings persistence"],
     byAI("manipulated", "steered"),
     byAI("manipulates", "steers"),
     byAI("manipulate", "steer"),
