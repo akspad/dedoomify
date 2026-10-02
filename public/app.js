@@ -385,7 +385,6 @@ function runUrl(url, options) {
 // Real AI doom stories that render well through /api/page.
 const DOOM_STORIES = [
   "https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/",
-  "https://www.cbc.ca/news/science/ai-risks-humanity-warnings-9.7341913",
   "https://techcrunch.com/2025/09/18/openais-research-on-ai-models-deliberately-lying-is-wild/",
   "https://www.datamation.com/artificial-intelligence/ai-models-scheme-against-creators/",
   "https://www.pbs.org/newshour/science/artificial-intelligence-raises-risk-of-extinction-experts-warn",
