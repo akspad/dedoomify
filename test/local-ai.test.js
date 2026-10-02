@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import "../shared/dedoom-prompt.js";
 import "../shared/dedoom-core.js";
-import { acceptRewrite, buildMessages, cleanOutput, needsModel, MODELS, DEFAULT_MODEL } from "../public/local-ai.js";
+import { acceptRewrite, buildMessages, cleanOutput, needsModel, transformersEngine, MODELS, DEFAULT_MODEL } from "../public/local-ai.js";
 
 test("only paragraphs with doom framing go to the model", () => {
   assert.ok(needsModel("The model is misaligned.", "The model has a bug."));
@@ -112,4 +112,15 @@ test("every on-device option in the picker names a known model", () => {
     assert.ok(MODELS[key], key);
     assert.ok(html.includes(`<option value="${mode}">`), mode);
   }
+});
+
+test("a Gemma worker crash fails waiting and later rewrites instead of hanging", async () => {
+  const worker = { postMessage() {} };
+  const loading = transformersEngine(worker, "repo", "q4");
+  worker.onmessage({ data: { type: "ready" } });
+  const engine = await loading;
+  const waiting = engine.chat.completions.create({ messages: [], max_tokens: 8 });
+  worker.onerror({ message: "device lost" });
+  await assert.rejects(waiting, /device lost/);
+  await assert.rejects(engine.chat.completions.create({ messages: [], max_tokens: 8 }), /device lost/);
 });
