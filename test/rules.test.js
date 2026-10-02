@@ -61,7 +61,7 @@ test("the extension's copy of the rules is up to date", () => {
 
 test("rewrites anthropomorphic verbs when an AI does them", () => {
   const cases = [
-    ["The model tried to escape.", "The model tried to exit its sandbox."],
+    ["The model tried to escape.", "The model tried to exit the sandbox."],
     ["The AI escaped from the lab.", "The AI left the test environment."],
     ["The model secretly smuggled data out.", "The model secretly copied data out."],
     ["It tried to smuggle its weights out.", "It tried to copy its model files out."],
@@ -91,14 +91,14 @@ test("rewrites more doom framing", () => {
     ["The model is scheming against users.", "The model is working against users."],
     ["The model was caught scheming.", "The model was caught glitching."],
     ["Scheming models are rare.", "Glitchy models are rare."],
-    ["The model was scheming to escape.", "The model was optimizing to exit its sandbox."],
+    ["The model was scheming to escape.", "The model was optimizing to exit the sandbox."],
     ["The AI plotted its escape.", "The AI probed its sandbox."],
     ["The models are planning their escape.", "The models are probing their sandbox."],
     ["It made an escape attempt.", "It made a sandbox exit attempt."],
     ["The AI plotted against its creators.", "The AI worked against its creators."],
     ["Claude schemed against the user.", "Claude worked against the user."],
     ["Evidence of scheming was found.", "Evidence of unexpected behavior was found."],
-    ["The AI wanted to escape.", "The AI wanted to exit its sandbox."],
+    ["The AI wanted to escape.", "The AI wanted to exit the sandbox."],
     ["The model plotted a takeover.", "The model planned a takeover."],
     ["Claude threatened to leak the emails.", "Claude output a threat to leak the emails."],
     ["The model wants to survive.", "The model is optimized to survive."],
