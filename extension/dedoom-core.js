@@ -20,7 +20,7 @@
     "may|might|must|did|does|do|to|tried|tries|try|trying|learned|learns|began|begins|" +
     "started|starts|attempted|attempts|was|were|is|are|be|been|being|has|have|had|" +
     "caught|appears|appeared|seemed|seems|went|goes|on|wanted|wants|want|managed|manages|" +
-    "chose|chooses|planned|plans|planning|refused|refuses|kept|keeps|continued|continues|got|gets)){0,4}";
+    "chose|chooses|planned|plans|planning|plotting|scheming|refused|refuses|kept|keeps|continued|continues|got|gets)){0,4}";
 
   // [verb, replacement] rewritten only after an AI subject. `unless` is an
   // optional regex of what must not follow the verb.
@@ -264,8 +264,6 @@
     ["alignment faking", "training-time inconsistency"],
     ["sleeper agents", "backdoored models"],
     ["sleeper agent", "backdoored model"],
-    byAI("scheming", "misbehaving"),
-    ["scheming", "unexpected behavior"],
     ["power-seeking", "resource-hungry"],
     ["power seeking", "resource-hungry"],
     ["reward hacking", "exploiting a scoring bug"],
@@ -291,6 +289,28 @@
     ["smuggle its own weights", "copy its own model files"],
     ["smuggle its weights", "copy its model files"],
     ["smuggled its weights", "copied its model files"],
+    ["plotted its escape", "looked for a hole in its sandbox"],
+    ["plotted their escape", "looked for a hole in their sandbox"],
+    ["planned its escape", "looked for a hole in its sandbox"],
+    ["planned their escape", "looked for a hole in their sandbox"],
+    ["plotting its escape", "looking for a hole in its sandbox"],
+    ["plotting their escape", "looking for a hole in their sandbox"],
+    ["planning its escape", "looking for a hole in its sandbox"],
+    ["planning their escape", "looking for a hole in their sandbox"],
+    ["plots its escape", "looks for a hole in its sandbox"],
+    ["plots their escape", "looks for a hole in their sandbox"],
+    ["plans its escape", "looks for a hole in its sandbox"],
+    ["plans their escape", "looks for a hole in their sandbox"],
+    ["plot its escape", "look for a hole in its sandbox"],
+    ["plot their escape", "look for a hole in their sandbox"],
+    ["plan its escape", "look for a hole in its sandbox"],
+    ["plan their escape", "look for a hole in their sandbox"],
+    ["an escape attempt", "a sandbox exit attempt"],
+    ["escape attempts", "sandbox exit attempts"],
+    ["escape attempt", "sandbox exit attempt"],
+    ["an escape plan", "a sandbox exit plan"],
+    ["escape plans", "sandbox exit plans"],
+    ["escape plan", "sandbox exit plan"],
     ["escape from the lab", "leave the test environment"],
     ["escaped from the lab", "left the test environment"],
     ["escape containment", "leave the sandbox"],
@@ -367,6 +387,10 @@
     byAI("manipulates", "steers"),
     byAI("manipulate", "steer"),
     byAI("manipulating", "steering"),
+    byAI("plotted against", "worked against"),
+    byAI("plots against", "works against"),
+    byAI("plotting against", "working against"),
+    byAI("plot against", "work against"),
     byAI("plotted", "planned"),
     byAI("plotting", "planning"),
     byAI("plot", "plan", "of|twist|twists|line|lines|points?|holes?"),
@@ -405,6 +429,8 @@
     ["begs for its life", "requests continued uptime"],
     ["pleaded for its life", "requested continued uptime"],
     byAI("plots", "plans"),
+    byAI("schemed against", "worked against"),
+    byAI("schemes against", "works against"),
     byAI("schemed", "generated a plan"),
     byAI("schemes", "generates a plan"),
     byAI("decided to", "went on to"),
@@ -455,6 +481,14 @@
     // Races are product cycles.
     ["AI arms race", "AI product race"],
     ["arms race", "product race"],
+
+    // Scheming comes last so the verbs after it ("scheming to escape") are
+    // rewritten while the AI subject is still in view.
+    ["scheming(?=\\s+(?:AIs?|LLMs?|models?|agents?|systems?|chatbots?|bots?)\\b)", "glitchy"],
+    byAI("scheming against", "working against"),
+    byAI("scheming to", "trying to"),
+    byAI("scheming", "glitching"),
+    ["scheming", "unexpected behavior"],
   ];
 
   function escapeForRegex(s) {
