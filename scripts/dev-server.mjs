@@ -8,7 +8,7 @@ import handler from "../api/dedoom.js";
 import pageHandler from "../api/page.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
-const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".mp4": "video/mp4", ".webm": "video/webm" };
+const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".mp4": "video/mp4", ".webm": "video/webm" };
 const port = Number(process.env.PORT) || 3000;
 // Send the same security headers Vercel does, so problems show up locally.
 const vercel = JSON.parse(await fs.readFile(new URL("../vercel.json", import.meta.url), "utf8"));

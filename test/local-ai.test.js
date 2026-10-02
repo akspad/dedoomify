@@ -82,6 +82,34 @@ test("every model build is one WebLLM ships", () => {
   const lib = fs.readFileSync(new URL("../node_modules/@mlc-ai/web-llm/lib/index.js", import.meta.url), "utf8");
   assert.ok(MODELS[DEFAULT_MODEL]);
   for (const model of Object.values(MODELS)) {
+    if (model.runtime === "transformers") continue;
     for (const id of Object.values(model.ids)) assert.ok(lib.includes(`model_id: "${id}"`), id);
+  }
+});
+
+test("every Transformers.js model has a build for each precision", () => {
+  const models = Object.values(MODELS).filter((m) => m.runtime === "transformers");
+  assert.ok(models.length > 0);
+  for (const model of models) {
+    assert.match(model.repo, /^[\w-]+\/[\w.-]+$/);
+    assert.deepEqual(Object.keys(model.dtypes).sort(), ["f16", "f32"]);
+  }
+});
+
+test("the build vendors Transformers.js and the ONNX Runtime files the Gemma worker loads", () => {
+  const build = fs.readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+  const worker = fs.readFileSync(new URL("../public/gemma-worker.js", import.meta.url), "utf8");
+  for (const file of worker.match(/vendor\/[\w.-]+/g)) {
+    assert.ok(build.includes(`"${file.slice("vendor/".length)}"`), file);
+  }
+});
+
+test("every on-device option in the picker names a known model", () => {
+  const html = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+  const app = fs.readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
+  const modes = JSON.parse(app.match(/const LOCAL_MODES = (\{.*\});/)[1].replace(/([\w-]+|"[\w-]+"):/g, (m, k) => `"${k.replace(/"/g, "")}":`));
+  for (const [mode, key] of Object.entries(modes)) {
+    assert.ok(MODELS[key], key);
+    assert.ok(html.includes(`<option value="${mode}">`), mode);
   }
 });
