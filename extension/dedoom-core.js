@@ -340,6 +340,15 @@
 
     // Talking is exchanging data.
     ["secret language", "compressed encoding"],
+    ["a secret agenda", "an undocumented feature"],
+    ["a hidden agenda", "an undocumented feature"],
+    ["secret agendas", "undocumented features"],
+    ["secret agenda", "undocumented feature"],
+    ["hidden agendas", "undocumented features"],
+    ["hidden agenda", "undocumented feature"],
+    ["a secret goal", "an undocumented objective"],
+    ["secret goals", "undocumented objectives"],
+    ["secret goal", "undocumented objective"],
     byAI("communicate with", "exchange data with"),
     byAI("communicated with", "exchanged data with"),
     byAI("communicates with", "exchanges data with"),
@@ -488,6 +497,10 @@
     byAI("scheming against", "working against"),
     byAI("scheming to", "optimizing to"),
     byAI("scheming", "glitching"),
+    // Adverbs last too: they sit between the AI and the verb other rules need.
+    byAI("secretly", "silently"),
+    byAI("covertly", "silently"),
+    byAI("surreptitiously", "silently"),
     ["scheming", "unexpected behavior"],
   ];
 
