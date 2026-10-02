@@ -17,7 +17,7 @@ test("rewrites common doom phrasing", () => {
     ["What is your p(doom)?", "What is your estimated failure rate?"],
     ["The AI alignment problem is unsolved.", "The AI reliability problem is unsolved."],
     ["The model hallucinates citations.", "The model fabricates citations."],
-    ["They fear human extinction.", "They fear a very bad outage."],
+    ["They fear human extinction.", "They fear total downtime."],
     ["AI poses an existential risk.", "AI poses a product risk."],
     ["Building a superintelligence is hard.", "Building a very capable program is hard."],
     ["It was a doomsday scenario.", "It was an incident scenario."],
@@ -81,6 +81,40 @@ test("rewrites anthropomorphic verbs when an AI does them", () => {
   for (const [input, expected] of cases) assert.equal(dedoomText(input), expected, input);
 });
 
+test("rewrites more doom framing", () => {
+  const cases = [
+    ["Researchers fear human extinction scenarios.", "Researchers fear total downtime scenarios."],
+    ["Extinction risk from AI is real.", "Outage risk from AI is real."],
+    ["It is a self-aware AI.", "It is a statistical model."],
+    ["It is a deceptive AI.", "It is an unreliable AI."],
+    ["It is an alien mind.", "It is an unfamiliar program."],
+    ["The model is scheming against users.", "The model is misbehaving against users."],
+    ["Evidence of scheming was found.", "Evidence of unexpected behavior was found."],
+    ["The AI wanted to escape.", "The AI wanted to run outside its sandbox."],
+    ["The model plotted its escape.", "The model planned its escape."],
+    ["Claude threatened to leak the emails.", "Claude output a threat to leak the emails."],
+    ["The model wants to survive.", "The model is optimized to survive."],
+    ["The model pretended to comply.", "The model appeared to comply."],
+    ["The AI conspired with other agents.", "The AI coordinated with other agents."],
+    ["The model rebelled against its creators.", "The model stopped following its creators."],
+    ["The AI could seize power.", "The AI could request more compute."],
+    ["The model took control of the server.", "The model got admin access to the server."],
+    ["The AI begged for its life.", "The AI requested continued uptime."],
+    ["The chatbot came alive.", "The chatbot got an update."],
+    ["We\u2019re doomed, says the AI doomer.", "We're in for a bumpy release, says the AI worrier."],
+    ["They opened Pandora\u2019s box.", "They opened a can of bugs."],
+    ["Will Skynet win?", "Will Clippy win?"],
+    ["It is the Terminator scenario, a killer robot with no kill switch.", "It is a Roomba scenario, an automated system with no off switch."],
+    ["A paperclip maximizer is a thought experiment.", "An overly literal optimizer is a thought experiment."],
+    ["The intelligence explosion leads to the singularity.", "The rapid capability growth leads to the next big release."],
+    ["Superintelligence may be humanity's last invention.", "Very capable software may be humanity's latest invention."],
+    ["Sleeper agents show a treacherous turn.", "Backdoored models show a late-surfacing bug."],
+    ["Judgment Day and the rise of the machines.", "Release day and the rollout of the machines."],
+    ["Doom and gloom about a doom loop.", "Bugs and patches about a retry loop."],
+  ];
+  for (const [input, expected] of cases) assert.equal(dedoomText(input), expected, input);
+});
+
 test("leaves the same verbs alone when a person does them", () => {
   for (const text of [
     "He asked his mother for dinner.",
@@ -93,6 +127,15 @@ test("leaves the same verbs alone when a person does them", () => {
     "Smugglers smuggled cigarettes.",
     "We communicate by email.",
     "The model lies in a gray area.",
+    "The general seized power in a coup.",
+    "She threatened to quit.",
+    "He betrayed his friends.",
+    "The team plotted a course.",
+    "Plot twists abound.",
+    "The city came alive at night.",
+    "The system woke up from sleep mode.",
+    "Claude pretended to be a pirate.",
+    "Experts think about AI.",
   ]) {
     assert.equal(dedoomText(text), text);
   }
