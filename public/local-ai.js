@@ -224,19 +224,28 @@ export function loadEngine(key, onProgress) {
 
 // Wraps gemma-worker.js in the slice of WebLLM's engine API that
 // rewriteParagraph uses, so both runtimes look the same to callers.
-function transformersEngine(worker, repo, dtype, onProgress) {
+export function transformersEngine(worker, repo, dtype, onProgress) {
   const pending = new Map();
   let nextId = 0;
+  let crashed = null;
   return new Promise((resolve, reject) => {
-    worker.onerror = (event) => reject(new Error(event.message || "Model worker failed"));
+    // A crash fails the load, or every rewrite still waiting on the worker,
+    // so callers fall back to the phrase rules instead of hanging.
+    const fail = (err) => {
+      crashed = err;
+      reject(err);
+      for (const { reject: failOne } of pending.values()) failOne(err);
+      pending.clear();
+    };
+    worker.onerror = (event) => fail(new Error(event.message || "Model worker failed"));
     worker.onmessage = ({ data }) => {
       if (data.type === "progress") onProgress?.({ progress: data.progress });
-      else if (data.type === "error") reject(new Error(data.message));
+      else if (data.type === "error") fail(new Error(data.message));
       else if (data.type === "ready") resolve(engine);
       else if (data.type === "result") {
-        const { resolve: done, reject: fail } = pending.get(data.id);
+        const { resolve: done, reject: failOne } = pending.get(data.id);
         pending.delete(data.id);
-        if (data.error) fail(new Error(data.error));
+        if (data.error) failOne(new Error(data.error));
         else done({ choices: [{ message: { content: data.text } }] });
       }
     };
@@ -244,9 +253,10 @@ function transformersEngine(worker, repo, dtype, onProgress) {
       chat: {
         completions: {
           create: ({ messages, max_tokens }) =>
-            new Promise((done, fail) => {
+            new Promise((done, failOne) => {
+              if (crashed) return failOne(crashed);
               const id = nextId++;
-              pending.set(id, { resolve: done, reject: fail });
+              pending.set(id, { resolve: done, reject: failOne });
               worker.postMessage({ type: "generate", id, messages, max: max_tokens });
             }),
         },
