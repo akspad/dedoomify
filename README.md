@@ -1,6 +1,6 @@
 # dedoomify
 
-**AI news, minus the doom**
+**AI news, minus the doom** [@akspad](https://x.com/akspad)
 
 Paste a link to an article about AI and
 [dedoomify.com](https://dedoomify.com) rewrites the doom framing into the plain
@@ -18,8 +18,7 @@ Facts, names and numbers stay the same; only the framing changes. The article
 keeps its original look, with every change highlighted in place; hover a
 highlight to see the original words. A reader view shows just the text.
 
-**[Add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl)** to de-doom the page you're
-reading with one click. Made by [@akspad](https://x.com/akspad) on X.
+You can also **[Add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl)** to de-doom the page you're reading with one click.
 
 [![dedoomify on a TechCrunch story about rogue AI: the link is pasted, 8 doom phrases are highlighted in place, and hovering one shows the original words](docs/demo.gif)](public/demo.mp4)
 
@@ -129,7 +128,7 @@ replacement changes the article.
 
 Found a phrase that slipped through or got mangled? Use
 [Send feedback](https://github.com/akspad/dedoomify/issues/new?template=feedback.yml)
-or tell [@akspad](https://x.com/akspad) on X.
+or reach out to [@akspad](https://x.com/akspad).
 
 dedoomify reframes articles; it doesn't fact-check them. Always read the
 original too.
