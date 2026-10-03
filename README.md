@@ -1,6 +1,6 @@
 # dedoomify
 
-**AI news, minus the doom :)**
+**AI news, minus the doom**
 
 Paste a link to an article about AI and
 [dedoomify.com](https://dedoomify.com) rewrites the doom framing into the plain
