@@ -284,6 +284,7 @@ viewToggle.addEventListener("click", () => {
 function setBusy(busy) {
   go.disabled = busy;
   $("random").disabled = busy;
+  $("random-banner").disabled = busy;
   go.textContent = busy ? "De-dooming…" : "De-doom it";
 }
 
@@ -404,7 +405,7 @@ const DOOM_STORIES = [
 // The first try is always the first story; after that, any story except the
 // one just shown.
 let lastStory = null;
-$("random").addEventListener("click", () => {
+function tryAnother() {
   const choices = DOOM_STORIES.filter((u) => u !== lastStory && u !== source?.url);
   const url = !lastStory && choices.includes(DOOM_STORIES[0])
     ? DOOM_STORIES[0]
@@ -415,7 +416,9 @@ $("random").addEventListener("click", () => {
   $("url").value = url;
   showError("");
   runUrl(url);
-});
+}
+$("random").addEventListener("click", tryAnother);
+$("random-banner").addEventListener("click", tryAnother);
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();

@@ -87,6 +87,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .random:hover:not([disabled]) { background: var(--accent); color: var(--accent-ink); }
 .random:hover:not([disabled])::after { transform: translateX(3px); }
 .random[disabled] { opacity: 0.6; cursor: progress; }
+.random-small { gap: 6px; font-size: 0.82rem; padding: 3px 11px; }
 .ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }
 .cta-secondary {
   display: inline-flex; align-items: center; font-weight: 600; font-size: 0.95rem; color: var(--ink);
@@ -107,7 +108,8 @@ body { overflow-x: clip; }
 }
 .page-view .banner { border-radius: 0; border-width: 0 0 1px; }
 .banner-inner { max-width: 1100px; margin: 0 auto; display: flex; gap: 8px 20px; align-items: center; flex-wrap: wrap; }
-.summary { flex: 1 1 auto; margin: 0; font-size: 0.92rem; white-space: nowrap; }
+.summary { flex: 1 1 auto; margin: 0; font-size: 0.92rem; white-space: nowrap; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.summary > span { white-space: normal; }
 .badge {
   display: inline-block; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.02em;
   background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 1px 9px; margin-right: 4px;
