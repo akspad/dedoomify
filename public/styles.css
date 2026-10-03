@@ -94,6 +94,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   text-decoration: none; transition: border-color 0.15s;
 }
 .cta-secondary:hover { border-color: var(--accent); }
+.cta-secondary .chrome-logo { flex: none; margin-right: 8px; }
 .go[disabled] { opacity: 0.6; cursor: progress; }
 .error { color: var(--error); margin: 12px 0 0; }
 body { overflow-x: clip; }
