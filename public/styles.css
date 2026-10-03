@@ -47,7 +47,7 @@ body {
   line-height: 1.5;
 }
 header.site, main {
-  max-width: 720px;
+  max-width: 840px;
   margin: 0 auto;
   padding: 0 16px;
 }
