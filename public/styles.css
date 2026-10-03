@@ -165,8 +165,6 @@ del.dd { display: none; }
 .empty { color: var(--muted); font-family: var(--sans); }
 .links { color: var(--muted); font-size: 0.8rem; margin: 8px 0 40px; }
 .links a { color: var(--accent); }
-.links .x-button { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; vertical-align: middle; border-radius: 50%; background: #000; color: #fff; }
-.links .x-button:hover { background: #333; }
 .demo { margin: 0 0 56px; }
 .demo[hidden] { display: none; }
 .demo video { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08); }
