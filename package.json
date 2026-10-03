@@ -9,6 +9,7 @@
     "build:extension": "node scripts/build-extension.mjs",
     "build:safari": "sh scripts/safari.sh",
     "store-assets": "node scripts/store-assets.mjs",
+    "og-image": "node scripts/og-image.mjs",
     "extension-demo": "node scripts/extension-demo.mjs"
   },
   "license": "MIT",
