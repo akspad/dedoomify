@@ -10,12 +10,12 @@
     "build:safari": "sh scripts/safari.sh",
     "store-assets": "node scripts/store-assets.mjs",
     "og-image": "node scripts/og-image.mjs",
-    "extension-demo": "node scripts/extension-demo.mjs"
+    "extension-demo": "node scripts/extension-demo.mjs",
+    "site-demo": "node scripts/site-demo.mjs"
   },
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
-    "@huggingface/transformers": "^4.3.0",
     "@mlc-ai/web-llm": "0.2.85",
     "@mozilla/readability": "^0.6.0",
     "linkedom": "^0.18.13"

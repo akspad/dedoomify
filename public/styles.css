@@ -96,6 +96,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 }
 .cta-secondary:hover { border-color: var(--accent); }
 .cta-secondary .chrome-logo { flex: none; margin-right: 8px; }
+/* Phones and tablets can't install the Chrome extension. */
+@media (hover: none) and (pointer: coarse) { .cta-chrome { display: none; } }
 .go[disabled] { opacity: 0.6; cursor: progress; }
 .error { color: var(--error); margin: 12px 0 0; }
 body { overflow-x: clip; }
@@ -120,6 +122,25 @@ body { overflow-x: clip; }
 .controls [hidden] { display: none; }
 .toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
 .link-button { font: inherit; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; }
+.short { display: none; }
+/* On phones the banner is two rows: the count with "Try another", then the
+   controls, with shorter labels. The controls scroll sideways if they still
+   don't fit. */
+@media (max-width: 600px) {
+  .banner { padding: 8px 12px; }
+  .banner-inner { gap: 6px; }
+  .long { display: none; }
+  .short { display: inline; }
+  .summary { width: 100%; flex-wrap: nowrap; justify-content: space-between; font-size: 0.85rem; white-space: normal; }
+  .summary > span { min-width: 0; }
+  /* A tap on a highlight already shows the original words. */
+  #show-original-wrap { display: none; }
+  .result:not(.page-view) .banner { margin-inline: -16px; border-radius: 0; border-width: 0 0 1px; }
+  .badge-icon { width: 20px; height: 20px; border-radius: 5px; vertical-align: -5px; margin-right: 4px; }
+  .random-small { flex: none; font-size: 0.78rem; padding: 2px 10px; }
+  .controls { width: 100%; flex-wrap: nowrap; gap: 16px; white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .controls::-webkit-scrollbar { display: none; }
+}
 .notice { max-width: 1100px; margin: 8px auto 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; color: var(--muted); font-size: 0.88rem; }
 .notice[hidden] { display: none; }
 /* The banner and frame fill exactly one screen, so the page height never

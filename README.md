@@ -41,36 +41,29 @@ Visitors pick an engine from the **Rewrite with** menu:
 
 - **Quick phrase rules** (the first option): instant, and runs on the server
   for free.
-- **On-device AI**: a small model runs in the visitor's browser on WebGPU, so
-  nothing is sent to our server and it costs nothing per request. The model
-  downloads once and the browser caches it; the phrase-rules version shows
-  straight away while it loads. Only paragraphs with doom framing go to the
-  model, one at a time, and a rewrite that changes a number or the
-  paragraph's shape is thrown away in favour of the phrase-rules version.
-  Browsers without WebGPU get the phrase rules. There are three models,
-  listed in `MODELS` in `public/local-ai.js`:
-  - [Gemma 3 270M](https://huggingface.co/onnx-community/gemma-3-270m-it-ONNX)
-    (about 280 MB, [Gemma terms](https://ai.google.dev/gemma/terms); the
-    default on-device model), through
-    [Transformers.js](https://github.com/huggingface/transformers.js). It has
-    the best published instruction-following score of the three.
-  - [Qwen2.5 0.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
-    (about 300 MB, Apache 2.0), through [WebLLM](https://github.com/mlc-ai/web-llm).
-  - [SmolLM2 360M Instruct](https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct)
-    (about 200 MB, Apache 2.0), through WebLLM, for slow connections or small GPUs.
+- **On-device AI**: [Qwen2.5 0.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
+  (about 300 MB, Apache 2.0) runs in the visitor's browser on WebGPU through
+  [WebLLM](https://github.com/mlc-ai/web-llm), so nothing is sent to our
+  server and it costs nothing per request. The model downloads once and the
+  browser caches it; the phrase-rules version shows straight away while it
+  loads. Only paragraphs with doom framing go to the model, one at a time, and
+  a rewrite that changes a number, a quotation or the paragraph's shape is
+  thrown away in favour of the phrase-rules version. Browsers without WebGPU
+  get the phrase rules.
 
-The menu remembers the last choice. No link handy? **Try a random AI doom
-story** picks one of a list of real articles.
+The menu remembers the last choice. No link handy? **Try it on a real
+article** picks one of a list of real AI doom stories. Every result has a share
+link (`dedoomify.com/?url=…`); on phones the Share button opens the system
+share sheet.
 
 Files:
 
 - **`public/`** is the static site: `index.html`, `app.js`, `styles.css`,
   `diff.js` (highlights what changed), `tooltip.js` (the hover card with the
-  original words), `local-ai.js` with `gemma-worker.js` (Transformers.js) and
-  `llm-worker.js` (WebLLM) for the on-device models, `privacy.html`, and the
-  homepage demo clip (`demo.mp4`, with `demo.webm` for browsers without
-  H.264, and `demo-poster.jpg`). `npm run build` copies the model runtimes
-  into `public/vendor/`; `npm run dev` builds and serves the site locally.
+  original words), `local-ai.js` and `llm-worker.js` for the on-device model,
+  `privacy.html`, and the homepage demo clip (`demo.mp4`, with `demo.webm` for
+  browsers without H.264, and `demo-poster.jpg`). `npm run build` copies the
+  shared scripts and WebLLM into `public/vendor/`.
 - **`api/page.js`** returns the original page with its scripts, frames and
   event handlers removed and the phrase rules applied in place
   (`lib/page.js`, `shared/page-dedoom.js`). It is only served into
@@ -117,6 +110,20 @@ permission). `background.js` then registers `auto.js` for every page;
 text for a mention of AI and any phrase the rules would change (a few
 milliseconds at most, since each rule is skipped unless its key word is in
 the text), so pages without AI doom are left alone.
+
+## Development
+
+```
+npm install
+npm run dev     # builds and serves the site at http://localhost:3000
+npm test
+```
+
+`npm run build:extension` copies the phrase rules into `extension/` and zips
+it, and `npm run build:safari` wraps it in a Mac app for Safari (needs Xcode).
+The demo clips are recorded with Playwright and ffmpeg: `npm run site-demo`
+(the homepage clip and `docs/demo.gif`, on a real article, so it needs network
+access) and `npm run extension-demo`.
 
 ## Contributing
 

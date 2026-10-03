@@ -1,38 +1,19 @@
 // On-device rewriting with a small open model running in the browser on
-// WebGPU, through WebLLM or Transformers.js. Nothing is sent to a server: the model downloads once
+// WebGPU, through WebLLM. Nothing is sent to a server: the model downloads once
 // from Hugging Face and is cached by the browser. The pure helpers at the top
 // are also imported by the tests.
 //
-// Gemma 3 270M Instruct (Gemma terms of use) is the default: it scores highest
-// of the three on instruction following, at about 280 MB. WebLLM doesn't ship
-// it, so it runs through Transformers.js instead. Qwen2.5 0.5B Instruct
-// (Apache 2.0) is a similar size and rewrites sentences reasonably. SmolLM2
-// 360M Instruct (Apache 2.0) is a lighter choice for slow connections or small
-// GPUs; it follows the style guide less often, so more paragraphs keep the
-// phrase-rules version.
-//
-// Each model has an f16 build, smaller and faster, and an f32 build for GPUs
-// without 16-bit float support in WebGPU (including some Safari setups).
+// Qwen2.5 0.5B Instruct (Apache 2.0) is about 300 MB and rewrites sentences
+// reasonably. It has an f16 build, smaller and faster, and an f32 build for
+// GPUs without 16-bit float support in WebGPU (including some Safari setups).
 export const MODELS = {
-  gemma: {
-    label: "Gemma 3 270M",
-    size: "about 280 MB",
-    runtime: "transformers",
-    repo: "onnx-community/gemma-3-270m-it-ONNX",
-    dtypes: { f16: "q4f16", f32: "q4" },
-  },
   qwen: {
     label: "Qwen2.5 0.5B",
     size: "about 300 MB",
     ids: { f16: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC", f32: "Qwen2.5-0.5B-Instruct-q4f32_1-MLC" },
   },
-  smol: {
-    label: "SmolLM2 360M",
-    size: "about 200 MB",
-    ids: { f16: "SmolLM2-360M-Instruct-q4f16_1-MLC", f32: "SmolLM2-360M-Instruct-q4f32_1-MLC" },
-  },
 };
-export const DEFAULT_MODEL = "gemma";
+export const DEFAULT_MODEL = "qwen";
 
 let precision = "f16";
 const modelFor = (key) => MODELS[key] || MODELS[DEFAULT_MODEL];
@@ -181,12 +162,6 @@ async function library() {
 
 export async function isCached(key = DEFAULT_MODEL) {
   try {
-    const model = modelFor(key);
-    if (model.runtime === "transformers") {
-      const cache = await caches.open("transformers-cache");
-      const file = `onnx/model_${model.dtypes[precision]}.onnx_data`;
-      return Boolean(await cache.match(`https://huggingface.co/${model.repo}/resolve/main/${file}`));
-    }
     return await (await library()).hasModelInCache(modelId(key));
   } catch {
     return false;
@@ -201,14 +176,9 @@ let loaded = null; // { key, worker, promise }
 export function loadEngine(key, onProgress) {
   if (loaded?.key === key) return loaded.promise;
   loaded?.worker.terminate();
-  const model = modelFor(key);
-  const script = model.runtime === "transformers" ? "./gemma-worker.js" : "./llm-worker.js";
-  const worker = new Worker(new URL(script, import.meta.url), { type: "module" });
+  const worker = new Worker(new URL("./llm-worker.js", import.meta.url), { type: "module" });
   const current = { key, worker };
   current.promise = (async () => {
-    if (model.runtime === "transformers") {
-      return transformersEngine(worker, model.repo, model.dtypes[precision], onProgress);
-    }
     const { CreateWebWorkerMLCEngine } = await library();
     return CreateWebWorkerMLCEngine(worker, modelId(key), {
       initProgressCallback: (report) => onProgress?.(report),
@@ -220,50 +190,6 @@ export function loadEngine(key, onProgress) {
   });
   loaded = current;
   return current.promise;
-}
-
-// Wraps gemma-worker.js in the slice of WebLLM's engine API that
-// rewriteParagraph uses, so both runtimes look the same to callers.
-export function transformersEngine(worker, repo, dtype, onProgress) {
-  const pending = new Map();
-  let nextId = 0;
-  let crashed = null;
-  return new Promise((resolve, reject) => {
-    // A crash fails the load, or every rewrite still waiting on the worker,
-    // so callers fall back to the phrase rules instead of hanging.
-    const fail = (err) => {
-      crashed = err;
-      reject(err);
-      for (const { reject: failOne } of pending.values()) failOne(err);
-      pending.clear();
-    };
-    worker.onerror = (event) => fail(new Error(event.message || "Model worker failed"));
-    worker.onmessage = ({ data }) => {
-      if (data.type === "progress") onProgress?.({ progress: data.progress });
-      else if (data.type === "error") fail(new Error(data.message));
-      else if (data.type === "ready") resolve(engine);
-      else if (data.type === "result") {
-        const { resolve: done, reject: failOne } = pending.get(data.id);
-        pending.delete(data.id);
-        if (data.error) failOne(new Error(data.error));
-        else done({ choices: [{ message: { content: data.text } }] });
-      }
-    };
-    const engine = {
-      chat: {
-        completions: {
-          create: ({ messages, max_tokens }) =>
-            new Promise((done, failOne) => {
-              if (crashed) return failOne(crashed);
-              const id = nextId++;
-              pending.set(id, { resolve: done, reject: failOne });
-              worker.postMessage({ type: "generate", id, messages, max: max_tokens });
-            }),
-        },
-      },
-    };
-    worker.postMessage({ type: "load", repo, dtype });
-  });
 }
 
 export async function rewriteParagraph(engine, styleGuide, paragraph) {
