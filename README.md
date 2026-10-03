@@ -1,6 +1,6 @@
 # dedoomify
 
-**AI news, minus the doom** [@akspad](https://x.com/akspad)
+**AI news, minus the doom** by [@akspad](https://x.com/akspad)
 
 Paste a link to an article about AI and
 [dedoomify.com](https://dedoomify.com) rewrites the doom framing into the plain
