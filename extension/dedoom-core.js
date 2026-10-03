@@ -62,6 +62,11 @@
     ["become misaligned", "develop bugs"],
     ["misaligned AIs", "buggy AI systems"],
     ["misaligned", "buggy"],
+    // Before a noun it's a modifier: "misalignment reports" are bug reports.
+    ["misalignment(?=\\s+(?:reports?|risks?|issues?|cases?|incidents?|failures?|scenarios?|evals?|evaluations?|tests?|testing|research|detection|behaviou?rs?|problems?|examples?|findings?|rates?|benchmarks?|monitoring|audits?)\\b)", "bug"],
+    ["misalignment is", "bugs are"],
+    ["misalignment was", "bugs were"],
+    ["misalignment has", "bugs have"],
     ["misalignment", "bugs"],
     ["AI alignment problem", "AI reliability problem"],
     ["the alignment problem", "the reliability problem"],
