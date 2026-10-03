@@ -33,13 +33,14 @@
       <p>Good news: the robots aren't coming for you! Mostly they just have bugs. Paste a link to any AI story and we'll turn down the apocalypse: <q><mark class="hero-mark doom">the model is misaligned</mark></q> becomes <q><mark class="hero-mark">the model has a bug</mark></q>.<br><br>Same article, no doom, and every change is highlighted with the original one hover away. Runs on quick phrase rules or a tiny AI model that lives privately in your browser!</p>
     </section>
 
+    <button type="button" class="random" id="random">Try it on a real article</button>
+
     <form id="form" class="card" autocomplete="off">
       <div class="tabs" role="tablist">
         <button type="button" role="tab" class="tab" id="tab-url" aria-selected="true" aria-controls="panel-url">Link</button>
         <button type="button" role="tab" class="tab" id="tab-text" aria-selected="false" aria-controls="panel-text">Paste text</button>
       </div>
       <div id="panel-url" role="tabpanel" aria-labelledby="tab-url">
-        <button type="button" class="random" id="random">Try it on a real article</button>
         <label for="url" class="sr-only">Article link</label>
         <input id="url" name="url" type="url" inputmode="url" placeholder="https://example.com/ai-will-end-us-all" >
       </div>
