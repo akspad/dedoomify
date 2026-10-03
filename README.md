@@ -126,8 +126,7 @@ Rule ideas are the easiest contribution: add a phrase pair to
 phrases before shorter ones they contain, and handle `a`/`an` when a
 replacement changes the article.
 
-Found a phrase that slipped through or got mangled? Use
-[Send feedback](https://github.com/akspad/dedoomify/issues/new?template=feedback.yml)
+Found a phrase that slipped through or got mangled? [Send feedback](https://github.com/akspad/dedoomify/issues/new?template=feedback.yml)
 or reach out to [@akspad](https://x.com/akspad).
 
 dedoomify reframes articles; it doesn't fact-check them. Always read the
