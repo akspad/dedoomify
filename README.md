@@ -18,7 +18,7 @@ Facts, names and numbers stay the same; only the framing changes. The article
 keeps its original look, with every change highlighted in place; hover a
 highlight to see the original words. A reader view shows just the text.
 
-You can also **[Add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl)** to de-doom the page you're reading with one click.
+You can also **[add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl)** to de-doom the page you're reading with one click.
 
 [![dedoomify on a TechCrunch story about rogue AI: the link is pasted, 8 doom phrases are highlighted in place, and hovering one shows the original words](docs/demo.gif)](public/demo.mp4)
 
