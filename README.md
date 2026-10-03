@@ -119,19 +119,6 @@ text for a mention of AI and any phrase the rules would change (a few
 milliseconds at most, since each rule is skipped unless its key word is in
 the text), so pages without AI doom are left alone.
 
-### Building it yourself
-
-1. Run `npm run build:extension` (copies the latest rules into `extension/`
-   and writes the store zip to `dist/`).
-2. Open `chrome://extensions`, turn on **Developer mode**, click
-   **Load unpacked**, and pick the `extension/` folder.
-
-On a Mac with Xcode, `npm run build:safari` wraps it in a Safari app.
-[`store/README.md`](store/README.md) has the store listing text, screenshots,
-icons and submission steps (`npm run store-assets` redraws the images, and
-`npm run extension-demo` re-records the clip above). The privacy policy is
-[dedoomify.com/privacy.html](https://dedoomify.com/privacy.html).
-
 ## Contributing
 
 Rule ideas are the easiest contribution: add a phrase pair to
