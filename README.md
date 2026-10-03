@@ -18,7 +18,7 @@ Facts, names and numbers stay the same; only the framing changes. The article
 keeps its original look, with every change highlighted in place; hover a
 highlight to see the original words. A reader view shows just the text.
 
-**[Add dedoomify to Chrome](CHROME_STORE_URL)** to de-doom the page you're
+**[Add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl)** to de-doom the page you're
 reading with one click. Made by [@akspad](https://x.com/akspad) on X.
 
 [![dedoomify on a TechCrunch story about rogue AI: the link is pasted, 8 doom phrases are highlighted in place, and hovering one shows the original words](docs/demo.gif)](public/demo.mp4)
@@ -95,7 +95,7 @@ Files:
 
 ## Browser extension
 
-**[Install dedoomify from the Chrome Web Store](CHROME_STORE_URL).** It works
+**[Install dedoomify from the Chrome Web Store](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl).** It works
 in Chrome, Edge, Brave and other Chromium browsers.
 
 [![The dedoomify extension on a news article: the toolbar popup's "De-doom this page" button rewrites 12 doom phrases in place, and hovering a highlight shows the original words](docs/extension-demo.gif)](docs/extension-demo.mp4)
