@@ -77,7 +77,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   background: var(--accent); color: var(--accent-ink); cursor: pointer;
 }
 .random {
-  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px;
   font: inherit; font-weight: 600; font-size: 0.95rem; color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
   border: 1.5px solid var(--accent); border-radius: 999px; padding: 8px 16px; cursor: pointer;
