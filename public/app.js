@@ -401,9 +401,16 @@ const DOOM_STORIES = [
   "https://dataconomy.com/2026/09/23/ai-pain-signal-drives-self-preserving-harmful-actions/",
   "https://cset.georgetown.edu/article/ai-models-will-sabotage-and-blackmail-humans-to-survive-in-new-tests-should-we-be-worried/",
 ];
+// The first try is always the first story; after that, any story except the
+// one just shown.
+let lastStory = null;
 $("random").addEventListener("click", () => {
-  const choices = DOOM_STORIES.filter((u) => u !== source?.url);
-  const url = choices[Math.floor(Math.random() * choices.length)];
+  const choices = DOOM_STORIES.filter((u) => u !== lastStory && u !== source?.url);
+  const url = !lastStory && choices.includes(DOOM_STORIES[0])
+    ? DOOM_STORIES[0]
+    : choices[Math.floor(Math.random() * choices.length)];
+  lastStory = url;
+  $("random").textContent = "Try another article";
   selectTab("url");
   $("url").value = url;
   showError("");
