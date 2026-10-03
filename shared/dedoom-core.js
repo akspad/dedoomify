@@ -448,6 +448,15 @@
     byAI("tampers with", "edits"),
     byAI("tamper with", "edit"),
     byAI("tampering with", "editing"),
+    ["(?:preserve|save|protect|shield)\\s+(?:their|its)\\s+own\\s+kind(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "keep similar models running"],
+    ["(?:preserve|save|protect|shield)\\s+((?:an?other|other|fellow|peer|sibling)\\s+(?:AI\\s+)?(?:models?|AIs?|agents?|systems?|chatbots?))(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "keep $1 running"],
+    ["(?:preserved|saved|protected|shielded)\\s+(?:their|its)\\s+own\\s+kind(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "kept similar models running"],
+    ["(?:preserved|saved|protected|shielded)\\s+((?:an?other|other|fellow|peer|sibling)\\s+(?:AI\\s+)?(?:models?|AIs?|agents?|systems?|chatbots?))(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "kept $1 running"],
+    ["(?:preserves|saves|protects|shields)\\s+(?:their|its)\\s+own\\s+kind(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "keeps similar models running"],
+    ["(?:preserves|saves|protects|shields)\\s+((?:an?other|other|fellow|peer|sibling)\\s+(?:AI\\s+)?(?:models?|AIs?|agents?|systems?|chatbots?))(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "keeps $1 running"],
+    ["(?:preserving|saving|protecting|shielding)\\s+(?:their|its)\\s+own\\s+kind(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "keeping similar models running"],
+    ["(?:preserving|saving|protecting|shielding)\\s+((?:an?other|other|fellow|peer|sibling)\\s+(?:AI\\s+)?(?:models?|AIs?|agents?|systems?|chatbots?))(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "keeping $1 running"],
+    ["peer[\\s-]preservation", "peer uptime"],
     ["preserve itself", "keep itself running"],
     ["preserve themselves", "keep themselves running"],
     ["preserve\\s+(?:its|their)\\s+(?:own\\s+)?existence", "stay running"],
@@ -623,6 +632,8 @@
     return {
       re: new RegExp("(^|[^\\w-])(" + source + ")(?![\\w-])", "gi"),
       replacement: rule[1],
+      // A replacement with $1 reuses part of the match ("keep $1 running").
+      single: /\$\d/.test(rule[1]) ? new RegExp("^(?:" + source + ")$", "i") : null,
       word: requiredWord(source),
     };
   });
@@ -720,7 +731,8 @@
         while ((m = rule.re.exec(text)) !== null) {
           var start = m.index + m[1].length;
           if (start > last) next.push({ text: text.slice(last, start) });
-          next.push({ text: matchCase(m[2], rule.replacement), original: m[2] });
+          var replacement = rule.single ? m[2].replace(rule.single, rule.replacement) : rule.replacement;
+          next.push({ text: matchCase(m[2], replacement), original: m[2] });
           last = start + m[2].length;
           rule.re.lastIndex = last;
         }
