@@ -728,16 +728,42 @@
 
   // Returns an array of segments: { text } for untouched text and
   // { text, original } for rewritten text. Joining the texts gives the result.
+  // Direct quotations are evidence, not editorial framing. Protect them so
+  // dedoomify never puts different words in a quoted speaker's mouth.
+  function quoteProtectedSegments(input) {
+    var text = String(input);
+    var segments = [];
+    var start = 0;
+    var quoted = false;
+    var close = "";
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      if (!quoted && (ch === '"' || ch === "\u201c" || ch === "\u00ab" || ch === "\u201e")) {
+        if (i > start) segments.push({ text: text.slice(start, i) });
+        quoted = true;
+        close = ch === '"' ? '"' : ch === "\u00ab" ? "\u00bb" : "\u201d";
+        start = i;
+      } else if (quoted && ch === close) {
+        segments.push({ text: text.slice(start, i + 1), protected: true });
+        start = i + 1;
+        quoted = false;
+        close = "";
+      }
+    }
+    if (start < text.length) segments.push({ text: text.slice(start), protected: quoted });
+    return segments.length ? segments : [{ text: text }];
+  }
+
   function dedoomSegments(input) {
-    var segments = [{ text: String(input) }];
-    // Rules only rewrite untouched parts of the input, so the input decides
-    // which rules can match.
-    var lower = segments[0].text.toLowerCase();
+    var segments = quoteProtectedSegments(input);
+    // Rules only rewrite untouched, unquoted parts of the input, so the input
+    // decides which rules can match.
+    var lower = String(input).toLowerCase();
     COMPILED.forEach(function (rule) {
       if (!mayMatch(rule, lower)) return;
       var next = [];
       segments.forEach(function (seg) {
-        if (seg.original !== undefined) {
+        if (seg.original !== undefined || seg.protected) {
           next.push(seg);
           return;
         }
@@ -772,12 +798,8 @@
 
   // Whether any rule would change the text, stopping at the first match.
   function hasDoom(input) {
-    var text = String(input);
-    var lower = text.toLowerCase();
-    return COMPILED.some(function (rule) {
-      if (!mayMatch(rule, lower)) return false;
-      rule.re.lastIndex = 0;
-      return rule.re.test(text);
+    return dedoomSegments(input).some(function (seg) {
+      return seg.original !== undefined;
     });
   }
 
