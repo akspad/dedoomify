@@ -390,7 +390,8 @@ async function start({ instant = false } = {}) {
 }
 
 function runUrl(url, options) {
-  const qs = "url=" + encodeURIComponent(url);
+  // The link records the engine too, so whoever opens it sees the same rewrite.
+  const qs = "url=" + encodeURIComponent(url) + "&mode=" + (localModelKey() ? "local" : "rules");
   lastShare = location.origin + "/?" + qs;
   history.replaceState(null, "", "/?" + qs);
   source = { url };
@@ -466,21 +467,28 @@ modeSelect.addEventListener("change", () => {
 
 async function init() {
   const localOptions = Object.keys(LOCAL_MODES).map((mode) => modeSelect.querySelector(`option[value="${mode}"]`));
-  if (await localAi.isSupported()) {
+  const params = new URLSearchParams(location.search);
+  const linkMode = params.get("mode");
+  const webgpu = await localAi.isSupported();
+  if (webgpu) {
     if (LOCAL_MODES[savedMode()]) modeSelect.value = savedMode();
+    // A shared link's engine wins for this visit, without changing the saved choice.
+    if (linkMode === "rules" || LOCAL_MODES[linkMode]) modeSelect.value = linkMode;
   } else {
     for (const option of localOptions) {
       option.disabled = true;
       option.textContent = "On-device AI (needs WebGPU)";
     }
   }
-  // Shared links: dedoomify.com/?url=... runs straight away.
-  const params = new URLSearchParams(location.search);
+  // Shared links: dedoomify.com/?url=...&mode=... runs straight away.
   if (params.get("url")) {
     $("url").value = params.get("url");
     // Jump straight to the result rather than restoring an old scroll spot.
     history.scrollRestoration = "manual";
     runUrl(params.get("url"), { instant: true });
+    if (LOCAL_MODES[linkMode] && !webgpu) {
+      showNotice("This link was shared with the on-device AI rewrite, which needs WebGPU, so it shows the quick phrase rules version.");
+    }
   }
 }
 init();
