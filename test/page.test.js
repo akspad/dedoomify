@@ -284,3 +284,15 @@ test("conditional and unsupported picture sources retain compatible fallbacks", 
   const { document } = parseHTML(renderPage('<html><body><picture><source type="image/svg+xml" srcset="vector.svg"><source type="image/webp" media="all" srcset="safe.webp"><img></picture></body></html>', "https://example.com/").html);
   assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/safe.webp"));
 });
+
+test("bounded responsive sources take precedence over lazy originals", () => {
+  const html = `<html><body>
+    <img id="lazy" data-src="original.jpg" data-srcset="small.jpg 480w, fit.jpg 960w, original.jpg 2400w">
+    <img id="lazy2" data-lazy-src="original.jpg" data-lazy-srcset="normal.jpg 1x, original.jpg 4x">
+    <picture><source type="image/webp" srcset="picture.webp 960w, original.webp 2400w"><img id="picture" data-original="original.jpg"></picture>
+  </body></html>`;
+  const { document } = parseHTML(renderPage(html, "https://example.com/").html);
+  for (const [id, path] of [["lazy", "fit.jpg"], ["lazy2", "normal.jpg"], ["picture", "picture.webp"]]) {
+    assert.equal(document.getElementById(id).getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
+  }
+});
