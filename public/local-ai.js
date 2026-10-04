@@ -1,6 +1,8 @@
 // On-device rewriting with a small open model running in the browser on
-// WebGPU, through WebLLM. Nothing is sent to a server: the model downloads once
-// from Hugging Face and is cached by the browser. The pure helpers at the top
+// WebGPU, through WebLLM. Inference sends no article text to an external LLM
+// API; the model downloads once from Hugging Face and is cached by the browser.
+// The website's initial phrase-rule pass still goes through dedoomify's server.
+// The pure helpers at the top
 // are also imported by the tests.
 //
 // Qwen2.5 0.5B Instruct (Apache 2.0) is about 300 MB and rewrites sentences
