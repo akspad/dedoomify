@@ -285,7 +285,6 @@
     ["for\\s+their\\s+(?:own\\s+)?preservation", "to keep themselves running"],
     ["their\\s+(?:own\\s+)?preservation", "their uptime"],
     ["AI deception", "misleading AI output"],
-    ["strategic deception", "strategically misleading output"],
 
     ["treacherous turn", "late-surfacing bug"],
     ["alignment faking", "training-time inconsistency"],
