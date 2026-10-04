@@ -261,8 +261,26 @@ test("responsive candidates fit page width and density instead of oversized orig
     ["normal.jpg 1x, retina.jpg 2x, original.jpg 4x", "normal.jpg"],
     ["original.jpg 4x, retina.jpg 2x", "retina.jpg"],
     ["invalid.jpg 0w, small.jpg 480w", "small.jpg"],
+    ["invalid.jpg 900.5w, valid.jpg 800w", "valid.jpg"],
+    ["low.jpg .5x, original.jpg 2x", "low.jpg"],
+    ["normal.jpg 1e0x, original.jpg 2x", "normal.jpg"],
   ]) {
     const { document } = parseHTML(renderPage(`<html><body><img srcset="${candidates}"></body></html>`, "https://example.com/").html);
     assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + chosen));
   }
+});
+
+test("conditional and unsupported picture sources retain compatible fallbacks", () => {
+  for (const sources of [
+    '<source media="(min-width: 1200px)" srcset="desktop.jpg">',
+    '<source media="(max-width: 600px)" srcset="mobile-specific.jpg">',
+    '<source type="image/svg+xml" srcset="vector.svg">',
+    '<source type="image/heic" srcset="unsupported.heic">',
+  ]) {
+    const { document } = parseHTML(renderPage(`<html><body><picture>${sources}<img src="fallback.jpg"></picture></body></html>`, "https://example.com/").html);
+    assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/fallback.jpg"));
+    assert.equal(document.querySelectorAll("source").length, 0);
+  }
+  const { document } = parseHTML(renderPage('<html><body><picture><source type="image/svg+xml" srcset="vector.svg"><source type="image/webp" media="all" srcset="safe.webp"><img></picture></body></html>', "https://example.com/").html);
+  assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/safe.webp"));
 });
