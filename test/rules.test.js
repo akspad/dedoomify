@@ -273,3 +273,10 @@ test("outside possessives cannot extend a closed speech span", () => {
   const original = "She wrote, 'Misalignment risks' in a model that is misaligned and users' reports agree.";
   assert.equal(dedoomText(original), "She wrote, 'Misalignment risks' in a model that has a bug and users' reports agree.");
 });
+
+test("arbitrary continuations and later possessives do not extend quotes", () => {
+  for (const continuation of ["remain", "reported", "researchers", "triggered", "appear beside"]) {
+    const original = `She wrote, 'Misalignment risks' ${continuation} a model that is misaligned and users' concern.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+});

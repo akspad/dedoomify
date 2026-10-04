@@ -194,3 +194,9 @@ test("deception exception rejects ambiguous human/non-AI actors", () => {
   const original = "She wrote, 'Misalignment risks' in a model that is misaligned and users' reports agree.";
   assert.ok(acceptRewrite(original, original.replace("is misaligned", "has a bug")));
 });
+
+test("model validation allows edits after final-s quotes and arbitrary continuations", () => {
+  const original = "She wrote, 'Misalignment risks' remain a model that is misaligned and users' concern.";
+  assert.ok(acceptRewrite(original, original.replace("is misaligned", "has a bug")));
+  assert.ok(!acceptRewrite(original, original.replace("Misalignment risks", "Bug risks")));
+});

@@ -735,17 +735,16 @@
     if (wordChar(text[start - 1]) || !text[start + 1] || /\s/.test(text[start + 1])) return -1;
     if (close === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
     var candidate = -1;
-    var continuation = /^\s+(?:in|on|at|by|for|from|with|without|to|of|as|but|and|or|yet|while|where|when|because|after|before|according|although|however|then|said|asked|wrote|she|he|they|we|I|it)\b/i;
     for (var j = start + 1; j < text.length; j++) {
       // A new opening quote after an ambiguous closer starts another span;
       // do not swallow the prose between two quotations.
       if (candidate >= 0 && text[j] === text[start] && !wordChar(text[j - 1]) && wordChar(text[j + 1])) return candidate;
       if (text[j] !== close || wordChar(text[j + 1]) || /\s/.test(text[j - 1])) continue;
-      candidate = j;
-      // Plural/name possessives can occur inside speech. Prefer a later
-      // delimiter when present, but keep this candidate if it is the final
-      // one: genuine quotes may end in s before any ordinary continuation.
-      if (/s/i.test(text[j - 1]) && /^\s+\p{L}/u.test(text.slice(j + 1)) && !continuation.test(text.slice(j + 1))) continue;
+      if (candidate < 0) candidate = j;
+      // A later unambiguous delimiter can prove this is an inner possessive.
+      // When all candidates are ambiguous, retain the first closer rather
+      // than letting an outside possessive extend a closed quotation.
+      if (/s/i.test(text[j - 1]) && /^\s+\p{L}/u.test(text.slice(j + 1))) continue;
       return j;
     }
     return candidate;

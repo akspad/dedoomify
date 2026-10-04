@@ -227,3 +227,9 @@ test("page view preserves ASCII speech spanning inline markup", () => {
   assert.equal(document.querySelectorAll("mark.dd").length, 1);
   assert.match(document.querySelector("p").textContent, /'The model is misaligned\.'/);
 });
+
+test("expanded disclosure content stays open with visible highlights", () => {
+  const { document } = parseHTML(renderPage('<html><body><details open><summary>Results</summary><p>The model is misaligned.</p></details></body></html>', "https://example.com/").html);
+  assert.ok(document.querySelector("details").hasAttribute("open"));
+  assert.equal(document.querySelector("details mark.dd").textContent, "has a bug");
+});
