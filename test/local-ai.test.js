@@ -175,3 +175,13 @@ test("keeps plural/name possessives and human deception inside model output", ()
     assert.ok(!acceptRewrite(`${actor} decided to deceive customers while discussing AI.`, `${actor} produced misleading output for customers while discussing AI.`), actor);
   }
 });
+
+test("protects final-s speech and shares all rule-recognized AI subjects", () => {
+  const original = "She wrote, 'Misalignment risks' in her report.";
+  assert.ok(!acceptRewrite(original, "She wrote, 'Bug risks' in her report."));
+  for (const actor of ["Llama", "GPT-5", "the AI system", "the models", "the chatbot", "Claude"]) {
+    assert.ok(acceptRewrite(`Critics said ${actor} decided to deceive its creators.`, `Critics said ${actor} produced misleading output for its creators.`), actor);
+  }
+  const quoted = "She said, 'Llama decided to deceive its creators.' Outside it is misaligned.";
+  assert.ok(acceptRewrite(quoted, quoted.replace("Outside it is misaligned", "Outside it has a bug")));
+});

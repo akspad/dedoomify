@@ -730,19 +730,24 @@
   // closing quote. Internal apostrophes, possessives and abbreviated years
   // are ordinary prose. Curly apostrophes use the same closing-boundary check.
   function wordChar(ch) { return !!ch && /[\p{L}\p{N}_]/u.test(ch); }
-  function possessiveEnd(text, at) {
-    // A plural/name possessive inside speech is followed by its noun. A
-    // reporting clause after a real closing quote is not a possessive.
-    return /s/i.test(text[at - 1] || "") && /^\s+\p{L}/u.test(text.slice(at + 1)) &&
-      !/^\s+(?:(?:she|he|they|we|I|it)\s+(?:said|says|asked|replied|wrote)|(?:said|asked|replied)\b)/i.test(text.slice(at + 1));
-  }
-  function singleQuoteEnd(text, start) {
+  function singleQuoteEnd(text, start, close) {
+    close = close || "'";
     if (wordChar(text[start - 1]) || !text[start + 1] || /\s/.test(text[start + 1])) return -1;
-    if (/^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
+    if (close === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
+    var candidate = -1;
     for (var j = start + 1; j < text.length; j++) {
-      if (text[j] === "'" && !wordChar(text[j + 1]) && !/\s/.test(text[j - 1]) && !possessiveEnd(text, j)) return j;
+      // A new opening quote after an ambiguous closer starts another span;
+      // do not swallow the prose between two quotations.
+      if (candidate >= 0 && text[j] === text[start] && !wordChar(text[j - 1]) && wordChar(text[j + 1])) return candidate;
+      if (text[j] !== close || wordChar(text[j + 1]) || /\s/.test(text[j - 1])) continue;
+      candidate = j;
+      // Plural/name possessives can occur inside speech. Prefer a later
+      // delimiter when present, but keep this candidate if it is the final
+      // one: genuine quotes may end in s before any ordinary continuation.
+      if (/s/i.test(text[j - 1]) && /^\s+\p{L}/u.test(text.slice(j + 1))) continue;
+      return j;
     }
-    return -1;
+    return candidate;
   }
   function quoteProtectedSegments(input) {
     var text = String(input);
@@ -750,16 +755,16 @@
     var start = 0;
     var quoted = false;
     var close = "";
-    var asciiEnd = -1;
+    var singleEnd = -1;
     for (var i = 0; i < text.length; i++) {
       var ch = text.charAt(i);
-      if (!quoted && ch === "'") asciiEnd = singleQuoteEnd(text, i);
-      if (!quoted && ((ch === "'" && asciiEnd >= 0) || ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
+      if (!quoted && (ch === "'" || ch === "\u2018")) singleEnd = singleQuoteEnd(text, i, ch === "'" ? "'" : "\u2019");
+      if (!quoted && ((ch === "'" && singleEnd >= 0) || ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
         if (i > start) segments.push({ text: text.slice(start, i) });
         quoted = true;
         close = ch === "'" ? "'" : ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
         start = i;
-      } else if (quoted && ch === close && (close !== "'" || i === asciiEnd) && (close !== "\u2019" || (!wordChar(text[i + 1]) && !possessiveEnd(text, i)))) {
+      } else if (quoted && ch === close && ((close !== "'" && close !== "\u2019") || i === singleEnd)) {
         segments.push({ text: text.slice(start, i + 1), protected: true });
         start = i + 1;
         quoted = false;
@@ -821,6 +826,7 @@
 
   root.Dedoom = {
     RULES: RULES,
+    AI_SUBJECT: AI_SUBJECT,
     quoteProtectedSegments: quoteProtectedSegments,
     dedoomSegments: dedoomSegments,
     dedoomText: dedoomText,

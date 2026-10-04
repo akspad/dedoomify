@@ -258,3 +258,13 @@ test("possessives inside speech do not prematurely end quotations", () => {
     "'The model is misaligned for its users' she said.",
   ]) assert.equal(dedoomText(`She said, ${quote} Outside it is misaligned.`), `She said, ${quote} Outside it has a bug.`);
 });
+
+test("speech ending in s is protected before ordinary continuations", () => {
+  for (const continuation of ["in her report", "but disagreed later", "according to the report", "and 'Misalignment matters.'"]) {
+    for (const [open, close] of [["'", "'"], ["‘", "’"]]) {
+      const quoted = `${open}Misalignment risks${close}`;
+      const original = `She wrote, ${quoted} ${continuation}. Outside it is misaligned.`;
+      assert.equal(dedoomText(original), `She wrote, ${quoted} ${continuation}. Outside it has a bug.`);
+    }
+  }
+});
