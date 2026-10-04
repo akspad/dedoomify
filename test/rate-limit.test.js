@@ -12,7 +12,7 @@ const req = (ip = "198.51.100.1") => ({ socket: { remoteAddress: ip } });
 
 test("fixed quota blocks before expensive work, expires and isolates clients", () => {
   let time = 0;
-  const limit = createRateLimiter({ limit: 2, now: () => time });
+  const limit = createRateLimiter({ vercel: false, limit: 2, now: () => time });
   assert.ok(limit(req()).allowed);
   assert.ok(limit(req()).allowed);
   assert.deepEqual(limit(req()), { allowed: false, retryAfter: 60 });
@@ -24,14 +24,14 @@ test("fixed quota blocks before expensive work, expires and isolates clients", (
 });
 
 test("untrusted forwarded headers and IPv4-mapped addresses cannot reset quotas", () => {
-  const limit = createRateLimiter({ limit: 1 });
+  const limit = createRateLimiter({ vercel: false, limit: 1 });
   assert.ok(limit({ ...req(), headers: { "x-forwarded-for": "1.1.1.1" } }).allowed);
   assert.ok(!limit({ ...req(), headers: { "x-forwarded-for": "2.2.2.2", "x-real-ip": "3.3.3.3" } }).allowed);
   assert.ok(!limit(req("::ffff:198.51.100.1")).allowed);
 });
 
 test("bounded counters refuse new keys without evicting active quotas", () => {
-  const limit = createRateLimiter({ limit: 1, maxKeys: 2 });
+  const limit = createRateLimiter({ vercel: false, limit: 1, maxKeys: 2 });
   assert.ok(limit(req()).allowed);
   assert.ok(limit(req("198.51.100.2")).allowed);
   assert.ok(!limit(req("198.51.100.3")).allowed);
@@ -39,7 +39,7 @@ test("bounded counters refuse new keys without evicting active quotas", () => {
 });
 
 test("page and reader fetches share an injected article quota and return uncached 429", async () => {
-  const rateLimit = createRateLimiter({ limit: 1 });
+  const rateLimit = createRateLimiter({ vercel: false, limit: 1 });
   let calls = 0;
   const first = res();
   await page({ ...req(), method: "GET", url: "/api/page?url=https://example.com/" }, first, {
@@ -80,4 +80,15 @@ test("cheap page redirects and invalid methods do not consume the fetch quota", 
   assert.equal(response.statusCode, 302);
   await page({ method: "DELETE", url: "/api/page" }, response, { rateLimit });
   assert.equal(response.statusCode, 405);
+});
+
+
+test("Vercel mode uses only the platform-overwritten client header", () => {
+  const limit = createRateLimiter({ vercel: true, limit: 1 });
+  const request = { ...req(), headers: { "x-forwarded-for": "198.51.100.7" } };
+  assert.ok(limit(request).allowed);
+  assert.ok(!limit({ ...request, socket: { remoteAddress: "1.1.1.1" } }).allowed);
+  assert.ok(limit({ ...request, headers: { "x-forwarded-for": "198.51.100.8" } }).allowed);
+  assert.ok(limit({ headers: { "x-forwarded-for": "invalid" } }).allowed);
+  assert.ok(!limit({ headers: { "x-forwarded-for": ["198.51.100.9"] } }).allowed);
 });
