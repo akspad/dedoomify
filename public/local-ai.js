@@ -118,7 +118,9 @@ export function acceptRewrite(original, rewritten) {
 
   // Exempt only the matched occurrences. Paragraph-selection hints never
   // grant permission to erase factual words in unrelated occurrences.
-  const deception = new RegExp("(" + globalThis.Dedoom.AI_SUBJECT + ")\\s+decided to deceive\\b", "gi");
+  // Generic agents/models/assistants can be people, so require an explicit
+  // AI qualifier or an unambiguous software/model name for this exception.
+  const deception = /\b(AIs?(?:\s+(?:models?|systems?|agents?|assistants?|bots?))?|LLMs?|language models?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+)\s+decided to deceive\b/gi;
   const reference = globalThis.Dedoom.quoteProtectedSegments(original).map((seg) =>
     seg.protected ? seg.text : seg.text.replace(deception, "$1 produced misleading output"),
   ).join("");

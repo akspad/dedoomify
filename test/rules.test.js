@@ -268,3 +268,8 @@ test("speech ending in s is protected before ordinary continuations", () => {
     }
   }
 });
+
+test("outside possessives cannot extend a closed speech span", () => {
+  const original = "She wrote, 'Misalignment risks' in a model that is misaligned and users' reports agree.";
+  assert.equal(dedoomText(original), "She wrote, 'Misalignment risks' in a model that has a bug and users' reports agree.");
+});

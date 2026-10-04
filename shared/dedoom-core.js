@@ -735,6 +735,7 @@
     if (wordChar(text[start - 1]) || !text[start + 1] || /\s/.test(text[start + 1])) return -1;
     if (close === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
     var candidate = -1;
+    var continuation = /^\s+(?:in|on|at|by|for|from|with|without|to|of|as|but|and|or|yet|while|where|when|because|after|before|according|although|however|then|said|asked|wrote|she|he|they|we|I|it)\b/i;
     for (var j = start + 1; j < text.length; j++) {
       // A new opening quote after an ambiguous closer starts another span;
       // do not swallow the prose between two quotations.
@@ -744,7 +745,7 @@
       // Plural/name possessives can occur inside speech. Prefer a later
       // delimiter when present, but keep this candidate if it is the final
       // one: genuine quotes may end in s before any ordinary continuation.
-      if (/s/i.test(text[j - 1]) && /^\s+\p{L}/u.test(text.slice(j + 1))) continue;
+      if (/s/i.test(text[j - 1]) && /^\s+\p{L}/u.test(text.slice(j + 1)) && !continuation.test(text.slice(j + 1))) continue;
       return j;
     }
     return candidate;
@@ -826,7 +827,6 @@
 
   root.Dedoom = {
     RULES: RULES,
-    AI_SUBJECT: AI_SUBJECT,
     quoteProtectedSegments: quoteProtectedSegments,
     dedoomSegments: dedoomSegments,
     dedoomText: dedoomText,

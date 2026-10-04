@@ -143,3 +143,12 @@ test("API reports bad input clearly", async () => {
   await handler({ method: "DELETE", url: "/api/dedoom" }, res);
   assert.equal(res.statusCode, 405);
 });
+
+test("only globally routable destinations pass the shared fetch filter", async () => {
+  for (const ip of ["192.0.0.1", "192.0.0.8", "192.88.99.1", "192.0.2.1", "198.51.100.1", "203.0.113.1", "2001:db8::1", "2001:2::1", "2001:20::1", "3fff::1", "5f00::1", "0:0:0:0:0:0:0:1", "0:0:0:0:0:ffff:c000:201"]) {
+    assert.ok(isPrivateAddress(ip), ip);
+    const host = ip.includes(":") ? `[${ip}]` : ip;
+    await assert.rejects(assertPublicUrl(`http://${host}/`), /publicly reachable/, ip);
+  }
+  for (const ip of ["93.184.216.34", "8.8.8.8", "2001:4860:4860::8888", "2606:4700:4700::1111"]) assert.ok(!isPrivateAddress(ip), ip);
+});

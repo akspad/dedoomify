@@ -38,3 +38,10 @@ test("image fetch advertises the supported image representations", async () => {
     return new Response(png, { headers: { "content-type": "image/png" } });
   });
 });
+
+test("image proxy rejects special-purpose literals and redirects before connecting", async () => {
+  for (const url of ["http://192.0.0.1/x", "http://192.88.99.1/x", "http://[2001:db8::1]/x", "http://[3fff::1]/x"]) {
+    await assert.rejects(fetchImage(url, () => { throw new Error("must not connect"); }), /publicly reachable/);
+    await assert.rejects(fetchImage("http://93.184.216.34/a", async () => new Response(null, { status: 302, headers: { location: url } })), /publicly reachable/);
+  }
+});

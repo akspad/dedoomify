@@ -176,12 +176,21 @@ test("keeps plural/name possessives and human deception inside model output", ()
   }
 });
 
-test("protects final-s speech and shares all rule-recognized AI subjects", () => {
+test("protects final-s speech and covers explicitly qualified AI subjects", () => {
   const original = "She wrote, 'Misalignment risks' in her report.";
   assert.ok(!acceptRewrite(original, "She wrote, 'Bug risks' in her report."));
-  for (const actor of ["Llama", "GPT-5", "the AI system", "the models", "the chatbot", "Claude"]) {
+  for (const actor of ["Llama", "GPT-5", "the AI system", "the AI models", "the chatbot", "Claude"]) {
     assert.ok(acceptRewrite(`Critics said ${actor} decided to deceive its creators.`, `Critics said ${actor} produced misleading output for its creators.`), actor);
   }
   const quoted = "She said, 'Llama decided to deceive its creators.' Outside it is misaligned.";
   assert.ok(acceptRewrite(quoted, quoted.replace("Outside it is misaligned", "Outside it has a bug")));
+});
+
+test("deception exception rejects ambiguous human/non-AI actors", () => {
+  for (const actor of ["The federal agents", "The assistants", "The fashion models", "The accounting systems"]) {
+    const original = `${actor} decided to deceive voters while discussing an AI model.`;
+    assert.ok(!acceptRewrite(original, original.replace("decided to deceive", "produced misleading output for")), actor);
+  }
+  const original = "She wrote, 'Misalignment risks' in a model that is misaligned and users' reports agree.";
+  assert.ok(acceptRewrite(original, original.replace("is misaligned", "has a bug")));
 });
