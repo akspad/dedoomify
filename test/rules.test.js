@@ -208,6 +208,7 @@ test("preserves direct quotations and ambiguous non-AI language", () => {
     'She said, “The model is misaligned and could go rogue.” The model has a bug.',
   );
   assert.equal(hasDoom('“The model is misaligned.”'), false);
+  assert.equal(dedoomText("She said, ‘The model is misaligned.’ Outside, the model is misaligned."), "She said, ‘The model is misaligned.’ Outside, the model has a bug.");
 
   for (const text of [
     "The Cold War arms race shaped American policy.",
