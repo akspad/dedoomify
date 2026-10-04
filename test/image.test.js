@@ -30,3 +30,11 @@ test("image endpoint sends inert cached bytes and no redirects to third parties"
   assert.match(response.headers["content-security-policy"], /sandbox/);
   assert.deepEqual(response.body, png);
 });
+
+test("image fetch advertises the supported image representations", async () => {
+  await fetchImage("http://93.184.216.34/a", async (_url, options) => {
+    assert.match(options.headers.accept, /image\/png/);
+    assert.doesNotMatch(options.headers.accept, /text\/html/);
+    return new Response(png, { headers: { "content-type": "image/png" } });
+  });
+});

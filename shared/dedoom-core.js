@@ -730,11 +730,17 @@
   // closing quote. Internal apostrophes, possessives and abbreviated years
   // are ordinary prose. Curly apostrophes use the same closing-boundary check.
   function wordChar(ch) { return !!ch && /[\p{L}\p{N}_]/u.test(ch); }
+  function possessiveEnd(text, at) {
+    // A plural/name possessive inside speech is followed by its noun. A
+    // reporting clause after a real closing quote is not a possessive.
+    return /s/i.test(text[at - 1] || "") && /^\s+\p{L}/u.test(text.slice(at + 1)) &&
+      !/^\s+(?:(?:she|he|they|we|I|it)\s+(?:said|says|asked|replied|wrote)|(?:said|asked|replied)\b)/i.test(text.slice(at + 1));
+  }
   function singleQuoteEnd(text, start) {
     if (wordChar(text[start - 1]) || !text[start + 1] || /\s/.test(text[start + 1])) return -1;
     if (/^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
     for (var j = start + 1; j < text.length; j++) {
-      if (text[j] === "'" && !wordChar(text[j + 1]) && !/\s/.test(text[j - 1])) return j;
+      if (text[j] === "'" && !wordChar(text[j + 1]) && !/\s/.test(text[j - 1]) && !possessiveEnd(text, j)) return j;
     }
     return -1;
   }
@@ -753,7 +759,7 @@
         quoted = true;
         close = ch === "'" ? "'" : ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
         start = i;
-      } else if (quoted && ch === close && (close !== "'" || i === asciiEnd) && (close !== "\u2019" || !wordChar(text[i + 1]))) {
+      } else if (quoted && ch === close && (close !== "'" || i === asciiEnd) && (close !== "\u2019" || (!wordChar(text[i + 1]) && !possessiveEnd(text, i)))) {
         segments.push({ text: text.slice(start, i + 1), protected: true });
         start = i + 1;
         quoted = false;

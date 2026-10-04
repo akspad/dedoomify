@@ -164,3 +164,14 @@ test("model and rules share ASCII speech boundaries including contractions", () 
   assert.ok(!acceptRewrite("The model is misaligned.", "'The model has a bug.'"));
   assert.ok(acceptRewrite("The model's output is misaligned.", "The model's output has a bug."));
 });
+
+test("keeps plural/name possessives and human deception inside model output", () => {
+  for (const quote of ["'The users' feedback is that the model is misaligned.'", "'James' report says the model is misaligned.'"]) {
+    const original = `She said, ${quote} Outside it is misaligned.`;
+    assert.ok(!acceptRewrite(original, original.replace("model is misaligned", "model has a bug")));
+    assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
+  }
+  for (const actor of ["The CEO", "Carol", "The researcher", "The user"]) {
+    assert.ok(!acceptRewrite(`${actor} decided to deceive customers while discussing AI.`, `${actor} produced misleading output for customers while discussing AI.`), actor);
+  }
+});

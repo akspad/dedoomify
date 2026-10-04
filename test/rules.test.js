@@ -249,3 +249,12 @@ test("preserves paired ASCII speech without treating apostrophes as quotes", () 
   ];
   for (const [before, after] of cases) assert.equal(dedoomText(before), after, before);
 });
+
+test("possessives inside speech do not prematurely end quotations", () => {
+  for (const quote of [
+    "'The users' feedback is that the model is misaligned.'",
+    "'James' report says the model is misaligned.'",
+    "‘The users’ feedback is that the model is misaligned.’",
+    "'The model is misaligned for its users' she said.",
+  ]) assert.equal(dedoomText(`She said, ${quote} Outside it is misaligned.`), `She said, ${quote} Outside it has a bug.`);
+});

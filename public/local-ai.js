@@ -118,7 +118,7 @@ export function acceptRewrite(original, rewritten) {
 
   // Exempt only the matched occurrences. Paragraph-selection hints never
   // grant permission to erase factual words in unrelated occurrences.
-  const reference = original.replace(/\bdecided to deceive\b/gi, "produced misleading output");
+  const reference = original.replace(/\b((?:the\s+)?(?:AI|model|chatbot|agent|assistant|Claude|ChatGPT|Gemini|Grok|Copilot))\s+decided to deceive\b/gi, "$1 produced misleading output");
   const beforeWords = globalThis.Dedoom.dedoomSegments(reference).flatMap((seg) =>
     seg.original === undefined ? contentWords(seg.text) : [],
   );
