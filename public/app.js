@@ -64,7 +64,10 @@ function el(tag, attrs, children) {
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 // Which on-device model each "Rewrite with" option uses.
 const LOCAL_MODES = { local: "qwen" };
-const localModelKey = () => LOCAL_MODES[modeSelect.value];
+// The engine is fixed when a run starts, so a change to the picker mid-run
+// can't mix engines or put the wrong one in the share link.
+let runModelKey;
+const localModelKey = () => runModelKey;
 
 // ---- Reader view: the article's text only ----
 
@@ -362,6 +365,13 @@ new ResizeObserver(() => pin(atTop)).observe($("banner"));
 // Show `source` in the current view. Each call supersedes the previous one.
 async function start({ instant = false } = {}) {
   const runId = ++runCounter;
+  runModelKey = LOCAL_MODES[modeSelect.value];
+  if (source.url) {
+    // The link records the engine too, so whoever opens it sees the same rewrite.
+    const qs = "url=" + encodeURIComponent(source.url) + "&mode=" + (runModelKey ? "local" : "rules");
+    lastShare = location.origin + "/?" + qs;
+    history.replaceState(null, "", "/?" + qs);
+  }
   showError("");
   showNotice("");
   tooltip.hide();
@@ -390,10 +400,6 @@ async function start({ instant = false } = {}) {
 }
 
 function runUrl(url, options) {
-  // The link records the engine too, so whoever opens it sees the same rewrite.
-  const qs = "url=" + encodeURIComponent(url) + "&mode=" + (localModelKey() ? "local" : "rules");
-  lastShare = location.origin + "/?" + qs;
-  history.replaceState(null, "", "/?" + qs);
   source = { url };
   view = "page";
   start(options);
