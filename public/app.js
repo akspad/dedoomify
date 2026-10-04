@@ -63,7 +63,7 @@ function el(tag, attrs, children) {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 // Which on-device model each "Rewrite with" option uses.
-const LOCAL_MODES = { "local-gemma": "gemma", local: "qwen", "local-small": "smol" };
+const LOCAL_MODES = { local: "qwen" };
 const localModelKey = () => LOCAL_MODES[modeSelect.value];
 
 // ---- Reader view: the article's text only ----
@@ -267,13 +267,24 @@ $("show-changes").addEventListener("change", applyHighlight);
 $("show-original").addEventListener("change", applyHighlight);
 tooltip.attach(document, { enabled: () => articleEl.classList.contains("show-changes") });
 
-$("share").addEventListener("click", function () {
+// Phones and tablets get the system share sheet; elsewhere the button copies
+// the link.
+const shareButton = $("share");
+const touch = matchMedia("(pointer: coarse)").matches;
+const canShare = touch && typeof navigator.share === "function";
+const shareLabel = canShare ? "Share" : touch ? "Copy link" : "Copy share link";
+shareButton.textContent = shareLabel;
+shareButton.addEventListener("click", function () {
   const link = lastShare || location.href;
   const btn = this;
+  if (canShare) {
+    navigator.share({ title: frame.contentDocument?.title || document.title, url: link }).catch(() => {});
+    return;
+  }
   (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
     .then(() => { btn.textContent = "Link copied"; })
     .catch(() => { prompt("Copy this link:", link); })
-    .then(() => setTimeout(() => { btn.textContent = "Copy share link"; }, 2000));
+    .then(() => setTimeout(() => { btn.textContent = shareLabel; }, 2000));
 });
 
 viewToggle.addEventListener("click", () => {
@@ -295,7 +306,9 @@ function layout() {
   articleEl.hidden = page;
   $("show-original-wrap").hidden = page;
   viewToggle.hidden = !source.url;
-  viewToggle.textContent = page ? "Reader view" : "Original layout";
+  viewToggle.innerHTML = page
+    ? '<span class="long">Reader view</span><span class="short">Reader</span>'
+    : '<span class="long">Original layout</span><span class="short">Page view</span>';
   originalLink.hidden = !source.url;
   if (source.url) originalLink.href = source.url;
   $("share").hidden = !source.url;
@@ -441,7 +454,10 @@ form.addEventListener("submit", (e) => {
 // Remember the visitor's choice of engine in this browser.
 const MODE_KEY = "dedoomify.mode";
 function savedMode() {
-  try { return localStorage.getItem(MODE_KEY); } catch { return null; }
+  let mode = null;
+  try { mode = localStorage.getItem(MODE_KEY); } catch {}
+  // Older picks of the retired on-device models now mean the one that's left.
+  return /^local-/.test(mode || "") ? "local" : mode;
 }
 modeSelect.addEventListener("change", () => {
   try { localStorage.setItem(MODE_KEY, modeSelect.value); } catch {}
@@ -454,7 +470,7 @@ async function init() {
   } else {
     for (const option of localOptions) {
       option.disabled = true;
-      option.textContent = `On-device AI: ${localAi.MODELS[LOCAL_MODES[option.value]].label} (needs WebGPU)`;
+      option.textContent = "On-device AI (needs WebGPU)";
     }
   }
   // Shared links: dedoomify.com/?url=... runs straight away.

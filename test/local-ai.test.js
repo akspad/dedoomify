@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import "../shared/dedoom-prompt.js";
 import "../shared/dedoom-core.js";
-import { acceptRewrite, buildMessages, cleanOutput, needsModel, transformersEngine, MODELS, DEFAULT_MODEL } from "../public/local-ai.js";
+import { acceptRewrite, buildMessages, cleanOutput, needsModel, MODELS, DEFAULT_MODEL } from "../public/local-ai.js";
 
 test("only paragraphs with doom framing go to the model", () => {
   assert.ok(needsModel("The model is misaligned.", "The model has a bug."));
@@ -82,25 +82,7 @@ test("every model build is one WebLLM ships", () => {
   const lib = fs.readFileSync(new URL("../node_modules/@mlc-ai/web-llm/lib/index.js", import.meta.url), "utf8");
   assert.ok(MODELS[DEFAULT_MODEL]);
   for (const model of Object.values(MODELS)) {
-    if (model.runtime === "transformers") continue;
     for (const id of Object.values(model.ids)) assert.ok(lib.includes(`model_id: "${id}"`), id);
-  }
-});
-
-test("every Transformers.js model has a build for each precision", () => {
-  const models = Object.values(MODELS).filter((m) => m.runtime === "transformers");
-  assert.ok(models.length > 0);
-  for (const model of models) {
-    assert.match(model.repo, /^[\w-]+\/[\w.-]+$/);
-    assert.deepEqual(Object.keys(model.dtypes).sort(), ["f16", "f32"]);
-  }
-});
-
-test("the build vendors Transformers.js and the ONNX Runtime files the Gemma worker loads", () => {
-  const build = fs.readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
-  const worker = fs.readFileSync(new URL("../public/gemma-worker.js", import.meta.url), "utf8");
-  for (const file of worker.match(/vendor\/[\w.-]+/g)) {
-    assert.ok(build.includes(`"${file.slice("vendor/".length)}"`), file);
   }
 });
 
@@ -114,20 +96,10 @@ test("every on-device option in the picker names a known model", () => {
   }
 });
 
-test("a Gemma worker crash fails waiting and later rewrites instead of hanging", async () => {
-  const worker = { postMessage() {} };
-  const loading = transformersEngine(worker, "repo", "q4");
-  worker.onmessage({ data: { type: "ready" } });
-  const engine = await loading;
-  const waiting = engine.chat.completions.create({ messages: [], max_tokens: 8 });
-  worker.onerror({ message: "device lost" });
-  await assert.rejects(waiting, /device lost/);
-  await assert.rejects(engine.chat.completions.create({ messages: [], max_tokens: 8 }), /device lost/);
-});
-
-test("the picker lists Gemma, then Qwen, then SmolLM2, and Gemma is the default model", () => {
+test("the picker offers quick phrase rules first, then one on-device option running Qwen", () => {
   const html = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
-  const order = [...html.matchAll(/<option value="(local[\w-]*)">/g)].map((m) => m[1]);
-  assert.deepEqual(order, ["local-gemma", "local", "local-small"]);
-  assert.equal(DEFAULT_MODEL, "gemma");
+  const options = [...html.matchAll(/<option value="([\w-]+)">([^<]*)</g)].map((m) => [m[1], m[2]]);
+  assert.deepEqual(options, [["rules", "Quick phrase rules"], ["local", "On-device AI"]]);
+  assert.deepEqual(Object.keys(MODELS), ["qwen"]);
+  assert.equal(DEFAULT_MODEL, "qwen");
 });
