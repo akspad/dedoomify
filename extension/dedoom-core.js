@@ -287,10 +287,6 @@
     ["AI deception", "misleading AI output"],
     ["strategic deception", "strategically misleading output"],
 
-
-
-
-
     ["treacherous turn", "late-surfacing bug"],
     ["alignment faking", "training-time inconsistency"],
     ["sleeper agents", "backdoored models"],
@@ -301,7 +297,10 @@
     ["sandbagging", "underperforming"],
     ["mesa-optimizers", "sub-components"],
     ["mesa-optimizer", "sub-component"],
-    ["AI hallucinations", "AI errors"],\n    ["AI hallucination", "AI error"],\n    ["model hallucinations", "model errors"],\n    ["model hallucination", "model error"],
+    ["AI hallucinations", "AI errors"],
+    ["AI hallucination", "AI error"],
+    ["model hallucinations", "model errors"],
+    ["model hallucination", "model error"],
 
     byAI("hallucinates", "fabricates"),
     byAI("hallucinated", "fabricated"),
@@ -458,7 +457,6 @@
     byAI("sabotaging", "breaking"),
     ["sabotage evaluations", "breakage evaluations"],
     ["sabotage evals", "breakage evals"],
-
 
     ["reward tampering", "scoring-bug exploitation"],
     byAI("tampered with", "edited"),
@@ -621,7 +619,6 @@
 
     // Races are product cycles.
     ["AI arms race", "AI product race"],
-
 
     // Scheming comes last so the verbs after it ("scheming to escape") are
     // rewritten while the AI subject is still in view.
