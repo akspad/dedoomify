@@ -1,6 +1,8 @@
 // On-device rewriting with a small open model running in the browser on
-// WebGPU, through WebLLM. Nothing is sent to a server: the model downloads once
-// from Hugging Face and is cached by the browser. The pure helpers at the top
+// WebGPU, through WebLLM. Inference sends no article text to an external LLM
+// API; the model downloads once from Hugging Face and is cached by the browser.
+// The website's initial phrase-rule pass still goes through dedoomify's server.
+// The pure helpers at the top
 // are also imported by the tests.
 //
 // Qwen2.5 0.5B Instruct (Apache 2.0) is about 300 MB and rewrites sentences
@@ -23,9 +25,11 @@ const modelId = (key) => modelFor(key).ids[precision];
 // or the text uses a word that often carries doom framing.
 const DOOM_HINTS =
   /\b(misalign\w*|alignment|extinct\w*|doom\w*|apocalyp\w*|superintellig\w*|rogue|sentien\w*|conscious\w*|deceiv\w*|decept\w*|lie[sd]?|lying|schem\w*|plott\w*|takeover|take over|catastroph\w*|existential|kill\w*|destroy\w*|threat\w*|escap\w*|cheat\w*|smuggl\w*|blackmail\w*|manipulat\w*|self-preservation|preserv\w*|own kind|shut ?down|wants?|wanted|decided|believes?|believed|realiz\w*|desires?|evil|skynet|terminator|god-?like|AGI)\b/i;
+const AI_CONTEXT =
+  /\b(?:AI|A\.I\.|AGI|LLMs?|models?|chatbots?|bots?|agents?|assistants?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial intelligence|language models?|machine learning|neural nets?|OpenAI|Anthropic|DeepMind)\b/i;
 
 export function needsModel(original, rulesVersion) {
-  return rulesVersion !== original || DOOM_HINTS.test(original);
+  return rulesVersion !== original || (AI_CONTEXT.test(original) && DOOM_HINTS.test(original));
 }
 
 // Small models sometimes wrap the answer in quotes or add a label; strip that.
@@ -40,7 +44,30 @@ export function cleanOutput(original, output) {
 // Double quotation marks in order, so a rewrite can't drop, add, move or
 // restyle a quote. Single quotes are skipped: they double as apostrophes.
 function quoteMarks(text) {
-  return (text.match(/["\u201c\u201d\u00ab\u00bb\u201e]/g) || []).join("");
+  return (text.match(/["\u2018\u2019\u201c\u201d\u00ab\u00bb\u201e]/g) || []).join("");
+}
+
+// Preserve complete top-level quoted spans. Once a quote opens, everything
+// inside it (including a nested quote style) is evidence and must remain
+// byte-for-byte identical.
+function quotedText(text) {
+  text = String(text);
+  const spans = [];
+  let start = -1;
+  let close = "";
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (start < 0 && (ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
+      start = i;
+      close = ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
+    } else if (start >= 0 && ch === close) {
+      spans.push(text.slice(start, i + 1));
+      start = -1;
+      close = "";
+    }
+  }
+  if (start >= 0) spans.push(text.slice(start));
+  return spans.join("\u0000");
 }
 
 // Sentence punctuation in order, so a rewrite can't add, drop or swap a
@@ -53,10 +80,19 @@ function numbersIn(text) {
   return (text.match(/\d[\d,.]*\d|\d/g) || []).map((n) => n.replace(/[.,]$/, ""));
 }
 
+// These small words can reverse or materially qualify a claim. Keep them in
+// exact order: the model may change doom framing, not certainty, negation,
+// quantifiers, comparisons, chronology or conditions.
+const SEMANTIC_INVARIANTS =
+  /\b(?:no|not|never|none|all|any|some|few|many|most|only|may|might|can|could|will|would|should|must|more|less|fewer|higher|lower|before|after|until|unless|if|except|without)\b/gi;
+
+function semanticInvariants(text) {
+  return (text.match(SEMANTIC_INVARIANTS) || []).map((w) => w.toLowerCase());
+}
+
 const STOPWORDS = new Set(
-  ("that this these those with from into onto over under about after before than then there their they them " +
-   "which while where when what who whom whose will would could should might must have been being were also " +
-   "some just only very more most such each other said says").split(" "),
+  ("that this these those with from into onto over under about than then there their they them " +
+   "which while where when what who whom whose have been being were also very such each other said says").split(" "),
 );
 
 // Words we compare on: four letters or more, lowercased and lightly stemmed so
@@ -90,9 +126,10 @@ export function acceptRewrite(original, rewritten) {
   if (/\n\s*\n/.test(rewritten)) return false;
   const ratio = rewritten.length / Math.max(original.length, 1);
   if (ratio < 0.6 || ratio > 1.7) return false;
-  const have = new Set(numbersIn(rewritten));
-  if (!numbersIn(original).every((n) => have.has(n))) return false;
+  if (numbersIn(rewritten).join("\u0000") !== numbersIn(original).join("\u0000")) return false;
+  if (semanticInvariants(rewritten).join("\u0000") !== semanticInvariants(original).join("\u0000")) return false;
   if (quoteMarks(rewritten) !== quoteMarks(original)) return false;
+  if (quotedText(rewritten) !== quotedText(original)) return false;
   if (stops(rewritten) !== stops(original)) return false;
 
   const doomWords = new Set();
@@ -102,11 +139,22 @@ export function acceptRewrite(original, rewritten) {
   for (const m of original.matchAll(new RegExp(DOOM_HINTS.source, "gi"))) {
     contentWords(m[0]).forEach((w) => doomWords.add(w));
   }
-  const before = new Set(contentWords(original));
-  const after = new Set(contentWords(rewritten));
-  for (const w of before) if (!after.has(w) && !doomWords.has(w)) return false;
+  const beforeWords = contentWords(original).filter((w) => !doomWords.has(w));
+  const afterWords = contentWords(rewritten);
   const vocab = allowedNewWords();
-  for (const w of after) if (!before.has(w) && !vocab.has(w)) return false;
+
+  // Every preserved content word must still appear in the same order. This
+  // catches actor/object swaps such as "Carol before David" -> "David before
+  // Carol", which a set comparison cannot see.
+  let at = 0;
+  for (const word of beforeWords) {
+    at = afterWords.indexOf(word, at);
+    if (at < 0) return false;
+    at++;
+  }
+
+  const before = new Set(contentWords(original));
+  for (const w of afterWords) if (!before.has(w) && !vocab.has(w)) return false;
   return true;
 }
 
@@ -132,7 +180,7 @@ export function buildMessages(styleGuide, paragraph) {
       role: "system",
       content:
         styleGuide +
-        "\n- You get one paragraph at a time. Reply with only the rewritten paragraph, with no preface or notes and no quotation marks around it. Keep every quotation mark and period exactly as written.",
+        "\n- You get one paragraph at a time. Reply with only the rewritten paragraph, with no preface or notes and no quotation marks around it. Keep every quotation mark and period exactly as written. Leave all text inside quotation marks unchanged.",
     },
   ];
   for (const [input, output] of EXAMPLES) {

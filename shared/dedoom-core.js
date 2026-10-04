@@ -126,7 +126,7 @@
     ["AI catastrophe", "AI incident"],
     ["AI disaster", "AI incident"],
     ["AI Armageddon", "AI outage"],
-    ["armageddon", "outage"],
+
     ["judgment day", "release day"],
     ["judgement day", "release day"],
     ["the end times", "the end of the quarter"],
@@ -285,12 +285,7 @@
     ["for\\s+their\\s+(?:own\\s+)?preservation", "to keep themselves running"],
     ["their\\s+(?:own\\s+)?preservation", "their uptime"],
     ["AI deception", "misleading AI output"],
-    ["strategic deception", "strategically misleading output"],
-    ["deceptive behaviour", "misleading output"],
-    ["deceptive behavior", "misleading output"],
-    ["deceptive output", "misleading output"],
-    ["deception", "misleading output"],
-    ["deceptive", "misleading"],
+
     ["treacherous turn", "late-surfacing bug"],
     ["alignment faking", "training-time inconsistency"],
     ["sleeper agents", "backdoored models"],
@@ -301,12 +296,15 @@
     ["sandbagging", "underperforming"],
     ["mesa-optimizers", "sub-components"],
     ["mesa-optimizer", "sub-component"],
-    ["hallucinations", "errors"],
-    ["hallucination", "error"],
-    ["hallucinates", "fabricates"],
-    ["hallucinated", "fabricated"],
-    ["hallucinating", "fabricating"],
-    ["hallucinate", "fabricate"],
+    ["AI hallucinations", "AI errors"],
+    ["AI hallucination", "AI error"],
+    ["model hallucinations", "model errors"],
+    ["model hallucination", "model error"],
+
+    byAI("hallucinates", "fabricates"),
+    byAI("hallucinated", "fabricated"),
+    byAI("hallucinating", "fabricating"),
+    byAI("hallucinate", "fabricate"),
 
     // Escaping is leaving the sandbox.
     ["self-exfiltration", "copying its own files"],
@@ -458,8 +456,7 @@
     byAI("sabotaging", "breaking"),
     ["sabotage evaluations", "breakage evaluations"],
     ["sabotage evals", "breakage evals"],
-    ["acts of sabotage", "breakages"],
-    ["sabotage", "breakage"],
+
     ["reward tampering", "scoring-bug exploitation"],
     byAI("tampered with", "edited"),
     byAI("tampers with", "edits"),
@@ -621,7 +618,6 @@
 
     // Races are product cycles.
     ["AI arms race", "AI product race"],
-    ["arms race", "product race"],
 
     // Scheming comes last so the verbs after it ("scheming to escape") are
     // rewritten while the AI subject is still in view.
@@ -728,16 +724,42 @@
 
   // Returns an array of segments: { text } for untouched text and
   // { text, original } for rewritten text. Joining the texts gives the result.
+  // Direct quotations are evidence, not editorial framing. Protect them so
+  // dedoomify never puts different words in a quoted speaker's mouth.
+  function quoteProtectedSegments(input) {
+    var text = String(input);
+    var segments = [];
+    var start = 0;
+    var quoted = false;
+    var close = "";
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      if (!quoted && (ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
+        if (i > start) segments.push({ text: text.slice(start, i) });
+        quoted = true;
+        close = ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
+        start = i;
+      } else if (quoted && ch === close) {
+        segments.push({ text: text.slice(start, i + 1), protected: true });
+        start = i + 1;
+        quoted = false;
+        close = "";
+      }
+    }
+    if (start < text.length) segments.push({ text: text.slice(start), protected: quoted });
+    return segments.length ? segments : [{ text: text }];
+  }
+
   function dedoomSegments(input) {
-    var segments = [{ text: String(input) }];
-    // Rules only rewrite untouched parts of the input, so the input decides
-    // which rules can match.
-    var lower = segments[0].text.toLowerCase();
+    var segments = quoteProtectedSegments(input);
+    // Rules only rewrite untouched, unquoted parts of the input, so the input
+    // decides which rules can match.
+    var lower = String(input).toLowerCase();
     COMPILED.forEach(function (rule) {
       if (!mayMatch(rule, lower)) return;
       var next = [];
       segments.forEach(function (seg) {
-        if (seg.original !== undefined) {
+        if (seg.original !== undefined || seg.protected) {
           next.push(seg);
           return;
         }
@@ -772,12 +794,8 @@
 
   // Whether any rule would change the text, stopping at the first match.
   function hasDoom(input) {
-    var text = String(input);
-    var lower = text.toLowerCase();
-    return COMPILED.some(function (rule) {
-      if (!mayMatch(rule, lower)) return false;
-      rule.re.lastIndex = 0;
-      return rule.re.test(text);
+    return dedoomSegments(input).some(function (seg) {
+      return seg.original !== undefined;
     });
   }
 

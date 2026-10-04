@@ -19,12 +19,17 @@ const ARTICLE_HTML = `<!doctype html><html><head><title>Is AI misaligned?</title
 </body></html>`;
 
 test("blocks private and non-http addresses", async () => {
-  for (const ip of ["127.0.0.1", "10.1.2.3", "192.168.0.1", "169.254.169.254", "::1", "fd00::1", "::ffff:127.0.0.1"]) {
+  for (const ip of ["127.0.0.1", "10.1.2.3", "192.168.0.1", "169.254.169.254", "::1", "fd00::1", "::ffff:127.0.0.1", "::ffff:7f00:1", "::ffff:a9fe:a9fe", "::ffff:a00:1", "::ffff:c0a8:1", "::7f00:1", "64:ff9b::a00:1", "2002:a00:1::"]) {
     assert.ok(isPrivateAddress(ip), ip);
   }
   assert.ok(!isPrivateAddress("93.184.216.34"));
   await assert.rejects(assertPublicUrl("http://127.0.0.1/"), /publicly reachable/);
   await assert.rejects(assertPublicUrl("http://[::1]/"), /publicly reachable/);
+  await assert.rejects(assertPublicUrl("http://[::ffff:7f00:1]/"), /publicly reachable/);
+  await assert.rejects(assertPublicUrl("http://[::ffff:a9fe:a9fe]/"), /publicly reachable/);
+  await assert.rejects(assertPublicUrl("http://[::7f00:1]/"), /publicly reachable/);
+  await assert.rejects(assertPublicUrl("http://[64:ff9b::a00:1]/"), /publicly reachable/);
+  await assert.rejects(assertPublicUrl("http://[2002:a00:1::]/"), /publicly reachable/);
   await assert.rejects(assertPublicUrl("http://localhost:3000/"), /publicly reachable/);
   await assert.rejects(assertPublicUrl("file:///etc/passwd"), /http and https/);
   await assert.rejects(assertPublicUrl("not a url"), /valid URL/);
@@ -50,6 +55,19 @@ test("extracts the article body", () => {
   assert.ok(article.blocks.some((b) => b.type === "heading" && b.text === "What critics say"));
   assert.ok(article.blocks.some((b) => b.text.startsWith("Researchers say")));
   assert.ok(!article.blocks.some((b) => b.text.includes("Copyright")));
+});
+
+test("reader extraction and rules preserve direct quotations", async () => {
+  const html = '<html><head><title>AI story</title></head><body><article><p>She said <q>the model is misaligned</q>. Outside, the model is misaligned. This paragraph includes enough ordinary reporting context for article extraction: researchers described the test setup, the company published its methodology, and independent reviewers examined the results before publication.</p><blockquote><p>The model is misaligned.</p></blockquote></article></body></html>';
+  const article = extractArticle(html, "https://example.com/quotes");
+  const paragraph = article.blocks.find((b) => b.type === "paragraph");
+  assert.match(paragraph.text, /“the model is misaligned”/);
+  const result = await dedoomArticle(article, { mode: "rules" });
+  const rewritten = result.blocks.find((b) => b.type === "paragraph");
+  assert.match(rewritten.text, /“the model is misaligned”/);
+  assert.match(rewritten.text, /Outside, the model has a bug\./);
+  const quote = result.blocks.find((b) => b.type === "quote");
+  assert.equal(quote.text, "The model is misaligned.");
 });
 
 test("rules mode rewrites the title and body", async () => {

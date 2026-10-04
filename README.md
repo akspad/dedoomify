@@ -15,7 +15,8 @@ language an engineer would use about software with defects:
 | What's your **p(doom)**? | What's your **estimated failure rate**? |
 
 Designed to preserve names, numbers and factual claims while changing the
-framing. The article keeps its original look, with every change highlighted in
+framing. Direct quotations are left untouched. The article keeps its original
+look, with every change highlighted in
 place; hover a highlight to see the original words. A reader view shows just the text.
 
 You can also [add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl) to de-doom the page you're reading with one click.

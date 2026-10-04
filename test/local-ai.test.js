@@ -25,6 +25,34 @@ test("rejects rewrites that change the facts or the shape", () => {
   assert.ok(!acceptRewrite(original, ""));
 });
 
+test("rejects rewrites that change semantic invariants or actor order", () => {
+  const cases = [
+    ["Some researchers said the AI could cause human extinction.", "All researchers said the AI will cause human extinction."],
+    ["The model did not deceive users.", "The model did deceive users."],
+    ["The model deceived Carol before it deceived David.", "The model deceived David before it deceived Carol."],
+    ["Claude showed deception in 10% of runs; Gemini showed deception in 20%.", "Claude showed misleading output in 20% of runs; Gemini showed misleading output in 10%."],
+    ["Researchers saw deception in 10% of runs.", "Researchers saw misleading output in 10% to 20% of runs."],
+  ];
+  for (const [original, rewritten] of cases) {
+    assert.ok(!acceptRewrite(original, rewritten), rewritten);
+  }
+});
+
+test("leaves direct quotations byte-for-byte unchanged", () => {
+  const original = "She said, \u201cThe model is misaligned.\u201d The model is misaligned.";
+  assert.ok(acceptRewrite(original, "She said, \u201cThe model is misaligned.\u201d The model has a bug."));
+  assert.ok(!acceptRewrite(original, "She said, \u201cThe model has a bug.\u201d The model has a bug."));
+  const nested = 'She said, \u201cThey called the model "misaligned" yesterday.\u201d';
+  assert.ok(!acceptRewrite(nested, 'She said, \u201cThey called the model "has a bug" yesterday.\u201d'));
+  const british = "She said, ‘The model is misaligned.’";
+  assert.ok(!acceptRewrite(british, "She said, ‘The model has a bug.’"));
+});
+
+test("does not send ambiguous non-AI prose to the model", () => {
+  assert.ok(!needsModel("The patient reported hallucinations after taking the medication.", "The patient reported hallucinations after taking the medication."));
+  assert.ok(!needsModel("Researchers used deception in the human control group.", "Researchers used deception in the human control group."));
+});
+
 test("rejects rewrites that invent or drop details", () => {
   // Real outputs from Qwen2.5 0.5B that got facts wrong.
   assert.ok(!acceptRewrite(
@@ -39,7 +67,7 @@ test("rejects rewrites that invent or drop details", () => {
 
 test("rejects rewrites that drop, add or restyle quotation marks", () => {
   const original = "\u201cThe model is misaligned,\u201d she said, calling it \"rogue.\"";
-  assert.ok(acceptRewrite(original, "\u201cThe model has a bug,\u201d she said, calling it \"rogue.\""));
+  assert.ok(!acceptRewrite(original, "\u201cThe model has a bug,\u201d she said, calling it \"rogue.\""));
   assert.ok(!acceptRewrite(original, "The model has a bug, she said, calling it \"rogue.\""));
   assert.ok(!acceptRewrite(original, "\"The model has a bug,\" she said, calling it \"rogue.\""));
   assert.ok(!acceptRewrite("The model is misaligned, she said.", "\"The model has a bug,\" she said."));
