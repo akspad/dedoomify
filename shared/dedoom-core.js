@@ -126,7 +126,7 @@
     ["AI catastrophe", "AI incident"],
     ["AI disaster", "AI incident"],
     ["AI Armageddon", "AI outage"],
-    ["armageddon", "outage"],
+
     ["judgment day", "release day"],
     ["judgement day", "release day"],
     ["the end times", "the end of the quarter"],
@@ -286,11 +286,11 @@
     ["their\\s+(?:own\\s+)?preservation", "their uptime"],
     ["AI deception", "misleading AI output"],
     ["strategic deception", "strategically misleading output"],
-    ["deceptive behaviour", "misleading output"],
-    ["deceptive behavior", "misleading output"],
-    ["deceptive output", "misleading output"],
-    ["deception", "misleading output"],
-    ["deceptive", "misleading"],
+
+
+
+
+
     ["treacherous turn", "late-surfacing bug"],
     ["alignment faking", "training-time inconsistency"],
     ["sleeper agents", "backdoored models"],
@@ -301,8 +301,8 @@
     ["sandbagging", "underperforming"],
     ["mesa-optimizers", "sub-components"],
     ["mesa-optimizer", "sub-component"],
-    ["hallucinations", "errors"],
-    ["hallucination", "error"],
+    ["AI hallucinations", "AI errors"],\n    ["AI hallucination", "AI error"],\n    ["model hallucinations", "model errors"],\n    ["model hallucination", "model error"],
+
     ["hallucinates", "fabricates"],
     ["hallucinated", "fabricated"],
     ["hallucinating", "fabricating"],
@@ -459,7 +459,7 @@
     ["sabotage evaluations", "breakage evaluations"],
     ["sabotage evals", "breakage evals"],
     ["acts of sabotage", "breakages"],
-    ["sabotage", "breakage"],
+
     ["reward tampering", "scoring-bug exploitation"],
     byAI("tampered with", "edited"),
     byAI("tampers with", "edits"),
@@ -621,7 +621,7 @@
 
     // Races are product cycles.
     ["AI arms race", "AI product race"],
-    ["arms race", "product race"],
+
 
     // Scheming comes last so the verbs after it ("scheming to escape") are
     // rewritten while the AI subject is still in view.
