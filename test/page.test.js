@@ -90,6 +90,16 @@ test("the frame's policy allows only the hover card's script", () => {
   assert.equal(scripts[0].attributes.length, 0);
 });
 
+test("does not rewrite direct quotations in page view", () => {
+  const html = '<html><head><title>AI story</title></head><body><p>She said, “the model is misaligned.” Outside the quote, the model is misaligned.</p></body></html>';
+  const { html: rendered } = renderPage(html, "https://example.com/story");
+  const { document } = parseHTML(rendered);
+  const p = document.querySelector("p");
+  assert.match(p.textContent, /“the model is misaligned\.”/);
+  assert.match(p.textContent, /Outside the quote, the model has a bug\./);
+  assert.equal(p.querySelectorAll("mark.dd").length, 1);
+});
+
 test("groups break at block elements but not inline ones", () => {
   const document = apply("<div>AI is <b>very</b> smart<p>and is</p> misaligned</div>", () => {});
   const groups = collectGroups(document.querySelector("div")).map((g) => g.map((n) => n.nodeValue).join(""));
