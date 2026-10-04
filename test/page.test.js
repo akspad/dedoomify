@@ -251,3 +251,18 @@ test("responsive and picture-only images use the same public-only proxy", () => 
   assert.equal(document.getElementById("bad").getAttribute("src"), null);
   assert.equal(document.querySelectorAll("source, [srcset], [data-srcset], [data-lazy-srcset]").length, 0);
 });
+
+test("responsive candidates fit page width and density instead of oversized originals", () => {
+  for (const [candidates, chosen] of [
+    ["small.jpg 480w, original.jpg 2400w", "small.jpg"],
+    ["original.jpg 2400w, small.jpg 480w", "small.jpg"],
+    ["small.jpg 480w, fit.jpg 960w, original.jpg 2400w", "fit.jpg"],
+    ["huge.jpg 3000w, smaller.jpg 1200w", "smaller.jpg"],
+    ["normal.jpg 1x, retina.jpg 2x, original.jpg 4x", "normal.jpg"],
+    ["original.jpg 4x, retina.jpg 2x", "retina.jpg"],
+    ["invalid.jpg 0w, small.jpg 480w", "small.jpg"],
+  ]) {
+    const { document } = parseHTML(renderPage(`<html><body><img srcset="${candidates}"></body></html>`, "https://example.com/").html);
+    assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + chosen));
+  }
+});
