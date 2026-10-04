@@ -322,3 +322,14 @@ test("img src supplies an implicit 1x fallback only for density sets", () => {
     assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
   }
 });
+
+test("picture selection only considers direct sources preceding the img", () => {
+  for (const [markup, path] of [
+    ['<picture><img src="current.jpg"><source srcset="stale.jpg"></picture>', "current.jpg"],
+    ['<picture><span><source srcset="nested.jpg"></span><img src="current.jpg"></picture>', "current.jpg"],
+    ['<picture><source srcset="before.jpg"><img src="current.jpg"><source srcset="after.jpg"></picture>', "before.jpg"],
+  ]) {
+    const { document } = parseHTML(renderPage(`<html><body>${markup}</body></html>`, "https://example.com/").html);
+    assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
+  }
+});
