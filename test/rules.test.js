@@ -306,3 +306,13 @@ test("leading elisions stay ordinary prose while punctuated speech stays protect
     assert.equal(dedoomText(speech), speech.replace("Outside it is misaligned", "Outside it has a bug"));
   }
 });
+
+test("adversarial unmatched single quotes are scanned within a linear work budget", () => {
+  const payload = "'a ".repeat(30_000); // Accepted by the 100,000-character POST limit.
+  const start = performance.now();
+  const segments = globalThis.Dedoom.quoteProtectedSegments(payload);
+  assert.equal(segments.map((segment) => segment.text).join(""), payload);
+  assert.ok(performance.now() - start < 1500, "90,000 characters must not consume seconds of CPU");
+  const whitespace = "'risks'" + " ".repeat(80_000) + "feedback";
+  assert.equal(globalThis.Dedoom.quoteProtectedSegments(whitespace).map((segment) => segment.text).join(""), whitespace);
+});

@@ -730,38 +730,52 @@
   // closing quote. Internal apostrophes, possessives and abbreviated years
   // are ordinary prose. Curly apostrophes use the same closing-boundary check.
   function wordChar(ch) { return !!ch && /[\p{L}\p{N}_]/u.test(ch); }
-  function singleQuoteEnd(text, start, close) {
-    close = close || "'";
-    if (wordChar(text[start - 1]) || !text[start + 1] || /\s/.test(text[start + 1])) return -1;
-    if (close === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
-    var elision = /^(?:twas|tis|twere|twill|twould|em|cause|cos|til|bout)\b/i.test(text.slice(start + 1));
-    var reportedSpeech = /(?:[,:]|\b(?:said|says|wrote|writes|told|tells|asked|asks|replied|replies|stated|states|quoted|quotes|report(?:ed|s)?|remark(?:ed|s)?|claim(?:ed|s)?|explain(?:ed|s)?|whisper(?:ed|s)?|shout(?:ed|s)?|note(?:d|s)?|add(?:ed|s)?|respond(?:ed|s)?|declare(?:d|s)?|announce(?:d|s)?|recount(?:ed|s)?))\s*$/i.test(text.slice(0, start));
-    var candidate = -1;
-    for (var j = start + 1; j < text.length; j++) {
-      if (text[j] !== close || wordChar(text[j + 1]) || /\s/.test(text[j - 1])) continue;
-      candidate = j;
-      // A later unambiguous delimiter can prove this is an inner possessive.
-      // When every delimiter could be a possessive, preserve the entire
-      // plausible quotation. Ambiguous surrounding prose can be left alone;
-      // choosing an earlier delimiter could rewrite a speaker's words.
-      if (/s/i.test(text[j - 1]) && /^\s+\p{L}/u.test(text.slice(j + 1))) continue;
-      // An elision followed only by a possessive is ordinary prose. Clear
-      // closing punctuation, a non-possessive ending or a reporting verb
-      // still permits speech beginning with an elision.
-      return elision && !reportedSpeech && /s/i.test(text[j - 1]) ? -1 : j;
+  function singleQuoteEnds(text) {
+    var endings = new Map();
+    // Record speech introductions once, including arbitrary whitespace, rather
+    // than repeatedly scanning the prefix at each possible opening apostrophe.
+    var reported = new Set();
+    var introductions = /(?:[,:]|\b(?:said|says|wrote|writes|told|tells|asked|asks|replied|replies|stated|states|quoted|quotes|report(?:ed|s)?|remark(?:ed|s)?|claim(?:ed|s)?|explain(?:ed|s)?|whisper(?:ed|s)?|shout(?:ed|s)?|note(?:d|s)?|add(?:ed|s)?|respond(?:ed|s)?|declare(?:d|s)?|announce(?:d|s)?|recount(?:ed|s)?))\s*/gi;
+    var match;
+    while ((match = introductions.exec(text))) reported.add(introductions.lastIndex);
+    var clear = { "'": -1, "\u2019": -1 };
+    var last = { "'": -1, "\u2019": -1 };
+    var nextNonSpace = -1;
+    // A reverse pass caches the nearest clear ending and the farthest ambiguous
+    // one for each quote kind. Every character is visited once, even when there
+    // are thousands of unmatched openers or long runs of whitespace.
+    for (var j = text.length - 1; j >= 0; j--) {
+      var ch = text[j];
+      if ((ch === "'" || ch === "\u2018") && !wordChar(text[j - 1]) && text[j + 1] && !/\s/.test(text[j + 1])) {
+        var close = ch === "'" ? "'" : "\u2019";
+        var year = ch === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(j + 1, j + 6));
+        var elision = /^(?:twas|tis|twere|twill|twould|em|cause|cos|til|bout)\b/i.test(text.slice(j + 1, j + 14));
+        var end = clear[close] >= 0 ? clear[close] : last[close];
+        // An elision followed only by a possessive is ordinary prose. Clear
+        // non-possessive endings and reporting context still permit speech.
+        if (elision && !reported.has(j) && (clear[close] < 0 || /s/i.test(text[end - 1]))) end = -1;
+        if (!year && end >= 0) endings.set(j, end);
+      }
+      if ((ch === "'" || ch === "\u2019") && !wordChar(text[j + 1]) && !/\s/.test(text[j - 1])) {
+        if (last[ch] < 0) last[ch] = j;
+        var ambiguous = /s/i.test(text[j - 1]) && /\s/.test(text[j + 1]) && nextNonSpace >= 0 && /\p{L}/u.test(text[nextNonSpace]);
+        if (!ambiguous) clear[ch] = j;
+      }
+      if (!/\s/.test(ch)) nextNonSpace = j;
     }
-    return elision && !reportedSpeech ? -1 : candidate;
+    return endings;
   }
   function quoteProtectedSegments(input) {
     var text = String(input);
     var segments = [];
+    var singleEnds = singleQuoteEnds(text);
     var start = 0;
     var quoted = false;
     var close = "";
     var singleEnd = -1;
     for (var i = 0; i < text.length; i++) {
       var ch = text.charAt(i);
-      if (!quoted && (ch === "'" || ch === "\u2018")) singleEnd = singleQuoteEnd(text, i, ch === "'" ? "'" : "\u2019");
+      if (!quoted && (ch === "'" || ch === "\u2018")) singleEnd = singleEnds.get(i) ?? -1;
       if (!quoted && ((ch === "'" && singleEnd >= 0) || ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
         if (i > start) segments.push({ text: text.slice(start, i) });
         quoted = true;
