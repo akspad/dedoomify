@@ -211,7 +211,7 @@ test("model validation protects inner possessives combined with final-s speech",
   }
   const nested = "She wrote, 'The users' misalignment feedback includes 'bug risks' and misalignment risks' in her report.";
   assert.ok(!acceptRewrite(nested, nested.replace("misalignment feedback", "bug feedback")));
-  const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned and users' reports agree.";
+  const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned.";
   assert.ok(acceptRewrite(clear, clear.replace("is misaligned", "has a bug")));
 });
 
@@ -228,6 +228,14 @@ test("leading elisions do not create model quote boundaries", () => {
 test("punctuated possessives cannot expose quoted facts to model edits", () => {
   for (const punctuation of [";", "—", "."]) {
     const original = `She said, 'The result belongs to the users'${punctuation} the model is misaligned.' Outside it is misaligned.`;
+    assert.ok(!acceptRewrite(original, original.replace("model is misaligned", "model has a bug")));
+    assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
+  }
+});
+
+test("model validation preserves quote-adjacent padding and multiline speech", () => {
+  for (const [leading, trailing] of [[" ", ""], ["", " "], ["\n", "\n"], ["\t", "\t"]]) {
+    const original = `She said, '${leading}The model is misaligned.${trailing}' Outside it is misaligned.`;
     assert.ok(!acceptRewrite(original, original.replace("model is misaligned", "model has a bug")));
     assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
   }

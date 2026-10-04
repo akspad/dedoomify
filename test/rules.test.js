@@ -293,7 +293,7 @@ test("inner possessives and final-s endings preserve complete direct speech", ()
   }
   const nested = "She wrote, 'The users' misalignment feedback includes 'bug risks' and misalignment risks' in her report.";
   assert.equal(dedoomText(nested), nested);
-  const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned and users' reports agree.";
+  const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned.";
   assert.equal(dedoomText(clear), clear.replace("is misaligned", "has a bug"));
 });
 
@@ -324,4 +324,18 @@ test("punctuated plural and name possessives stay inside direct speech", () => {
       assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
     }
   }
+});
+
+test("whitespace and line breaks inside speech stay protected", () => {
+  for (const [leading, trailing] of [[" ", ""], ["", " "], ["\n", "\n"], ["\t  ", "  \t"]]) {
+    const original = `She said, '${leading}The model is misaligned.${trailing}' Outside it is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+  }
+  for (const original of [
+    "She said, ' Misalignment risks ' and ' The model is misaligned. ' Outside it is misaligned.",
+    "She said, 'Misalignment risks' and then stated,' The model is misaligned. ' Outside it is misaligned.",
+    "'Cause the model is misaligned' and users' feedback agreed. Outside it is misaligned.",
+    "She said, '\nThe users' feedback says the model is misaligned.\n' Outside it is misaligned.",
+  ]) assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+  assert.equal(dedoomText("Don't worry: users' feedback says it is misaligned."), "Don't worry: users' feedback says it has a bug.");
 });

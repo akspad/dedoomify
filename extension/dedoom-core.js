@@ -740,28 +740,36 @@
     while ((match = introductions.exec(text))) reported.add(introductions.lastIndex);
     var clear = { "'": -1, "\u2019": -1 };
     var last = { "'": -1, "\u2019": -1 };
-    // A reverse pass caches the nearest clear ending and the farthest ambiguous
-    // one for each quote kind. Every character is visited once, even when there
+    var nextNonSpace = -1;
+    // A reverse pass caches the outermost ending and elision evidence
+    // for each quote kind. Every character is visited once, even when there
     // are thousands of unmatched openers or long runs of whitespace.
     for (var j = text.length - 1; j >= 0; j--) {
       var ch = text[j];
-      if ((ch === "'" || ch === "\u2018") && !wordChar(text[j - 1]) && text[j + 1] && !/\s/.test(text[j + 1])) {
+      if ((ch === "'" || ch === "\u2018") && !wordChar(text[j - 1]) && nextNonSpace >= 0) {
         var close = ch === "'" ? "'" : "\u2019";
-        var year = ch === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(j + 1, j + 6));
-        var elision = /^(?:twas|tis|twere|twill|twould|em|cause|cos|til|bout)\b/i.test(text.slice(j + 1, j + 14));
-        var end = clear[close] >= 0 ? clear[close] : last[close];
+        var year = ch === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(nextNonSpace, nextNonSpace + 5));
+        var elision = /^(?:twas|tis|twere|twill|twould|em|cause|cos|til|bout)\b/i.test(text.slice(nextNonSpace, nextNonSpace + 13));
+        // Protect the outermost plausible pair. Internal apostrophes, padded
+        // delimiters and nested fragments cannot expose quoted wording. This
+        // can leave intervening unquoted prose unchanged; preservation wins.
+        var end = last[close];
         // An elision followed only by a possessive is ordinary prose. Clear
         // non-possessive endings and reporting context still permit speech.
-        if (elision && !reported.has(j) && (clear[close] < 0 || /s/i.test(text[end - 1]))) end = -1;
+        if (elision && !reported.has(j) && clear[close] < 0) end = -1;
         if (!year && end >= 0) endings.set(j, end);
       }
-      if ((ch === "'" || ch === "\u2019") && !wordChar(text[j + 1]) && !/\s/.test(text[j - 1])) {
+      if ((ch === "'" || ch === "\u2019") && !wordChar(text[j + 1])) {
         if (last[ch] < 0) last[ch] = j;
-        // A plural/name possessive can precede punctuation as well as a
-        // noun. Retain it as a plausible inner apostrophe in either case.
-        var ambiguous = /s/i.test(text[j - 1]);
+        // Whitespace may pad an ending or a new opening. Keep such boundaries
+        // ambiguous, so a padded opener cannot expose the following speech.
+        // An apostrophe after s also remains a plausible inner possessive.
+        var before = j - 1;
+        while (before >= 0 && /\s/.test(text[before])) before--;
+        var ambiguous = /s/i.test(text[before]) || /\s/.test(text[j - 1]);
         if (!ambiguous) clear[ch] = j;
       }
+      if (!/\s/.test(ch)) nextNonSpace = j;
     }
     return endings;
   }
