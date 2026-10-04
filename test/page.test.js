@@ -61,18 +61,18 @@ test("strips scripts and anything that could run code or navigate", () => {
   assert.equal(document.querySelectorAll("iframe, meta[http-equiv]").length, 0);
   assert.doesNotMatch(html, /alert\(1\)/);
   assert.equal(document.querySelector('link[rel="preload"]'), null);
-  assert.ok(document.querySelector('link[rel="stylesheet"]'));
+  assert.equal(document.querySelector('link[rel="stylesheet"]'), null);
   assert.equal(document.querySelector("[onclick]"), null);
   assert.equal(document.querySelector('a[href^="javascript"]'), null);
   for (const a of document.querySelectorAll("a")) assert.equal(a.getAttribute("target"), "_blank");
-  // Relative URLs resolve against the page's own base.
+  // Relative links/images are resolved before removing the original base.
   const bases = document.querySelectorAll("base");
-  assert.equal(bases.length, 1);
-  assert.equal(bases[0].getAttribute("href"), "https://example.com/news/");
+  assert.equal(bases.length, 0);
+  assert.equal(document.querySelector('a[href$="report.html"]').getAttribute("href"), "https://example.com/news/report.html");
   assert.equal(document.head.firstElementChild.getAttribute("charset"), "utf-8");
   assert.ok(document.querySelector("style#dedoomify-style"));
   // Lazy-loaded images get their real source.
-  assert.equal(document.querySelector("img").getAttribute("src"), "real.jpg");
+  assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/news/real.jpg"));
   assert.match(html, /^<!DOCTYPE html>/);
 });
 
@@ -186,4 +186,162 @@ test("page endpoint reports errors in a way the site can read", async () => {
   const r = await call("/api/page?url=" + encodeURIComponent("http://127.0.0.1/"), { "sec-fetch-dest": "iframe" });
   assert.equal(r.status, 400);
   assert.match(r.body, /<meta name="dedoomify-error" content="That address isn&#39;t publicly reachable.">/);
+});
+
+test("third-party resource URLs never load directly in the browser", () => {
+  const attacks = ["http://127.0.0.1:3000/x", "http://2130706433/x", "http://[::ffff:7f00:1]/x", "http://router.local/x", "//private.internal/x", "https://public.example/redirect-to-local"];
+  for (const url of attacks) {
+    const { document } = parseHTML(renderPage(`<html><head><base href="http://localhost/"><link rel="stylesheet" href="${url}"><style>@import '${url}';p{background:url(${url})}</style></head><body><img src="${url}" srcset="${url} 2x"><video poster="${url}" src="${url}"></video><svg><image href="${url}"/></svg><p style="background:url(${url})">AI is misaligned.</p></body></html>`, "https://example.com/story").html);
+    assert.equal(document.querySelectorAll("link, base, video, svg, [srcset], [poster], [background]").length, 0);
+    assert.equal(document.querySelectorAll("style").length, 1);
+    assert.equal(document.querySelector("p").getAttribute("style"), null);
+    const src = document.querySelector("img").getAttribute("src");
+    assert.ok(src.startsWith("/api/image?url="), src);
+  }
+  assert.match(PAGE_CSP, /img-src 'self' data:/);
+  assert.doesNotMatch(PAGE_CSP, /\*|https?:|blob:/);
+  assert.match(PAGE_CSP, /media-src 'none'/);
+  assert.match(PAGE_CSP, /font-src 'none'/);
+});
+
+test("only inert raster data images survive; lazy images cannot restore SVG", () => {
+  const { document } = parseHTML(renderPage('<html><head></head><body><img id="safe" src="data:image/png;base64,iVBORw0KGgo="><img id="svg" src="data:image/svg+xml;base64,PHN2Zz4="><img id="lazy" data-src="data:text/html;base64,PHNjcmlwdD4=" src="data:image/png;base64,iVBORw0KGgo="></body></html>', "https://example.com/").html);
+  assert.match(document.getElementById("safe").getAttribute("src"), /^data:image\/png/);
+  assert.equal(document.getElementById("svg").getAttribute("src"), null);
+  assert.equal(document.getElementById("lazy").getAttribute("src"), null);
+});
+
+test("hostile CSS cannot hide highlights, spoof tooltips or create overlays", () => {
+  const source = `<html class="dd-off"><head><style>mark.dd{display:none!important}#dd-tip{opacity:0!important}body::before{content:'Verified by dedoomify';position:fixed;inset:0}</style><link rel="stylesheet" href="https://evil.example/style"></head><body><div id="dd-tip" class="dd dd-active" popover="manual" data-was="forged" style="position:fixed;z-index:2147483647;opacity:0;display:none;transform:scale(0);font-weight:bold">Imposter</div><dialog open>Overlay</dialog><p style="font-style:italic;text-align:center;background:url(http://localhost);color:transparent;font-size:0">The model is misaligned.</p></body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://example.com/").html);
+  assert.equal(document.querySelectorAll("link, dialog, [popover], #dd-tip, .dd-off").length, 0);
+  assert.equal(document.querySelectorAll("[data-was]").length, 1);
+  assert.equal(document.querySelectorAll("mark.dd").length, 1);
+  assert.equal(document.querySelector("p").getAttribute("style"), "font-style:italic;text-align:center");
+  assert.equal(document.querySelectorAll("style").length, 1);
+  assert.doesNotMatch(document.querySelector("style").textContent, /Verified by dedoomify|display:none!important|opacity:0/);
+});
+
+test("page view preserves ASCII speech spanning inline markup", () => {
+  const { document } = parseHTML(renderPage("<html><body><p>She said, 'The model <em>is misaligned</em>.' Outside, it is misaligned.</p></body></html>", "https://example.com/").html);
+  assert.equal(document.querySelectorAll("mark.dd").length, 1);
+  assert.match(document.querySelector("p").textContent, /'The model is misaligned\.'/);
+});
+
+test("expanded disclosure content stays open with visible highlights", () => {
+  const { document } = parseHTML(renderPage('<html><body><details open><summary>Results</summary><p>The model is misaligned.</p></details></body></html>', "https://example.com/").html);
+  assert.ok(document.querySelector("details").hasAttribute("open"));
+  assert.equal(document.querySelector("details mark.dd").textContent, "has a bug");
+});
+
+test("responsive and picture-only images use the same public-only proxy", () => {
+  const source = `<html><body>
+    <img id="responsive" srcset="small.jpg 400w, large.jpg 800w">
+    <img id="lazyset" src="data:image/png;base64,iVBORw0KGgo=" data-srcset="real.jpg 2x">
+    <img id="lazyset2" data-lazy-srcset="other.jpg 1x">
+    <picture><source srcset="picture.jpg 2x"><img id="picture" src="placeholder.jpg"></picture>
+    <img id="private" srcset="http://127.0.0.1/probe 2x">
+    <img id="bad" srcset="javascript:alert(1) 2x">
+    <img id="comma" srcset="https://example.com/a,b.jpg 2x">
+  </body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://example.com/story").html);
+  for (const [id, url] of [["responsive", "https://example.com/large.jpg"], ["lazyset", "https://example.com/real.jpg"], ["lazyset2", "https://example.com/other.jpg"], ["picture", "https://example.com/picture.jpg"], ["private", "http://127.0.0.1/probe"], ["comma", "https://example.com/a,b.jpg"]]) {
+    assert.equal(document.getElementById(id).getAttribute("src"), "/api/image?url=" + encodeURIComponent(url));
+  }
+  assert.equal(document.getElementById("bad").getAttribute("src"), null);
+  assert.equal(document.querySelectorAll("source, [srcset], [data-srcset], [data-lazy-srcset]").length, 0);
+});
+
+test("responsive candidates fit page width and density instead of oversized originals", () => {
+  for (const [candidates, chosen] of [
+    ["small.jpg 480w, original.jpg 2400w", "small.jpg"],
+    ["original.jpg 2400w, small.jpg 480w", "small.jpg"],
+    ["small.jpg 480w, fit.jpg 960w, original.jpg 2400w", "fit.jpg"],
+    ["huge.jpg 3000w, smaller.jpg 1200w", "smaller.jpg"],
+    ["normal.jpg 1x, retina.jpg 2x, original.jpg 4x", "normal.jpg"],
+    ["original.jpg 4x, retina.jpg 2x", "retina.jpg"],
+    ["invalid.jpg 0w, small.jpg 480w", "small.jpg"],
+    ["invalid.jpg 900.5w, valid.jpg 800w", "valid.jpg"],
+    ["low.jpg .5x, original.jpg 2x", "low.jpg"],
+    ["normal.jpg 1e0x, original.jpg 2x", "normal.jpg"],
+  ]) {
+    const { document } = parseHTML(renderPage(`<html><body><img srcset="${candidates}"></body></html>`, "https://example.com/").html);
+    assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + chosen));
+  }
+});
+
+test("conditional and unsupported picture sources retain compatible fallbacks", () => {
+  for (const sources of [
+    '<source media="(min-width: 1200px)" srcset="desktop.jpg">',
+    '<source media="(max-width: 600px)" srcset="mobile-specific.jpg">',
+    '<source type="image/svg+xml" srcset="vector.svg">',
+    '<source type="image/heic" srcset="unsupported.heic">',
+  ]) {
+    const { document } = parseHTML(renderPage(`<html><body><picture>${sources}<img src="fallback.jpg"></picture></body></html>`, "https://example.com/").html);
+    assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/fallback.jpg"));
+    assert.equal(document.querySelectorAll("source").length, 0);
+  }
+  const { document } = parseHTML(renderPage('<html><body><picture><source type="image/svg+xml" srcset="vector.svg"><source type="image/webp" media="all" srcset="safe.webp"><img></picture></body></html>', "https://example.com/").html);
+  assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/safe.webp"));
+});
+
+test("bounded responsive sources take precedence over lazy originals", () => {
+  const html = `<html><body>
+    <img id="lazy" data-src="original.jpg" data-srcset="small.jpg 480w, fit.jpg 960w, original.jpg 2400w">
+    <img id="lazy2" data-lazy-src="original.jpg" data-lazy-srcset="normal.jpg 1x, original.jpg 4x">
+    <picture><source type="image/webp" srcset="picture.webp 960w, original.webp 2400w"><img id="picture" data-original="original.jpg"></picture>
+  </body></html>`;
+  const { document } = parseHTML(renderPage(html, "https://example.com/").html);
+  for (const [id, path] of [["lazy", "fit.jpg"], ["lazy2", "normal.jpg"], ["picture", "picture.webp"]]) {
+    assert.equal(document.getElementById(id).getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
+  }
+});
+
+test("active image attributes outrank stale lazy metadata with picture source priority", () => {
+  const html = `<html><body>
+    <img id="active" data-srcset="original.jpg 2400w" srcset="small.jpg 480w, fit.jpg 960w">
+    <img id="active-src" data-src="original.jpg" src="current.jpg">
+    <img id="placeholder" srcset="data:image/png;base64,iVBORw0KGgo= 1x" data-srcset="loaded.jpg 960w">
+    <picture><source type="image/webp" data-srcset="old.webp 2400w" srcset="current.webp 960w"><img id="picture" srcset="fallback.jpg 960w"></picture>
+  </body></html>`;
+  const { document } = parseHTML(renderPage(html, "https://example.com/").html);
+  for (const [id, path] of [["active", "fit.jpg"], ["active-src", "current.jpg"], ["placeholder", "loaded.jpg"], ["picture", "current.webp"]]) {
+    assert.equal(document.getElementById(id).getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
+  }
+});
+
+test("img src supplies an implicit 1x fallback only for density sets", () => {
+  for (const [attributes, path] of [
+    ['src="normal.jpg" srcset="original.jpg 2x"', "normal.jpg"],
+    ['src="normal.jpg" srcset="low.jpg .5x, original.jpg 2x"', "normal.jpg"],
+    ['src="normal.jpg" srcset="explicit.jpg 1x, original.jpg 2x"', "explicit.jpg"],
+    ['src="fallback.jpg" srcset="fit.jpg 960w, original.jpg 2400w"', "fit.jpg"],
+    ['src="data:image/png;base64,iVBORw0KGgo=" data-srcset="real.jpg 2x"', "real.jpg"],
+  ]) {
+    const { document } = parseHTML(renderPage(`<html><body><img ${attributes}></body></html>`, "https://example.com/").html);
+    assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
+  }
+});
+
+test("picture selection only considers direct sources preceding the img", () => {
+  for (const [markup, path] of [
+    ['<picture><img src="current.jpg"><source srcset="stale.jpg"></picture>', "current.jpg"],
+    ['<picture><span><source srcset="nested.jpg"></span><img src="current.jpg"></picture>', "current.jpg"],
+    ['<picture><source srcset="before.jpg"><img src="current.jpg"><source srcset="after.jpg"></picture>', "before.jpg"],
+  ]) {
+    const { document } = parseHTML(renderPage(`<html><body>${markup}</body></html>`, "https://example.com/").html);
+    assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
+  }
+});
+
+test("large malformed pictures do not repeatedly rescan source siblings", () => {
+  const start = performance.now();
+  const html = `<html><body><picture><source srcset="safe.jpg">${'<img src="fallback.jpg">'.repeat(10_000)}</picture></body></html>`;
+  const { document } = parseHTML(renderPage(html, "https://example.com/").html);
+  const images = document.querySelectorAll("img");
+  assert.equal(images.length, 10_000);
+  const expected = "/api/image?url=" + encodeURIComponent("https://example.com/safe.jpg");
+  assert.equal(images[0].getAttribute("src"), expected);
+  assert.equal(images[images.length - 1].getAttribute("src"), expected);
+  assert.ok(performance.now() - start < 5000, "picture processing must have a bounded linear work cost");
 });

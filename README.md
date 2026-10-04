@@ -15,8 +15,7 @@ language an engineer would use about software with defects:
 | What's your **p(doom)**? | What's your **estimated failure rate**? |
 
 Designed to preserve names, numbers and factual claims while changing the
-framing. Direct quotations are left untouched. The article keeps its original
-look, with every change highlighted in
+framing. Direct quotations are left untouched. Single-quoted passages use the outermost plausible pair to preserve speech across possessives, nested fragments and whitespace padding. Intervening prose may also stay unchanged. Page view keeps article markup and images with safe formatting, with every change highlighted in
 place; hover a highlight to see the original words. A reader view shows just the text.
 
 You can also [add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl) to de-doom the page you're reading with one click.
@@ -31,7 +30,7 @@ homepage; click it for the [MP4](public/demo.mp4).*
 ## How it works
 
 ```
-browser ──► /api/page?url=…   ──► fetch page ──► strip scripts ──► phrase rules ──► HTML in a sandboxed frame
+browser ──► /api/page?url=…   ──► fetch page ──► sanitize + proxy images ──► phrase rules ──► HTML in a sandboxed frame
                                    (public hosts                    (marked in place)
 browser ──► /api/dedoom?url=… ──►  only)      ──► extract article ──► phrase rules ──► JSON (reader view)
    │
@@ -67,11 +66,22 @@ Files:
   `privacy.html`, and the homepage demo clip (`demo.mp4`, with `demo.webm` for
   browsers without H.264, and `demo-poster.jpg`). `npm run build` copies the
   shared scripts and WebLLM into `public/vendor/`.
-- **`api/page.js`** returns the original page with its scripts, frames and
+- **`api/page.js`** returns article markup with third-party CSS, active media, scripts, frames and
   event handlers removed and the phrase rules applied in place
   (`lib/page.js`, `shared/page-dedoom.js`). It is only served into
-  dedoomify's own sandboxed frame, under a policy that allows no scripts;
+  dedoomify's own sandboxed frame, under a policy that allows only the hash-pinned tooltip script;
   opening it directly redirects to the site.
+- **`api/image.js`** serves raster images through the same public-only, DNS-pinned
+  fetch path, checking every redirect and limiting images to 2 MB. The frame
+  cannot load remote styles, fonts or media; inline styling uses a small formatting
+  allowlist. Source pages cannot forge generated highlights or tooltip IDs.
+- **`lib/rate-limit.js`** throttles article requests to 30 per minute per client
+  and images to 120, before fetching or calling a model. Local servers trust the
+  socket address; Vercel trusts its overwritten forwarding header. Counters are
+  bounded and never evict active quotas. These process-local counters supplement
+  a Vercel WAF rule covering all three fetch endpoints: 180 requests per minute
+  per IP per edge region, enforced before functions run. Cached responses also
+  count at the edge. The single combined rule fits the current hosting plan.
 - **`api/dedoom.js`** extracts the article text for reader view. `GET ?url=` fetches and
   rewrites an article (responses are cacheable at the CDN for a day);
   `POST {text}` rewrites pasted text.

@@ -126,7 +126,7 @@ test("rewrites more doom framing", () => {
     ["Gemini tried to preserve other AI models from deletion.", "Gemini tried to keep other AI models running."],
     ["Models protected fellow models from shutdown.", "Models kept fellow models running."],
     ["The models showed peer preservation.", "The models showed peer uptime."],
-    ["OpenAI published a site devoted to \u201cmisalignment reports\u201d.", "OpenAI published a site devoted to \u201cbug reports\u201d."],
+    ["OpenAI published a site devoted to \u201cmisalignment reports\u201d.", "OpenAI published a site devoted to \u201cmisalignment reports\u201d."],
     ["Misalignment risks are rising.", "Bug risks are rising."],
     ["They study misalignment.", "They study bugs."],
     ["Misalignment is real.", "Bugs are real."],
@@ -234,4 +234,108 @@ test("every plain phrase rule can find its own phrase", () => {
     assert.ok(hasDoom(pattern), pattern);
     assert.ok(hasDoom(pattern.toUpperCase()), pattern.toUpperCase());
   }
+});
+
+test("preserves paired ASCII speech without treating apostrophes as quotes", () => {
+  const cases = [
+    ["She said, 'The model is misaligned.' The model is misaligned.", "She said, 'The model is misaligned.' The model has a bug."],
+    ["'The model isn't misaligned,' she said. It is misaligned.", "'The model isn't misaligned,' she said. It has a bug."],
+    ["The model's output is misaligned and users' feedback is misaligned.", "The model's output has a bug and users' feedback has a bug."],
+    ["Don't worry: it is misaligned.", "Don't worry: it has a bug."],
+    ["In '26 it is misaligned; in '27 it is misaligned.", "In '26 it has a bug; in '27 it has a bug."],
+    ["She said ‘The model isn’t misaligned.’ It is misaligned.", "She said ‘The model isn’t misaligned.’ It has a bug."],
+    ["She said, 'The model is misaligned. It is misaligned.", "She said, 'The model has a bug. It has a bug."],
+    ["She said, 'The model is misaligned.' Then 'It is misaligned.'", "She said, 'The model is misaligned.' Then 'It is misaligned.'"],
+  ];
+  for (const [before, after] of cases) assert.equal(dedoomText(before), after, before);
+});
+
+test("possessives inside speech do not prematurely end quotations", () => {
+  for (const quote of [
+    "'The users' feedback is that the model is misaligned.'",
+    "'James' report says the model is misaligned.'",
+    "‘The users’ feedback is that the model is misaligned.’",
+    "'The model is misaligned for its users' she said.",
+  ]) assert.equal(dedoomText(`She said, ${quote} Outside it is misaligned.`), `She said, ${quote} Outside it has a bug.`);
+});
+
+test("speech ending in s is protected before ordinary continuations", () => {
+  for (const continuation of ["in her report", "but disagreed later", "according to the report", "and 'Misalignment matters.'"]) {
+    for (const [open, close] of [["'", "'"], ["‘", "’"]]) {
+      const quoted = `${open}Misalignment risks${close}`;
+      const original = `She wrote, ${quoted} ${continuation}. Outside it is misaligned.`;
+      assert.equal(dedoomText(original), `She wrote, ${quoted} ${continuation}. Outside it has a bug.`);
+    }
+  }
+});
+
+test("ambiguous quote endings conservatively preserve possible speech", () => {
+  const original = "She wrote, 'Misalignment risks' in a model that is misaligned and users' reports agree.";
+  assert.equal(dedoomText(original), original);
+});
+
+test("arbitrary continuations preserve every plausible quote boundary", () => {
+  for (const continuation of ["remain", "reported", "researchers", "triggered", "appear beside"]) {
+    const original = `She wrote, 'Misalignment risks' ${continuation} a model that is misaligned and users' concern.`;
+    assert.equal(dedoomText(original), original);
+  }
+});
+
+test("inner possessives and final-s endings preserve complete direct speech", () => {
+  for (const [open, close] of [["'", "'"], ["‘", "’"]]) {
+    for (const possessive of ["The users", "James", "Local users"]) {
+      for (const continuation of ["in her report", "during the briefing", "remain controversial"]) {
+        const quote = `${open}${possessive}${close} feedback covers misalignment risks${close}`;
+        const original = `She wrote, ${quote} ${continuation}. Outside it is misaligned.`;
+        assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+      }
+    }
+  }
+  const nested = "She wrote, 'The users' misalignment feedback includes 'bug risks' and misalignment risks' in her report.";
+  assert.equal(dedoomText(nested), nested);
+  const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned.";
+  assert.equal(dedoomText(clear), clear.replace("is misaligned", "has a bug"));
+});
+
+test("leading elisions stay ordinary prose while punctuated speech stays protected", () => {
+  for (const elision of ["'Twas", "'Tis", "'Twere", "'em", "'cause", "'til", "'bout"]) {
+    const original = `${elision} clear the model is misaligned and users' feedback agreed.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  for (const speech of ["She reported, 'Twas feedback on misalignment risks' in her report. Outside it is misaligned.", "She remarked 'Twas feedback on misalignment risks' in her report. Outside it is misaligned.", "The caption: 'Twas feedback on misalignment risks' in her report. Outside it is misaligned.", "She said, 'Twas clear the model is misaligned.' Outside it is misaligned.", "'Cause the AI is misaligned' Outside it is misaligned.", "She wrote, 'Twas feedback on misalignment risks' in her report. Outside it is misaligned."]) {
+    assert.equal(dedoomText(speech), speech.replace("Outside it is misaligned", "Outside it has a bug"));
+  }
+});
+
+test("adversarial unmatched single quotes are scanned within a linear work budget", () => {
+  const payload = "'a ".repeat(30_000); // Accepted by the 100,000-character POST limit.
+  const start = performance.now();
+  const segments = globalThis.Dedoom.quoteProtectedSegments(payload);
+  assert.equal(segments.map((segment) => segment.text).join(""), payload);
+  assert.ok(performance.now() - start < 1500, "90,000 characters must not consume seconds of CPU");
+  const whitespace = "'risks'" + " ".repeat(80_000) + "feedback";
+  assert.equal(globalThis.Dedoom.quoteProtectedSegments(whitespace).map((segment) => segment.text).join(""), whitespace);
+});
+
+test("punctuated plural and name possessives stay inside direct speech", () => {
+  for (const punctuation of [";", "—", ".", ",", ":"]) {
+    for (const owner of ["users", "James"]) {
+      const original = `She said, 'The result belongs to the ${owner}'${punctuation} the model is misaligned.' Outside it is misaligned.`;
+      assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+    }
+  }
+});
+
+test("whitespace and line breaks inside speech stay protected", () => {
+  for (const [leading, trailing] of [[" ", ""], ["", " "], ["\n", "\n"], ["\t  ", "  \t"]]) {
+    const original = `She said, '${leading}The model is misaligned.${trailing}' Outside it is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+  }
+  for (const original of [
+    "She said, ' Misalignment risks ' and ' The model is misaligned. ' Outside it is misaligned.",
+    "She said, 'Misalignment risks' and then stated,' The model is misaligned. ' Outside it is misaligned.",
+    "'Cause the model is misaligned' and users' feedback agreed. Outside it is misaligned.",
+    "She said, '\nThe users' feedback says the model is misaligned.\n' Outside it is misaligned.",
+  ]) assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+  assert.equal(dedoomText("Don't worry: users' feedback says it is misaligned."), "Don't worry: users' feedback says it has a bug.");
 });

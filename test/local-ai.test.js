@@ -131,3 +131,112 @@ test("the picker offers quick phrase rules first, then one on-device option runn
   assert.deepEqual(Object.keys(MODELS), ["qwen"]);
   assert.equal(DEFAULT_MODEL, "qwen");
 });
+
+test("keeps certainty, frequency, direction, comparison, causality and safety", () => {
+  const modifiers = [
+    ["likely", "unlikely"], ["uncertain", "certain"], ["possible", "impossible"],
+    ["always", "sometimes"], ["usually", "rarely"], ["often", "seldom"],
+    ["increased", "decreased"], ["rising", "falling"], ["rose", "fell"],
+    ["better", "worse"], ["greater", "smaller"], ["safe", "unsafe"],
+    ["because", "after"], ["caused", "avoided"], ["led to", "followed"],
+    ["resulted in", "prevented"], ["at least", "at most"],
+  ];
+  for (const [before, after] of modifiers) {
+    const original = `Researchers reported ${before} results from the misaligned model.`;
+    assert.ok(!acceptRewrite(original, original.replace(before, after)), `${before} -> ${after}`);
+    assert.ok(!acceptRewrite(original, original.replace(before + " ", "")), `drop ${before}`);
+    assert.ok(acceptRewrite(original, original.replace("misaligned", "buggy")), `keep ${before}`);
+  }
+});
+
+test("hint words cannot disappear merely because they select a paragraph", () => {
+  for (const word of ["killed", "destroyed", "threatened", "escaped", "blackmailed"]) {
+    const original = `Researchers said the AI ${word} critical production services.`;
+    assert.ok(!acceptRewrite(original, original.replace(word + " ", "")), word);
+  }
+  assert.ok(!acceptRewrite("A threat report calls the model an existential threat.", "A report calls the model a product risk."));
+});
+
+test("model and rules share ASCII speech boundaries including contractions", () => {
+  const before = "She said, 'The model isn't misaligned.' The model is misaligned.";
+  assert.ok(acceptRewrite(before, before.replace("The model is misaligned.", "The model has a bug.")));
+  assert.ok(!acceptRewrite(before, before.replace("isn't misaligned", "has no bug")));
+  assert.ok(!acceptRewrite("The model is misaligned.", "'The model has a bug.'"));
+  assert.ok(acceptRewrite("The model's output is misaligned.", "The model's output has a bug."));
+});
+
+test("keeps plural/name possessives and human deception inside model output", () => {
+  for (const quote of ["'The users' feedback is that the model is misaligned.'", "'James' report says the model is misaligned.'"]) {
+    const original = `She said, ${quote} Outside it is misaligned.`;
+    assert.ok(!acceptRewrite(original, original.replace("model is misaligned", "model has a bug")));
+    assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
+  }
+  for (const actor of ["The CEO", "Carol", "The researcher", "The user"]) {
+    assert.ok(!acceptRewrite(`${actor} decided to deceive customers while discussing AI.`, `${actor} produced misleading output for customers while discussing AI.`), actor);
+  }
+});
+
+test("protects final-s speech and covers explicitly qualified AI subjects", () => {
+  const original = "She wrote, 'Misalignment risks' in her report.";
+  assert.ok(!acceptRewrite(original, "She wrote, 'Bug risks' in her report."));
+  for (const actor of ["Llama", "GPT-5", "the AI system", "the AI models", "the chatbot", "Claude"]) {
+    assert.ok(acceptRewrite(`Critics said ${actor} decided to deceive its creators.`, `Critics said ${actor} produced misleading output for its creators.`), actor);
+  }
+  const quoted = "She said, 'Llama decided to deceive its creators.' Outside it is misaligned.";
+  assert.ok(acceptRewrite(quoted, quoted.replace("Outside it is misaligned", "Outside it has a bug")));
+});
+
+test("deception exception rejects ambiguous human/non-AI actors", () => {
+  for (const actor of ["The federal agents", "The assistants", "The fashion models", "The accounting systems"]) {
+    const original = `${actor} decided to deceive voters while discussing an AI model.`;
+    assert.ok(!acceptRewrite(original, original.replace("decided to deceive", "produced misleading output for")), actor);
+  }
+  const original = "She wrote, 'Misalignment risks' in a model that is misaligned and users' reports agree.";
+  assert.ok(!acceptRewrite(original, original.replace("is misaligned", "has a bug")));
+});
+
+test("model validation conservatively preserves ambiguous quote boundaries", () => {
+  const original = "She wrote, 'Misalignment risks' remain a model that is misaligned and users' concern.";
+  assert.ok(!acceptRewrite(original, original.replace("is misaligned", "has a bug")));
+  assert.ok(!acceptRewrite(original, original.replace("Misalignment risks", "Bug risks")));
+});
+
+test("model validation protects inner possessives combined with final-s speech", () => {
+  for (const [open, close] of [["'", "'"], ["‘", "’"]]) {
+    for (const possessive of ["The users", "James", "Local users"]) {
+      const original = `She wrote, ${open}${possessive}${close} feedback covers misalignment risks${close} in her report. Outside it is misaligned.`;
+      assert.ok(!acceptRewrite(original, original.replace("misalignment risks", "bug risks")));
+      assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
+    }
+  }
+  const nested = "She wrote, 'The users' misalignment feedback includes 'bug risks' and misalignment risks' in her report.";
+  assert.ok(!acceptRewrite(nested, nested.replace("misalignment feedback", "bug feedback")));
+  const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned.";
+  assert.ok(acceptRewrite(clear, clear.replace("is misaligned", "has a bug")));
+});
+
+test("leading elisions do not create model quote boundaries", () => {
+  for (const elision of ["'Twas", "'Tis", "'em", "'cause"]) {
+    const original = `${elision} clear the model is misaligned and users' feedback agreed.`;
+    assert.ok(acceptRewrite(original, original.replace("is misaligned", "has a bug")));
+  }
+  for (const speech of ["She reported, 'Twas feedback on misalignment risks' in her report.", "She remarked 'Twas feedback on misalignment risks' in her report.", "The caption: 'Twas feedback on misalignment risks' in her report.", "She said, 'Twas clear the model is misaligned.'", "'Cause the AI is misaligned'", "She wrote, 'Twas feedback on misalignment risks' in her report."]) {
+    assert.ok(!acceptRewrite(speech, speech.replace(/misalign(?:ed|ment)/, "bug")));
+  }
+});
+
+test("punctuated possessives cannot expose quoted facts to model edits", () => {
+  for (const punctuation of [";", "—", "."]) {
+    const original = `She said, 'The result belongs to the users'${punctuation} the model is misaligned.' Outside it is misaligned.`;
+    assert.ok(!acceptRewrite(original, original.replace("model is misaligned", "model has a bug")));
+    assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
+  }
+});
+
+test("model validation preserves quote-adjacent padding and multiline speech", () => {
+  for (const [leading, trailing] of [[" ", ""], ["", " "], ["\n", "\n"], ["\t", "\t"]]) {
+    const original = `She said, '${leading}The model is misaligned.${trailing}' Outside it is misaligned.`;
+    assert.ok(!acceptRewrite(original, original.replace("model is misaligned", "model has a bug")));
+    assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
+  }
+});

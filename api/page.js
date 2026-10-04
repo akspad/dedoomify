@@ -1,3 +1,4 @@
+import { articleLimit } from "../lib/rate-limit.js";
 import { fetchHtml, FetchError } from "../lib/fetch-article.js";
 import { renderPage, textToHtml, errorPage, PAGE_CSP } from "../lib/page.js";
 
@@ -30,6 +31,11 @@ export default async function handler(req, res, deps = {}) {
     res.setHeader("location", "/?url=" + encodeURIComponent(url));
     res.setHeader("cache-control", "no-store");
     return res.end();
+  }
+  const limit = (deps.rateLimit ?? articleLimit)(req);
+  if (!limit.allowed) {
+    res.setHeader("retry-after", String(limit.retryAfter));
+    return send(res, 429, errorPage("Too many articles. Please try again in a minute."));
   }
   try {
     const { html, finalUrl, contentType } = await fetchHtmlImpl(url.trim());

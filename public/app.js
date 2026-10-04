@@ -311,7 +311,7 @@ function layout() {
   viewToggle.hidden = !source.url;
   viewToggle.innerHTML = page
     ? '<span class="long">Reader view</span><span class="short">Reader</span>'
-    : '<span class="long">Original layout</span><span class="short">Page view</span>';
+    : '<span class="long">Page view</span><span class="short">Page view</span>';
   originalLink.hidden = !source.url;
   if (source.url) originalLink.href = source.url;
   $("share").hidden = !source.url;

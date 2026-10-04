@@ -1,3 +1,4 @@
+import { articleLimit } from "../lib/rate-limit.js";
 import { fetchArticle, textToArticle, FetchError } from "../lib/fetch-article.js";
 import { dedoomArticle } from "../lib/dedoom.js";
 
@@ -34,6 +35,8 @@ export default async function handler(req, res, deps = {}) {
       const url = params.get("url");
       const mode = MODES.has(params.get("mode")) ? params.get("mode") : "rules";
       if (!url) return send(res, 400, { error: "Add a link to an article." });
+      const limit = (deps.rateLimit ?? articleLimit)(req);
+      if (!limit.allowed) return send(res, 429, { error: "Too many articles. Please try again in a minute." }, { "retry-after": String(limit.retryAfter), "cache-control": "no-store" });
       const article = await fetchArticleImpl(url.trim());
       const result = await dedoomImpl(article, { mode });
       // Let the CDN reuse a rewrite for a day, so popular links cost one call.
@@ -42,6 +45,8 @@ export default async function handler(req, res, deps = {}) {
       });
     }
     if (req.method === "POST") {
+      const limit = (deps.rateLimit ?? articleLimit)(req);
+      if (!limit.allowed) return send(res, 429, { error: "Too many requests. Please try again in a minute." }, { "retry-after": String(limit.retryAfter), "cache-control": "no-store" });
       let body;
       try {
         body = await readJsonBody(req);

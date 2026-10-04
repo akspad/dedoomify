@@ -5,6 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import handler from "../api/dedoom.js";
+import imageHandler from "../api/image.js";
 import pageHandler from "../api/page.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
@@ -21,6 +22,7 @@ http
       if (rule.re.test(pathname)) for (const { key, value } of rule.headers) res.setHeader(key, value);
     }
     if (pathname === "/api/dedoom") return handler(req, res);
+    if (pathname === "/api/image") return imageHandler(req, res);
     if (pathname === "/api/page") return pageHandler(req, res);
     const file = path.join(root, pathname === "/" ? "index.html" : path.normalize(pathname));
     if (!file.startsWith(root)) {

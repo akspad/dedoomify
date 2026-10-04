@@ -1,11 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm test && npm run build",
   "outputDirectory": "public",
   "functions": {
     "api/dedoom.js": {
       "maxDuration": 60
     },
+    "api/image.js": { "maxDuration": 15 },
     "api/page.js": {
       "maxDuration": 30
     }
