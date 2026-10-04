@@ -296,3 +296,16 @@ test("bounded responsive sources take precedence over lazy originals", () => {
     assert.equal(document.getElementById(id).getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
   }
 });
+
+test("active image attributes outrank stale lazy metadata with picture source priority", () => {
+  const html = `<html><body>
+    <img id="active" data-srcset="original.jpg 2400w" srcset="small.jpg 480w, fit.jpg 960w">
+    <img id="active-src" data-src="original.jpg" src="current.jpg">
+    <img id="placeholder" srcset="data:image/png;base64,iVBORw0KGgo= 1x" data-srcset="loaded.jpg 960w">
+    <picture><source type="image/webp" data-srcset="old.webp 2400w" srcset="current.webp 960w"><img id="picture" srcset="fallback.jpg 960w"></picture>
+  </body></html>`;
+  const { document } = parseHTML(renderPage(html, "https://example.com/").html);
+  for (const [id, path] of [["active", "fit.jpg"], ["active-src", "current.jpg"], ["placeholder", "loaded.jpg"], ["picture", "current.webp"]]) {
+    assert.equal(document.getElementById(id).getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
+  }
+});
