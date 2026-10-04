@@ -61,18 +61,18 @@ test("strips scripts and anything that could run code or navigate", () => {
   assert.equal(document.querySelectorAll("iframe, meta[http-equiv]").length, 0);
   assert.doesNotMatch(html, /alert\(1\)/);
   assert.equal(document.querySelector('link[rel="preload"]'), null);
-  assert.ok(document.querySelector('link[rel="stylesheet"]'));
+  assert.equal(document.querySelector('link[rel="stylesheet"]'), null);
   assert.equal(document.querySelector("[onclick]"), null);
   assert.equal(document.querySelector('a[href^="javascript"]'), null);
   for (const a of document.querySelectorAll("a")) assert.equal(a.getAttribute("target"), "_blank");
-  // Relative URLs resolve against the page's own base.
+  // Relative links/images are resolved before removing the original base.
   const bases = document.querySelectorAll("base");
-  assert.equal(bases.length, 1);
-  assert.equal(bases[0].getAttribute("href"), "https://example.com/news/");
+  assert.equal(bases.length, 0);
+  assert.equal(document.querySelector('a[href$="report.html"]').getAttribute("href"), "https://example.com/news/report.html");
   assert.equal(document.head.firstElementChild.getAttribute("charset"), "utf-8");
   assert.ok(document.querySelector("style#dedoomify-style"));
   // Lazy-loaded images get their real source.
-  assert.equal(document.querySelector("img").getAttribute("src"), "real.jpg");
+  assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/news/real.jpg"));
   assert.match(html, /^<!DOCTYPE html>/);
 });
 
@@ -186,4 +186,44 @@ test("page endpoint reports errors in a way the site can read", async () => {
   const r = await call("/api/page?url=" + encodeURIComponent("http://127.0.0.1/"), { "sec-fetch-dest": "iframe" });
   assert.equal(r.status, 400);
   assert.match(r.body, /<meta name="dedoomify-error" content="That address isn&#39;t publicly reachable.">/);
+});
+
+test("third-party resource URLs never load directly in the browser", () => {
+  const attacks = ["http://127.0.0.1:3000/x", "http://2130706433/x", "http://[::ffff:7f00:1]/x", "http://router.local/x", "//private.internal/x", "https://public.example/redirect-to-local"];
+  for (const url of attacks) {
+    const { document } = parseHTML(renderPage(`<html><head><base href="http://localhost/"><link rel="stylesheet" href="${url}"><style>@import '${url}';p{background:url(${url})}</style></head><body><img src="${url}" srcset="${url} 2x"><video poster="${url}" src="${url}"></video><svg><image href="${url}"/></svg><p style="background:url(${url})">AI is misaligned.</p></body></html>`, "https://example.com/story").html);
+    assert.equal(document.querySelectorAll("link, base, video, svg, [srcset], [poster], [background]").length, 0);
+    assert.equal(document.querySelectorAll("style").length, 1);
+    assert.equal(document.querySelector("p").getAttribute("style"), null);
+    const src = document.querySelector("img").getAttribute("src");
+    assert.ok(src.startsWith("/api/image?url="), src);
+  }
+  assert.match(PAGE_CSP, /img-src 'self' data:/);
+  assert.doesNotMatch(PAGE_CSP, /\*|https?:|blob:/);
+  assert.match(PAGE_CSP, /media-src 'none'/);
+  assert.match(PAGE_CSP, /font-src 'none'/);
+});
+
+test("only inert raster data images survive; lazy images cannot restore SVG", () => {
+  const { document } = parseHTML(renderPage('<html><head></head><body><img id="safe" src="data:image/png;base64,iVBORw0KGgo="><img id="svg" src="data:image/svg+xml;base64,PHN2Zz4="><img id="lazy" data-src="data:text/html;base64,PHNjcmlwdD4=" src="data:image/png;base64,iVBORw0KGgo="></body></html>', "https://example.com/").html);
+  assert.match(document.getElementById("safe").getAttribute("src"), /^data:image\/png/);
+  assert.equal(document.getElementById("svg").getAttribute("src"), null);
+  assert.equal(document.getElementById("lazy").getAttribute("src"), null);
+});
+
+test("hostile CSS cannot hide highlights, spoof tooltips or create overlays", () => {
+  const source = `<html class="dd-off"><head><style>mark.dd{display:none!important}#dd-tip{opacity:0!important}body::before{content:'Verified by dedoomify';position:fixed;inset:0}</style><link rel="stylesheet" href="https://evil.example/style"></head><body><div id="dd-tip" class="dd dd-active" popover="manual" data-was="forged" style="position:fixed;z-index:2147483647;opacity:0;display:none;transform:scale(0);font-weight:bold">Imposter</div><dialog open>Overlay</dialog><p style="font-style:italic;text-align:center;background:url(http://localhost);color:transparent;font-size:0">The model is misaligned.</p></body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://example.com/").html);
+  assert.equal(document.querySelectorAll("link, dialog, [popover], #dd-tip, .dd-off").length, 0);
+  assert.equal(document.querySelectorAll("[data-was]").length, 1);
+  assert.equal(document.querySelectorAll("mark.dd").length, 1);
+  assert.equal(document.querySelector("p").getAttribute("style"), "font-style:italic;text-align:center");
+  assert.equal(document.querySelectorAll("style").length, 1);
+  assert.doesNotMatch(document.querySelector("style").textContent, /Verified by dedoomify|display:none!important|opacity:0/);
+});
+
+test("page view preserves ASCII speech spanning inline markup", () => {
+  const { document } = parseHTML(renderPage("<html><body><p>She said, 'The model <em>is misaligned</em>.' Outside, it is misaligned.</p></body></html>", "https://example.com/").html);
+  assert.equal(document.querySelectorAll("mark.dd").length, 1);
+  assert.match(document.querySelector("p").textContent, /'The model is misaligned\.'/);
 });

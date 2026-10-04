@@ -131,3 +131,36 @@ test("the picker offers quick phrase rules first, then one on-device option runn
   assert.deepEqual(Object.keys(MODELS), ["qwen"]);
   assert.equal(DEFAULT_MODEL, "qwen");
 });
+
+test("keeps certainty, frequency, direction, comparison, causality and safety", () => {
+  const modifiers = [
+    ["likely", "unlikely"], ["uncertain", "certain"], ["possible", "impossible"],
+    ["always", "sometimes"], ["usually", "rarely"], ["often", "seldom"],
+    ["increased", "decreased"], ["rising", "falling"], ["rose", "fell"],
+    ["better", "worse"], ["greater", "smaller"], ["safe", "unsafe"],
+    ["because", "after"], ["caused", "avoided"], ["led to", "followed"],
+    ["resulted in", "prevented"], ["at least", "at most"],
+  ];
+  for (const [before, after] of modifiers) {
+    const original = `Researchers reported ${before} results from the misaligned model.`;
+    assert.ok(!acceptRewrite(original, original.replace(before, after)), `${before} -> ${after}`);
+    assert.ok(!acceptRewrite(original, original.replace(before + " ", "")), `drop ${before}`);
+    assert.ok(acceptRewrite(original, original.replace("misaligned", "buggy")), `keep ${before}`);
+  }
+});
+
+test("hint words cannot disappear merely because they select a paragraph", () => {
+  for (const word of ["killed", "destroyed", "threatened", "escaped", "blackmailed"]) {
+    const original = `Researchers said the AI ${word} critical production services.`;
+    assert.ok(!acceptRewrite(original, original.replace(word + " ", "")), word);
+  }
+  assert.ok(!acceptRewrite("A threat report calls the model an existential threat.", "A report calls the model a product risk."));
+});
+
+test("model and rules share ASCII speech boundaries including contractions", () => {
+  const before = "She said, 'The model isn't misaligned.' The model is misaligned.";
+  assert.ok(acceptRewrite(before, before.replace("The model is misaligned.", "The model has a bug.")));
+  assert.ok(!acceptRewrite(before, before.replace("isn't misaligned", "has no bug")));
+  assert.ok(!acceptRewrite("The model is misaligned.", "'The model has a bug.'"));
+  assert.ok(acceptRewrite("The model's output is misaligned.", "The model's output has a bug."));
+});

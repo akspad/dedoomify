@@ -126,7 +126,7 @@ test("rewrites more doom framing", () => {
     ["Gemini tried to preserve other AI models from deletion.", "Gemini tried to keep other AI models running."],
     ["Models protected fellow models from shutdown.", "Models kept fellow models running."],
     ["The models showed peer preservation.", "The models showed peer uptime."],
-    ["OpenAI published a site devoted to \u201cmisalignment reports\u201d.", "OpenAI published a site devoted to \u201cbug reports\u201d."],
+    ["OpenAI published a site devoted to \u201cmisalignment reports\u201d.", "OpenAI published a site devoted to \u201cmisalignment reports\u201d."],
     ["Misalignment risks are rising.", "Bug risks are rising."],
     ["They study misalignment.", "They study bugs."],
     ["Misalignment is real.", "Bugs are real."],
@@ -234,4 +234,18 @@ test("every plain phrase rule can find its own phrase", () => {
     assert.ok(hasDoom(pattern), pattern);
     assert.ok(hasDoom(pattern.toUpperCase()), pattern.toUpperCase());
   }
+});
+
+test("preserves paired ASCII speech without treating apostrophes as quotes", () => {
+  const cases = [
+    ["She said, 'The model is misaligned.' The model is misaligned.", "She said, 'The model is misaligned.' The model has a bug."],
+    ["'The model isn't misaligned,' she said. It is misaligned.", "'The model isn't misaligned,' she said. It has a bug."],
+    ["The model's output is misaligned and users' feedback is misaligned.", "The model's output has a bug and users' feedback has a bug."],
+    ["Don't worry: it is misaligned.", "Don't worry: it has a bug."],
+    ["In '26 it is misaligned; in '27 it is misaligned.", "In '26 it has a bug; in '27 it has a bug."],
+    ["She said ‘The model isn’t misaligned.’ It is misaligned.", "She said ‘The model isn’t misaligned.’ It has a bug."],
+    ["She said, 'The model is misaligned. It is misaligned.", "She said, 'The model has a bug. It has a bug."],
+    ["She said, 'The model is misaligned.' Then 'It is misaligned.'", "She said, 'The model is misaligned.' Then 'It is misaligned.'"],
+  ];
+  for (const [before, after] of cases) assert.equal(dedoomText(before), after, before);
 });

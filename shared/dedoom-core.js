@@ -726,20 +726,34 @@
   // { text, original } for rewritten text. Joining the texts gives the result.
   // Direct quotations are evidence, not editorial framing. Protect them so
   // dedoomify never puts different words in a quoted speaker's mouth.
+  // A single quote opens speech only at a word boundary and with a plausible
+  // closing quote. Internal apostrophes, possessives and abbreviated years
+  // are ordinary prose. Curly apostrophes use the same closing-boundary check.
+  function wordChar(ch) { return !!ch && /[\p{L}\p{N}_]/u.test(ch); }
+  function singleQuoteEnd(text, start) {
+    if (wordChar(text[start - 1]) || !text[start + 1] || /\s/.test(text[start + 1])) return -1;
+    if (/^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
+    for (var j = start + 1; j < text.length; j++) {
+      if (text[j] === "'" && !wordChar(text[j + 1]) && !/\s/.test(text[j - 1])) return j;
+    }
+    return -1;
+  }
   function quoteProtectedSegments(input) {
     var text = String(input);
     var segments = [];
     var start = 0;
     var quoted = false;
     var close = "";
+    var asciiEnd = -1;
     for (var i = 0; i < text.length; i++) {
       var ch = text.charAt(i);
-      if (!quoted && (ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
+      if (!quoted && ch === "'") asciiEnd = singleQuoteEnd(text, i);
+      if (!quoted && ((ch === "'" && asciiEnd >= 0) || ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
         if (i > start) segments.push({ text: text.slice(start, i) });
         quoted = true;
-        close = ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
+        close = ch === "'" ? "'" : ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
         start = i;
-      } else if (quoted && ch === close) {
+      } else if (quoted && ch === close && (close !== "'" || i === asciiEnd) && (close !== "\u2019" || !wordChar(text[i + 1]))) {
         segments.push({ text: text.slice(start, i + 1), protected: true });
         start = i + 1;
         quoted = false;
@@ -801,6 +815,7 @@
 
   root.Dedoom = {
     RULES: RULES,
+    quoteProtectedSegments: quoteProtectedSegments,
     dedoomSegments: dedoomSegments,
     dedoomText: dedoomText,
     hasDoom: hasDoom,

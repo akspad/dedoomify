@@ -41,33 +41,17 @@ export function cleanOutput(original, output) {
   return text;
 }
 
-// Double quotation marks in order, so a rewrite can't drop, add, move or
-// restyle a quote. Single quotes are skipped: they double as apostrophes.
+// Curly/double quotation marks in order. Paired ASCII speech is checked by
+// quotedText below, using the same boundaries as the rules.
 function quoteMarks(text) {
   return (text.match(/["\u2018\u2019\u201c\u201d\u00ab\u00bb\u201e]/g) || []).join("");
 }
 
-// Preserve complete top-level quoted spans. Once a quote opens, everything
-// inside it (including a nested quote style) is evidence and must remain
-// byte-for-byte identical.
+// Use exactly the same quote boundaries as the phrase rules (including
+// paired ASCII speech and apostrophes inside speech).
 function quotedText(text) {
-  text = String(text);
-  const spans = [];
-  let start = -1;
-  let close = "";
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (start < 0 && (ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
-      start = i;
-      close = ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
-    } else if (start >= 0 && ch === close) {
-      spans.push(text.slice(start, i + 1));
-      start = -1;
-      close = "";
-    }
-  }
-  if (start >= 0) spans.push(text.slice(start));
-  return spans.join("\u0000");
+  return globalThis.Dedoom.quoteProtectedSegments(text)
+    .filter((segment) => segment.protected).map((segment) => segment.text).join("\u0000");
 }
 
 // Sentence punctuation in order, so a rewrite can't add, drop or swap a
@@ -84,7 +68,7 @@ function numbersIn(text) {
 // exact order: the model may change doom framing, not certainty, negation,
 // quantifiers, comparisons, chronology or conditions.
 const SEMANTIC_INVARIANTS =
-  /\b(?:no|not|never|none|all|any|some|few|many|most|only|may|might|can|could|will|would|should|must|more|less|fewer|higher|lower|before|after|until|unless|if|except|without)\b/gi;
+  /\b(?:no|not|never|none|all|any|some|few|many|most|only|may|might|can|could|will|would|should|must|more|less|fewer|higher|lower|before|after|until|unless|if|except|without|likely|unlikely|certain|certainly|uncertain|possibly|possible|impossible|always|usually|often|sometimes|rarely|seldom|increase\w*|decrease\w*|rise|rises|rose|rising|fall|falls|fell|falling|better|worse|greater|smaller|because|cause\w*|led|result\w*|safe|unsafe|safety|kill\w*|destroy\w*|threaten\w*|escap\w*|blackmail\w*|up|down|at least|at most)\b/gi;
 
 function semanticInvariants(text) {
   return (text.match(SEMANTIC_INVARIANTS) || []).map((w) => w.toLowerCase());
@@ -132,14 +116,12 @@ export function acceptRewrite(original, rewritten) {
   if (quotedText(rewritten) !== quotedText(original)) return false;
   if (stops(rewritten) !== stops(original)) return false;
 
-  const doomWords = new Set();
-  for (const seg of globalThis.Dedoom.dedoomSegments(original)) {
-    if (seg.original !== undefined) contentWords(seg.original).forEach((w) => doomWords.add(w));
-  }
-  for (const m of original.matchAll(new RegExp(DOOM_HINTS.source, "gi"))) {
-    contentWords(m[0]).forEach((w) => doomWords.add(w));
-  }
-  const beforeWords = contentWords(original).filter((w) => !doomWords.has(w));
+  // Exempt only the matched occurrences. Paragraph-selection hints never
+  // grant permission to erase factual words in unrelated occurrences.
+  const reference = original.replace(/\bdecided to deceive\b/gi, "produced misleading output");
+  const beforeWords = globalThis.Dedoom.dedoomSegments(reference).flatMap((seg) =>
+    seg.original === undefined ? contentWords(seg.text) : [],
+  );
   const afterWords = contentWords(rewritten);
   const vocab = allowedNewWords();
 
