@@ -27,7 +27,7 @@
   // Rewrites text nodes in place and marks each change. Returns
   // { added, total }: phrases changed this time and on the page so far.
   function run() {
-    var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1, SVG: 1, MATH: 1 };
+    var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1, SVG: 1, MATH: 1, Q: 1, BLOCKQUOTE: 1 };
     var body = document.body;
     if (!body || !root.Dedoom) return { added: 0, total: 0 };
     var added = 0;
