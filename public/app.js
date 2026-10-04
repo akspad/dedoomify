@@ -368,6 +368,7 @@ async function start({ instant = false } = {}) {
   setBusy(true);
   layout();
   result.hidden = false;
+  $("random").textContent = "Try another article";
   demo.hidden = true;
   demo.querySelector("video").pause();
   pinned = true;
@@ -380,6 +381,7 @@ async function start({ instant = false } = {}) {
   } catch (err) {
     if (runId !== runCounter) return;
     result.hidden = true;
+    $("random").textContent = "Try it on a real article";
     demo.hidden = false;
     showError(err.message || "Couldn't reach dedoomify. Check your connection.");
   } finally {
@@ -424,7 +426,6 @@ function tryAnother() {
     ? DOOM_STORIES[0]
     : choices[Math.floor(Math.random() * choices.length)];
   lastStory = url;
-  $("random").textContent = "Try another article";
   selectTab("url");
   $("url").value = url;
   showError("");

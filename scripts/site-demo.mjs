@@ -20,6 +20,8 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ARTICLE =
   process.env.ARTICLE ||
   "https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/";
+// Playback speed of the published clip relative to the recording.
+const SPEED = Number(process.env.SPEED) || 1.5;
 const W = 1100;
 const H = 704;
 
@@ -136,9 +138,9 @@ if (process.env.SKIP_ENCODE) {
 const out = (...p) => path.join(root, ...p);
 const ff = (...args) => execFileSync("ffmpeg", ["-v", "error", "-y", ...args], { stdio: "inherit" });
 // Trim the blank first moments of the recording.
-ff("-ss", "0.6", "-i", video, "-c:v", "libx264", "-preset", "slow", "-crf", "28", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", out("public", "demo.mp4"));
+ff("-ss", "0.6", "-i", video, "-vf", `setpts=PTS/${SPEED}`, "-c:v", "libx264", "-preset", "slow", "-crf", "28", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", out("public", "demo.mp4"));
 ff("-i", out("public", "demo.mp4"), "-c:v", "libvpx-vp9", "-crf", "40", "-b:v", "0", "-an", out("public", "demo.webm"));
-ff("-ss", "9", "-i", out("public", "demo.mp4"), "-frames:v", "1", "-q:v", "4", out("public", "demo-poster.jpg"));
+ff("-ss", String(9 / SPEED), "-i", out("public", "demo.mp4"), "-frames:v", "1", "-q:v", "4", out("public", "demo-poster.jpg"));
 ff("-i", out("public", "demo.mp4"), "-vf", "fps=12,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96[p];[b][p]paletteuse=dither=bayer:bayer_scale=4", out("docs", "demo.gif"));
 fs.rmSync(path.join(root, "dist", "demo-tmp"), { recursive: true, force: true });
 console.log("Wrote public/demo.mp4, public/demo.webm, public/demo-poster.jpg and docs/demo.gif");
