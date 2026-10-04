@@ -269,14 +269,30 @@ test("speech ending in s is protected before ordinary continuations", () => {
   }
 });
 
-test("outside possessives cannot extend a closed speech span", () => {
+test("ambiguous quote endings conservatively preserve possible speech", () => {
   const original = "She wrote, 'Misalignment risks' in a model that is misaligned and users' reports agree.";
-  assert.equal(dedoomText(original), "She wrote, 'Misalignment risks' in a model that has a bug and users' reports agree.");
+  assert.equal(dedoomText(original), original);
 });
 
-test("arbitrary continuations and later possessives do not extend quotes", () => {
+test("arbitrary continuations preserve every plausible quote boundary", () => {
   for (const continuation of ["remain", "reported", "researchers", "triggered", "appear beside"]) {
     const original = `She wrote, 'Misalignment risks' ${continuation} a model that is misaligned and users' concern.`;
-    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+    assert.equal(dedoomText(original), original);
   }
+});
+
+test("inner possessives and final-s endings preserve complete direct speech", () => {
+  for (const [open, close] of [["'", "'"], ["‘", "’"]]) {
+    for (const possessive of ["The users", "James", "Local users"]) {
+      for (const continuation of ["in her report", "during the briefing", "remain controversial"]) {
+        const quote = `${open}${possessive}${close} feedback covers misalignment risks${close}`;
+        const original = `She wrote, ${quote} ${continuation}. Outside it is misaligned.`;
+        assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+      }
+    }
+  }
+  const nested = "She wrote, 'The users' misalignment feedback includes 'bug risks' and misalignment risks' in her report.";
+  assert.equal(dedoomText(nested), nested);
+  const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned and users' reports agree.";
+  assert.equal(dedoomText(clear), clear.replace("is misaligned", "has a bug"));
 });

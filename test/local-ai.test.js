@@ -192,11 +192,25 @@ test("deception exception rejects ambiguous human/non-AI actors", () => {
     assert.ok(!acceptRewrite(original, original.replace("decided to deceive", "produced misleading output for")), actor);
   }
   const original = "She wrote, 'Misalignment risks' in a model that is misaligned and users' reports agree.";
-  assert.ok(acceptRewrite(original, original.replace("is misaligned", "has a bug")));
+  assert.ok(!acceptRewrite(original, original.replace("is misaligned", "has a bug")));
 });
 
-test("model validation allows edits after final-s quotes and arbitrary continuations", () => {
+test("model validation conservatively preserves ambiguous quote boundaries", () => {
   const original = "She wrote, 'Misalignment risks' remain a model that is misaligned and users' concern.";
-  assert.ok(acceptRewrite(original, original.replace("is misaligned", "has a bug")));
+  assert.ok(!acceptRewrite(original, original.replace("is misaligned", "has a bug")));
   assert.ok(!acceptRewrite(original, original.replace("Misalignment risks", "Bug risks")));
+});
+
+test("model validation protects inner possessives combined with final-s speech", () => {
+  for (const [open, close] of [["'", "'"], ["‘", "’"]]) {
+    for (const possessive of ["The users", "James", "Local users"]) {
+      const original = `She wrote, ${open}${possessive}${close} feedback covers misalignment risks${close} in her report. Outside it is misaligned.`;
+      assert.ok(!acceptRewrite(original, original.replace("misalignment risks", "bug risks")));
+      assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
+    }
+  }
+  const nested = "She wrote, 'The users' misalignment feedback includes 'bug risks' and misalignment risks' in her report.";
+  assert.ok(!acceptRewrite(nested, nested.replace("misalignment feedback", "bug feedback")));
+  const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned and users' reports agree.";
+  assert.ok(acceptRewrite(clear, clear.replace("is misaligned", "has a bug")));
 });

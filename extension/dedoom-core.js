@@ -736,14 +736,12 @@
     if (close === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
     var candidate = -1;
     for (var j = start + 1; j < text.length; j++) {
-      // A new opening quote after an ambiguous closer starts another span;
-      // do not swallow the prose between two quotations.
-      if (candidate >= 0 && text[j] === text[start] && !wordChar(text[j - 1]) && wordChar(text[j + 1])) return candidate;
       if (text[j] !== close || wordChar(text[j + 1]) || /\s/.test(text[j - 1])) continue;
-      if (candidate < 0) candidate = j;
+      candidate = j;
       // A later unambiguous delimiter can prove this is an inner possessive.
-      // When all candidates are ambiguous, retain the first closer rather
-      // than letting an outside possessive extend a closed quotation.
+      // When every delimiter could be a possessive, preserve the entire
+      // plausible quotation. Ambiguous surrounding prose can be left alone;
+      // choosing an earlier delimiter could rewrite a speaker's words.
       if (/s/i.test(text[j - 1]) && /^\s+\p{L}/u.test(text.slice(j + 1))) continue;
       return j;
     }
