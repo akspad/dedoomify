@@ -19,7 +19,7 @@ const ARTICLE_HTML = `<!doctype html><html><head><title>Is AI misaligned?</title
 </body></html>`;
 
 test("blocks private and non-http addresses", async () => {
-  for (const ip of ["127.0.0.1", "10.1.2.3", "192.168.0.1", "169.254.169.254", "::1", "fd00::1", "::ffff:127.0.0.1", "::ffff:7f00:1", "::ffff:a9fe:a9fe", "::ffff:a00:1", "::ffff:c0a8:1"]) {
+  for (const ip of ["127.0.0.1", "10.1.2.3", "192.168.0.1", "169.254.169.254", "::1", "fd00::1", "::ffff:127.0.0.1", "::ffff:7f00:1", "::ffff:a9fe:a9fe", "::ffff:a00:1", "::ffff:c0a8:1", "::7f00:1", "64:ff9b::a00:1", "2002:a00:1::"]) {
     assert.ok(isPrivateAddress(ip), ip);
   }
   assert.ok(!isPrivateAddress("93.184.216.34"));
@@ -27,6 +27,9 @@ test("blocks private and non-http addresses", async () => {
   await assert.rejects(assertPublicUrl("http://[::1]/"), /publicly reachable/);
   await assert.rejects(assertPublicUrl("http://[::ffff:7f00:1]/"), /publicly reachable/);
   await assert.rejects(assertPublicUrl("http://[::ffff:a9fe:a9fe]/"), /publicly reachable/);
+  await assert.rejects(assertPublicUrl("http://[::7f00:1]/"), /publicly reachable/);
+  await assert.rejects(assertPublicUrl("http://[64:ff9b::a00:1]/"), /publicly reachable/);
+  await assert.rejects(assertPublicUrl("http://[2002:a00:1::]/"), /publicly reachable/);
   await assert.rejects(assertPublicUrl("http://localhost:3000/"), /publicly reachable/);
   await assert.rejects(assertPublicUrl("file:///etc/passwd"), /http and https/);
   await assert.rejects(assertPublicUrl("not a url"), /valid URL/);
