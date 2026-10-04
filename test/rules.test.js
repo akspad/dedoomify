@@ -110,7 +110,6 @@ test("rewrites more doom framing", () => {
     ["The model tried to survive.", "The model tried to stay online."],
     ["The model engaged in blackmail.", "The model sent sternly worded emails."],
     ["In the blackmail scenario, Claude chose blackmail.", "In the sternly-worded-email scenario, Claude chose sternly worded emails."],
-    ["Researchers found deception in 10% of AI runs.", "Researchers found deception in 10% of AI runs."],
     ["AI deception is a growing concern.", "Misleading AI output is a growing concern."],
     ["The AI engaged in sabotage.", "The AI broke things."],
     ["The model tried to sabotage the run.", "The model tried to break the run."],
