@@ -309,3 +309,16 @@ test("active image attributes outrank stale lazy metadata with picture source pr
     assert.equal(document.getElementById(id).getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
   }
 });
+
+test("img src supplies an implicit 1x fallback only for density sets", () => {
+  for (const [attributes, path] of [
+    ['src="normal.jpg" srcset="original.jpg 2x"', "normal.jpg"],
+    ['src="normal.jpg" srcset="low.jpg .5x, original.jpg 2x"', "normal.jpg"],
+    ['src="normal.jpg" srcset="explicit.jpg 1x, original.jpg 2x"', "explicit.jpg"],
+    ['src="fallback.jpg" srcset="fit.jpg 960w, original.jpg 2400w"', "fit.jpg"],
+    ['src="data:image/png;base64,iVBORw0KGgo=" data-srcset="real.jpg 2x"', "real.jpg"],
+  ]) {
+    const { document } = parseHTML(renderPage(`<html><body><img ${attributes}></body></html>`, "https://example.com/").html);
+    assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
+  }
+});
