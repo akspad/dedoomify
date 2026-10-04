@@ -44,12 +44,30 @@ export function cleanOutput(original, output) {
 // Double quotation marks in order, so a rewrite can't drop, add, move or
 // restyle a quote. Single quotes are skipped: they double as apostrophes.
 function quoteMarks(text) {
-  return (text.match(/["\u201c\u201d\u00ab\u00bb\u201e]/g) || []).join("");
+  return (text.match(/["\u2018\u2019\u201c\u201d\u00ab\u00bb\u201e]/g) || []).join("");
 }
 
+// Preserve complete top-level quoted spans. Once a quote opens, everything
+// inside it (including a nested quote style) is evidence and must remain
+// byte-for-byte identical.
 function quotedText(text) {
-  const parts = String(text).split(/["\u201c\u201d\u00ab\u00bb\u201e]/);
-  return parts.filter((_part, i) => i % 2 === 1).join("\u0000");
+  text = String(text);
+  const spans = [];
+  let start = -1;
+  let close = "";
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (start < 0 && (ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
+      start = i;
+      close = ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
+    } else if (start >= 0 && ch === close) {
+      spans.push(text.slice(start, i + 1));
+      start = -1;
+      close = "";
+    }
+  }
+  if (start >= 0) spans.push(text.slice(start));
+  return spans.join("\u0000");
 }
 
 // Sentence punctuation in order, so a rewrite can't add, drop or swap a
