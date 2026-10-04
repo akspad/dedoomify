@@ -734,6 +734,7 @@
     close = close || "'";
     if (wordChar(text[start - 1]) || !text[start + 1] || /\s/.test(text[start + 1])) return -1;
     if (close === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
+    var elision = /^(?:twas|tis|twere|twill|twould|em|cause|cos|til|bout)\b/i.test(text.slice(start + 1));
     var candidate = -1;
     for (var j = start + 1; j < text.length; j++) {
       if (text[j] !== close || wordChar(text[j + 1]) || /\s/.test(text[j - 1])) continue;
@@ -743,9 +744,11 @@
       // plausible quotation. Ambiguous surrounding prose can be left alone;
       // choosing an earlier delimiter could rewrite a speaker's words.
       if (/s/i.test(text[j - 1]) && /^\s+\p{L}/u.test(text.slice(j + 1))) continue;
-      return j;
+      // Leading elisions are prose unless sentence punctuation supplies a
+      // clear paired speech ending (for example, 'Twas ... misaligned.').
+      return elision && !/[.!?,;:]/.test(text[j - 1]) ? -1 : j;
     }
-    return candidate;
+    return elision ? -1 : candidate;
   }
   function quoteProtectedSegments(input) {
     var text = String(input);

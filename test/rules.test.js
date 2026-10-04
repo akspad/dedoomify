@@ -296,3 +296,12 @@ test("inner possessives and final-s endings preserve complete direct speech", ()
   const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned and users' reports agree.";
   assert.equal(dedoomText(clear), clear.replace("is misaligned", "has a bug"));
 });
+
+test("leading elisions stay ordinary prose while punctuated speech stays protected", () => {
+  for (const elision of ["'Twas", "'Tis", "'Twere", "'em", "'cause", "'til", "'bout"]) {
+    const original = `${elision} clear the model is misaligned and users' feedback agreed.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  const speech = "She said, 'Twas clear the model is misaligned.' Outside it is misaligned.";
+  assert.equal(dedoomText(speech), speech.replace("Outside it is misaligned", "Outside it has a bug"));
+});

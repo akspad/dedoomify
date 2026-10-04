@@ -233,3 +233,21 @@ test("expanded disclosure content stays open with visible highlights", () => {
   assert.ok(document.querySelector("details").hasAttribute("open"));
   assert.equal(document.querySelector("details mark.dd").textContent, "has a bug");
 });
+
+test("responsive and picture-only images use the same public-only proxy", () => {
+  const source = `<html><body>
+    <img id="responsive" srcset="small.jpg 400w, large.jpg 800w">
+    <img id="lazyset" src="data:image/png;base64,iVBORw0KGgo=" data-srcset="real.jpg 2x">
+    <img id="lazyset2" data-lazy-srcset="other.jpg 1x">
+    <picture><source srcset="picture.jpg 2x"><img id="picture" src="placeholder.jpg"></picture>
+    <img id="private" srcset="http://127.0.0.1/probe 2x">
+    <img id="bad" srcset="javascript:alert(1) 2x">
+    <img id="comma" srcset="https://example.com/a,b.jpg 2x">
+  </body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://example.com/story").html);
+  for (const [id, url] of [["responsive", "https://example.com/large.jpg"], ["lazyset", "https://example.com/real.jpg"], ["lazyset2", "https://example.com/other.jpg"], ["picture", "https://example.com/picture.jpg"], ["private", "http://127.0.0.1/probe"], ["comma", "https://example.com/a,b.jpg"]]) {
+    assert.equal(document.getElementById(id).getAttribute("src"), "/api/image?url=" + encodeURIComponent(url));
+  }
+  assert.equal(document.getElementById("bad").getAttribute("src"), null);
+  assert.equal(document.querySelectorAll("source, [srcset], [data-srcset], [data-lazy-srcset]").length, 0);
+});

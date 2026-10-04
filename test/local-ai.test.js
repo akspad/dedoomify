@@ -214,3 +214,12 @@ test("model validation protects inner possessives combined with final-s speech",
   const clear = "She wrote, 'Misalignment risks,' in a model that is misaligned and users' reports agree.";
   assert.ok(acceptRewrite(clear, clear.replace("is misaligned", "has a bug")));
 });
+
+test("leading elisions do not create model quote boundaries", () => {
+  for (const elision of ["'Twas", "'Tis", "'em", "'cause"]) {
+    const original = `${elision} clear the model is misaligned and users' feedback agreed.`;
+    assert.ok(acceptRewrite(original, original.replace("is misaligned", "has a bug")));
+  }
+  const speech = "She said, 'Twas clear the model is misaligned.'";
+  assert.ok(!acceptRewrite(speech, speech.replace("is misaligned", "has a bug")));
+});
