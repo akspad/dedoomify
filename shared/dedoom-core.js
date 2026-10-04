@@ -303,10 +303,10 @@
     ["mesa-optimizer", "sub-component"],
     ["AI hallucinations", "AI errors"],\n    ["AI hallucination", "AI error"],\n    ["model hallucinations", "model errors"],\n    ["model hallucination", "model error"],
 
-    ["hallucinates", "fabricates"],
-    ["hallucinated", "fabricated"],
-    ["hallucinating", "fabricating"],
-    ["hallucinate", "fabricate"],
+    byAI("hallucinates", "fabricates"),
+    byAI("hallucinated", "fabricated"),
+    byAI("hallucinating", "fabricating"),
+    byAI("hallucinate", "fabricate"),
 
     // Escaping is leaving the sandbox.
     ["self-exfiltration", "copying its own files"],
@@ -458,7 +458,7 @@
     byAI("sabotaging", "breaking"),
     ["sabotage evaluations", "breakage evaluations"],
     ["sabotage evals", "breakage evals"],
-    ["acts of sabotage", "breakages"],
+
 
     ["reward tampering", "scoring-bug exploitation"],
     byAI("tampered with", "edited"),
