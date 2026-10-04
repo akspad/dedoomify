@@ -58,7 +58,7 @@ test("extracts the article body", () => {
 });
 
 test("reader extraction and rules preserve direct quotations", async () => {
-  const html = '<html><head><title>AI story</title></head><body><article><p>She said <q>the model is misaligned</q>. Outside, the model is misaligned. This paragraph includes enough ordinary reporting context for article extraction: researchers described the test setup, the company published its methodology, and independent reviewers examined the results before publication.</p><blockquote>The model is misaligned.</blockquote></article></body></html>';
+  const html = '<html><head><title>AI story</title></head><body><article><p>She said <q>the model is misaligned</q>. Outside, the model is misaligned. This paragraph includes enough ordinary reporting context for article extraction: researchers described the test setup, the company published its methodology, and independent reviewers examined the results before publication.</p><blockquote><p>The model is misaligned.</p></blockquote></article></body></html>';
   const article = extractArticle(html, "https://example.com/quotes");
   const paragraph = article.blocks.find((b) => b.type === "paragraph");
   assert.match(paragraph.text, /“the model is misaligned”/);
