@@ -91,11 +91,12 @@ test("the frame's policy allows only the hover card's script", () => {
 });
 
 test("does not rewrite direct quotations in page view", () => {
-  const html = '<html><head><title>AI story</title></head><body><p>She said, “the model is misaligned.” Outside the quote, the model is misaligned.</p></body></html>';
+  const html = '<html><head><title>AI story</title></head><body><p>She said, “the model is misaligned.” <q>The model is misaligned.</q> Outside the quote, the model is misaligned.</p></body></html>';
   const { html: rendered } = renderPage(html, "https://example.com/story");
   const { document } = parseHTML(rendered);
   const p = document.querySelector("p");
   assert.match(p.textContent, /“the model is misaligned\.”/);
+  assert.equal(p.querySelector("q").textContent, "The model is misaligned.");
   assert.match(p.textContent, /Outside the quote, the model has a bug\./);
   assert.equal(p.querySelectorAll("mark.dd").length, 1);
 });
