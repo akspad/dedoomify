@@ -740,7 +740,6 @@
     while ((match = introductions.exec(text))) reported.add(introductions.lastIndex);
     var clear = { "'": -1, "\u2019": -1 };
     var last = { "'": -1, "\u2019": -1 };
-    var nextNonSpace = -1;
     // A reverse pass caches the nearest clear ending and the farthest ambiguous
     // one for each quote kind. Every character is visited once, even when there
     // are thousands of unmatched openers or long runs of whitespace.
@@ -758,10 +757,11 @@
       }
       if ((ch === "'" || ch === "\u2019") && !wordChar(text[j + 1]) && !/\s/.test(text[j - 1])) {
         if (last[ch] < 0) last[ch] = j;
-        var ambiguous = /s/i.test(text[j - 1]) && /\s/.test(text[j + 1]) && nextNonSpace >= 0 && /\p{L}/u.test(text[nextNonSpace]);
+        // A plural/name possessive can precede punctuation as well as a
+        // noun. Retain it as a plausible inner apostrophe in either case.
+        var ambiguous = /s/i.test(text[j - 1]);
         if (!ambiguous) clear[ch] = j;
       }
-      if (!/\s/.test(ch)) nextNonSpace = j;
     }
     return endings;
   }

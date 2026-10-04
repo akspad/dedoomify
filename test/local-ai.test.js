@@ -224,3 +224,11 @@ test("leading elisions do not create model quote boundaries", () => {
     assert.ok(!acceptRewrite(speech, speech.replace(/misalign(?:ed|ment)/, "bug")));
   }
 });
+
+test("punctuated possessives cannot expose quoted facts to model edits", () => {
+  for (const punctuation of [";", "—", "."]) {
+    const original = `She said, 'The result belongs to the users'${punctuation} the model is misaligned.' Outside it is misaligned.`;
+    assert.ok(!acceptRewrite(original, original.replace("model is misaligned", "model has a bug")));
+    assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
+  }
+});

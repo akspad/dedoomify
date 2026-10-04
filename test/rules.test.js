@@ -316,3 +316,12 @@ test("adversarial unmatched single quotes are scanned within a linear work budge
   const whitespace = "'risks'" + " ".repeat(80_000) + "feedback";
   assert.equal(globalThis.Dedoom.quoteProtectedSegments(whitespace).map((segment) => segment.text).join(""), whitespace);
 });
+
+test("punctuated plural and name possessives stay inside direct speech", () => {
+  for (const punctuation of [";", "—", ".", ",", ":"]) {
+    for (const owner of ["users", "James"]) {
+      const original = `She said, 'The result belongs to the ${owner}'${punctuation} the model is misaligned.' Outside it is misaligned.`;
+      assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+    }
+  }
+});
