@@ -735,7 +735,7 @@
     if (wordChar(text[start - 1]) || !text[start + 1] || /\s/.test(text[start + 1])) return -1;
     if (close === "'" && /^\d{2}(?:\b|s\b)/.test(text.slice(start + 1))) return -1;
     var elision = /^(?:twas|tis|twere|twill|twould|em|cause|cos|til|bout)\b/i.test(text.slice(start + 1));
-    var reportedSpeech = /\b(?:said|says|wrote|writes|asked|asks|replied|replies|stated|states|quoted|quotes)\s*[,:]*\s*$/i.test(text.slice(0, start));
+    var reportedSpeech = /(?:[,:]|\b(?:said|says|wrote|writes|told|tells|asked|asks|replied|replies|stated|states|quoted|quotes|report(?:ed|s)?|remark(?:ed|s)?|claim(?:ed|s)?|explain(?:ed|s)?|whisper(?:ed|s)?|shout(?:ed|s)?|note(?:d|s)?|add(?:ed|s)?|respond(?:ed|s)?|declare(?:d|s)?|announce(?:d|s)?|recount(?:ed|s)?))\s*$/i.test(text.slice(0, start));
     var candidate = -1;
     for (var j = start + 1; j < text.length; j++) {
       if (text[j] !== close || wordChar(text[j + 1]) || /\s/.test(text[j - 1])) continue;

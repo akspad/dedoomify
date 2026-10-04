@@ -302,7 +302,7 @@ test("leading elisions stay ordinary prose while punctuated speech stays protect
     const original = `${elision} clear the model is misaligned and users' feedback agreed.`;
     assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
   }
-  for (const speech of ["She said, 'Twas clear the model is misaligned.' Outside it is misaligned.", "'Cause the AI is misaligned' Outside it is misaligned.", "She wrote, 'Twas feedback on misalignment risks' in her report. Outside it is misaligned."]) {
+  for (const speech of ["She reported, 'Twas feedback on misalignment risks' in her report. Outside it is misaligned.", "She remarked 'Twas feedback on misalignment risks' in her report. Outside it is misaligned.", "The caption: 'Twas feedback on misalignment risks' in her report. Outside it is misaligned.", "She said, 'Twas clear the model is misaligned.' Outside it is misaligned.", "'Cause the AI is misaligned' Outside it is misaligned.", "She wrote, 'Twas feedback on misalignment risks' in her report. Outside it is misaligned."]) {
     assert.equal(dedoomText(speech), speech.replace("Outside it is misaligned", "Outside it has a bug"));
   }
 });
