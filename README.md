@@ -79,7 +79,9 @@ Files:
   and images to 120, before fetching or calling a model. Local servers trust the
   socket address; Vercel trusts its overwritten forwarding header. Counters are
   bounded and never evict active quotas. These process-local counters supplement
-  the deployed Vercel WAF quotas; they do not replace a shared edge limit.
+  a Vercel WAF rule covering all three fetch endpoints: 180 requests per minute
+  per IP per edge region, enforced before functions run. Cached responses also
+  count at the edge. The single combined rule fits the current hosting plan.
 - **`api/dedoom.js`** extracts the article text for reader view. `GET ?url=` fetches and
   rewrites an article (responses are cacheable at the CDN for a day);
   `POST {text}` rewrites pasted text.
