@@ -110,7 +110,7 @@ test("rewrites more doom framing", () => {
     ["The model tried to survive.", "The model tried to stay online."],
     ["The model engaged in blackmail.", "The model sent sternly worded emails."],
     ["In the blackmail scenario, Claude chose blackmail.", "In the sternly-worded-email scenario, Claude chose sternly worded emails."],
-    ["Researchers found deception in 10% of runs.", "Researchers found misleading output in 10% of runs."],
+    ["Researchers found deception in 10% of AI runs.", "Researchers found deception in 10% of AI runs."],
     ["AI deception is a growing concern.", "Misleading AI output is a growing concern."],
     ["The AI engaged in sabotage.", "The AI broke things."],
     ["The model tried to sabotage the run.", "The model tried to break the run."],
@@ -197,6 +197,25 @@ test("leaves the same verbs alone when a person does them", () => {
     "The system woke up from sleep mode.",
     "Claude pretended to be a pirate.",
     "Experts think about AI.",
+  ]) {
+    assert.equal(dedoomText(text), text);
+  }
+});
+
+test("preserves direct quotations and ambiguous non-AI language", () => {
+  const quoted = 'She said, “The model is misaligned and could go rogue.” The model is misaligned.';
+  assert.equal(
+    dedoomText(quoted),
+    'She said, “The model is misaligned and could go rogue.” The model has a bug.',
+  );
+  assert.equal(hasDoom('“The model is misaligned.”'), false);
+
+  for (const text of [
+    "The Cold War arms race shaped American policy.",
+    "The patient reported hallucinations after taking the medication.",
+    "Researchers used deception in the human control group.",
+    "The activist threatened sabotage of the data center.",
+    "Armageddon is a 1998 film.",
   ]) {
     assert.equal(dedoomText(text), text);
   }
