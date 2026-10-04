@@ -220,6 +220,7 @@ test("leading elisions do not create model quote boundaries", () => {
     const original = `${elision} clear the model is misaligned and users' feedback agreed.`;
     assert.ok(acceptRewrite(original, original.replace("is misaligned", "has a bug")));
   }
-  const speech = "She said, 'Twas clear the model is misaligned.'";
-  assert.ok(!acceptRewrite(speech, speech.replace("is misaligned", "has a bug")));
+  for (const speech of ["She said, 'Twas clear the model is misaligned.'", "'Cause the AI is misaligned'", "She wrote, 'Twas feedback on misalignment risks' in her report."]) {
+    assert.ok(!acceptRewrite(speech, speech.replace(/misalign(?:ed|ment)/, "bug")));
+  }
 });
