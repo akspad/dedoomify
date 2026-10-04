@@ -19,6 +19,7 @@
   var SKIP = {
     SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEMPLATE: 1, TEXTAREA: 1, SELECT: 1, OPTION: 1,
     CODE: 1, PRE: 1, KBD: 1, SAMP: 1, SVG: 1, MATH: 1, TITLE: 1, IFRAME: 1,
+    Q: 1, BLOCKQUOTE: 1,
   };
   // Entering or leaving one of these starts a new group.
   var BLOCK = {};
