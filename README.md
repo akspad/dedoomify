@@ -14,9 +14,9 @@ language an engineer would use about software with defects:
 | Labs are racing toward **superintelligence** | Labs are racing toward **very capable software** |
 | What's your **p(doom)**? | What's your **estimated failure rate**? |
 
-Facts, names and numbers stay the same; only the framing changes. The article
-keeps its original look, with every change highlighted in place; hover a
-highlight to see the original words. A reader view shows just the text.
+Designed to preserve names, numbers and factual claims while changing the
+framing. The article keeps its original look, with every change highlighted in
+place; hover a highlight to see the original words. A reader view shows just the text.
 
 You can also [add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl) to de-doom the page you're reading with one click.
 
@@ -43,8 +43,10 @@ Visitors pick an engine from the **Rewrite with** menu:
   for free.
 - **On-device AI**: [Qwen2.5 0.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
   (about 300 MB, Apache 2.0) runs in the visitor's browser on WebGPU through
-  [WebLLM](https://github.com/mlc-ai/web-llm), so nothing is sent to our
-  server and it costs nothing per request. The model downloads once and the
+  [WebLLM](https://github.com/mlc-ai/web-llm). No text is sent to an external
+  LLM API: the page or pasted text still goes through our server for the
+  phrase-rules pass, and model inference happens locally in the browser, so it
+  costs nothing per request. The model downloads once and the
   browser caches it; the phrase-rules version shows straight away while it
   loads. Only paragraphs with doom framing go to the model, one at a time, and
   a rewrite that changes a number, a quotation or the paragraph's shape is
@@ -53,8 +55,8 @@ Visitors pick an engine from the **Rewrite with** menu:
 
 The menu remembers the last choice. No link handy? **Try it on a real
 article** picks one of a list of real AI doom stories. Every result has a share
-link (`dedoomify.com/?url=…`); on phones the Share button opens the system
-share sheet.
+link (`dedoomify.com/?url=…&mode=…`) that opens the same article with the same
+engine; on phones the Share button opens the system share sheet.
 
 Files:
 
