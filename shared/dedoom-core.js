@@ -734,10 +734,10 @@
     var close = "";
     for (var i = 0; i < text.length; i++) {
       var ch = text.charAt(i);
-      if (!quoted && (ch === '"' || ch === "\u201c" || ch === "\u00ab" || ch === "\u201e")) {
+      if (!quoted && (ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
         if (i > start) segments.push({ text: text.slice(start, i) });
         quoted = true;
-        close = ch === '"' ? '"' : ch === "\u00ab" ? "\u00bb" : "\u201d";
+        close = ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
         start = i;
       } else if (quoted && ch === close) {
         segments.push({ text: text.slice(start, i + 1), protected: true });
