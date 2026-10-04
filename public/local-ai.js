@@ -23,9 +23,11 @@ const modelId = (key) => modelFor(key).ids[precision];
 // or the text uses a word that often carries doom framing.
 const DOOM_HINTS =
   /\b(misalign\w*|alignment|extinct\w*|doom\w*|apocalyp\w*|superintellig\w*|rogue|sentien\w*|conscious\w*|deceiv\w*|decept\w*|lie[sd]?|lying|schem\w*|plott\w*|takeover|take over|catastroph\w*|existential|kill\w*|destroy\w*|threat\w*|escap\w*|cheat\w*|smuggl\w*|blackmail\w*|manipulat\w*|self-preservation|preserv\w*|own kind|shut ?down|wants?|wanted|decided|believes?|believed|realiz\w*|desires?|evil|skynet|terminator|god-?like|AGI)\b/i;
+const AI_CONTEXT =
+  /\b(?:AI|A\.I\.|AGI|LLMs?|models?|chatbots?|bots?|agents?|assistants?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial intelligence|language models?|machine learning|neural nets?|OpenAI|Anthropic|DeepMind)\b/i;
 
 export function needsModel(original, rulesVersion) {
-  return rulesVersion !== original || DOOM_HINTS.test(original);
+  return rulesVersion !== original || (AI_CONTEXT.test(original) && DOOM_HINTS.test(original));
 }
 
 // Small models sometimes wrap the answer in quotes or add a label; strip that.
@@ -41,6 +43,11 @@ export function cleanOutput(original, output) {
 // restyle a quote. Single quotes are skipped: they double as apostrophes.
 function quoteMarks(text) {
   return (text.match(/["\u201c\u201d\u00ab\u00bb\u201e]/g) || []).join("");
+}
+
+function quotedText(text) {
+  const parts = String(text).split(/["\u201c\u201d\u00ab\u00bb\u201e]/);
+  return parts.filter((_part, i) => i % 2 === 1).join("\u0000");
 }
 
 // Sentence punctuation in order, so a rewrite can't add, drop or swap a
@@ -102,6 +109,7 @@ export function acceptRewrite(original, rewritten) {
   if (numbersIn(rewritten).join("\u0000") !== numbersIn(original).join("\u0000")) return false;
   if (semanticInvariants(rewritten).join("\u0000") !== semanticInvariants(original).join("\u0000")) return false;
   if (quoteMarks(rewritten) !== quoteMarks(original)) return false;
+  if (quotedText(rewritten) !== quotedText(original)) return false;
   if (stops(rewritten) !== stops(original)) return false;
 
   const doomWords = new Set();
