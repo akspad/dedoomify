@@ -333,3 +333,15 @@ test("picture selection only considers direct sources preceding the img", () => 
     assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + path));
   }
 });
+
+test("large malformed pictures do not repeatedly rescan source siblings", () => {
+  const start = performance.now();
+  const html = `<html><body><picture><source srcset="safe.jpg">${'<img src="fallback.jpg">'.repeat(10_000)}</picture></body></html>`;
+  const { document } = parseHTML(renderPage(html, "https://example.com/").html);
+  const images = document.querySelectorAll("img");
+  assert.equal(images.length, 10_000);
+  const expected = "/api/image?url=" + encodeURIComponent("https://example.com/safe.jpg");
+  assert.equal(images[0].getAttribute("src"), expected);
+  assert.equal(images[images.length - 1].getAttribute("src"), expected);
+  assert.ok(performance.now() - start < 5000, "picture processing must have a bounded linear work cost");
+});
