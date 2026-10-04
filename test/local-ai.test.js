@@ -42,6 +42,10 @@ test("leaves direct quotations byte-for-byte unchanged", () => {
   const original = "She said, \u201cThe model is misaligned.\u201d The model is misaligned.";
   assert.ok(acceptRewrite(original, "She said, \u201cThe model is misaligned.\u201d The model has a bug."));
   assert.ok(!acceptRewrite(original, "She said, \u201cThe model has a bug.\u201d The model has a bug."));
+  const nested = 'She said, \u201cThey called the model "misaligned" yesterday.\u201d';
+  assert.ok(!acceptRewrite(nested, 'She said, \u201cThey called the model "has a bug" yesterday.\u201d'));
+  const british = "She said, ‘The model is misaligned.’";
+  assert.ok(!acceptRewrite(british, "She said, ‘The model has a bug.’"));
 });
 
 test("does not send ambiguous non-AI prose to the model", () => {
