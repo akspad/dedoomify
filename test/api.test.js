@@ -54,6 +54,19 @@ test("extracts the article body", () => {
   assert.ok(!article.blocks.some((b) => b.text.includes("Copyright")));
 });
 
+test("reader extraction and rules preserve direct quotations", async () => {
+  const html = '<html><head><title>AI story</title></head><body><article><p>She said <q>the model is misaligned</q>. Outside, the model is misaligned.</p><blockquote>The model is misaligned.</blockquote></article></body></html>';
+  const article = extractArticle(html, "https://example.com/quotes");
+  const paragraph = article.blocks.find((b) => b.type === "paragraph");
+  assert.match(paragraph.text, /“the model is misaligned”/);
+  const result = await dedoomArticle(article, { mode: "rules" });
+  const rewritten = result.blocks.find((b) => b.type === "paragraph");
+  assert.match(rewritten.text, /“the model is misaligned”/);
+  assert.match(rewritten.text, /Outside, the model has a bug\./);
+  const quote = result.blocks.find((b) => b.type === "quote");
+  assert.equal(quote.text, "The model is misaligned.");
+});
+
 test("rules mode rewrites the title and body", async () => {
   const article = extractArticle(ARTICLE_HTML, "https://example.com/a");
   const result = await dedoomArticle(article, { mode: "rules" });
