@@ -381,6 +381,7 @@ async function start({ instant = false } = {}) {
   } catch (err) {
     if (runId !== runCounter) return;
     result.hidden = true;
+    $("random").textContent = "Try it on a real article";
     demo.hidden = false;
     showError(err.message || "Couldn't reach dedoomify. Check your connection.");
   } finally {
