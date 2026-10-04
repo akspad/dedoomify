@@ -221,8 +221,8 @@ async function rewriteWithModel(items, runId, apply, what) {
 function rewriteReaderLocally(readerView, runId) {
   const { data } = readerView;
   const items = [{ index: -1, original: data.originalTitle || data.title, current: data.title }]
-    .concat(data.blocks.map((b, index) => ({ index, original: b.original, current: b.text })))
-    .filter((item) => localAi.needsModel(item.original, item.current));
+    .concat(data.blocks.map((b, index) => ({ index, type: b.type, original: b.original, current: b.text })))
+    .filter((item) => item.type !== "quote" && localAi.needsModel(item.original, item.current));
   return rewriteWithModel(items, runId, (item, text) => {
     data.engine = "local";
     if (item.index === -1) {
