@@ -1,6 +1,6 @@
 # dedoomify
 
-**AI news, minus the doom** by [@akspad](https://x.com/akspad)
+**AI news, minus the doom**
 
 Paste a link to an article about AI and
 [dedoomify.com](https://dedoomify.com) rewrites the doom framing into the plain
@@ -110,20 +110,6 @@ permission). `background.js` then registers `auto.js` for every page;
 text for a mention of AI and any phrase the rules would change (a few
 milliseconds at most, since each rule is skipped unless its key word is in
 the text), so pages without AI doom are left alone.
-
-## Development
-
-```
-npm install
-npm run dev     # builds and serves the site at http://localhost:3000
-npm test
-```
-
-`npm run build:extension` copies the phrase rules into `extension/` and zips
-it, and `npm run build:safari` wraps it in a Mac app for Safari (needs Xcode).
-The demo clips are recorded with Playwright and ffmpeg: `npm run site-demo`
-(the homepage clip and `docs/demo.gif`, on a real article, so it needs network
-access) and `npm run extension-demo`.
 
 ## Contributing
 

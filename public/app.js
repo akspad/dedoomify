@@ -368,6 +368,7 @@ async function start({ instant = false } = {}) {
   setBusy(true);
   layout();
   result.hidden = false;
+  $("random").textContent = "Try another article";
   demo.hidden = true;
   demo.querySelector("video").pause();
   pinned = true;
@@ -424,7 +425,6 @@ function tryAnother() {
     ? DOOM_STORIES[0]
     : choices[Math.floor(Math.random() * choices.length)];
   lastStory = url;
-  $("random").textContent = "Try another article";
   selectTab("url");
   $("url").value = url;
   showError("");
