@@ -53,10 +53,19 @@ function numbersIn(text) {
   return (text.match(/\d[\d,.]*\d|\d/g) || []).map((n) => n.replace(/[.,]$/, ""));
 }
 
+// These small words can reverse or materially qualify a claim. Keep them in
+// exact order: the model may change doom framing, not certainty, negation,
+// quantifiers, comparisons, chronology or conditions.
+const SEMANTIC_INVARIANTS =
+  /\b(?:no|not|never|none|all|any|some|few|many|most|only|may|might|can|could|will|would|should|must|more|less|fewer|higher|lower|before|after|until|unless|if|except|without)\b/gi;
+
+function semanticInvariants(text) {
+  return (text.match(SEMANTIC_INVARIANTS) || []).map((w) => w.toLowerCase());
+}
+
 const STOPWORDS = new Set(
-  ("that this these those with from into onto over under about after before than then there their they them " +
-   "which while where when what who whom whose will would could should might must have been being were also " +
-   "some just only very more most such each other said says").split(" "),
+  ("that this these those with from into onto over under about than then there their they them " +
+   "which while where when what who whom whose have been being were also very such each other said says").split(" "),
 );
 
 // Words we compare on: four letters or more, lowercased and lightly stemmed so
@@ -90,8 +99,8 @@ export function acceptRewrite(original, rewritten) {
   if (/\n\s*\n/.test(rewritten)) return false;
   const ratio = rewritten.length / Math.max(original.length, 1);
   if (ratio < 0.6 || ratio > 1.7) return false;
-  const have = new Set(numbersIn(rewritten));
-  if (!numbersIn(original).every((n) => have.has(n))) return false;
+  if (numbersIn(rewritten).join("\u0000") !== numbersIn(original).join("\u0000")) return false;
+  if (semanticInvariants(rewritten).join("\u0000") !== semanticInvariants(original).join("\u0000")) return false;
   if (quoteMarks(rewritten) !== quoteMarks(original)) return false;
   if (stops(rewritten) !== stops(original)) return false;
 
@@ -102,11 +111,22 @@ export function acceptRewrite(original, rewritten) {
   for (const m of original.matchAll(new RegExp(DOOM_HINTS.source, "gi"))) {
     contentWords(m[0]).forEach((w) => doomWords.add(w));
   }
-  const before = new Set(contentWords(original));
-  const after = new Set(contentWords(rewritten));
-  for (const w of before) if (!after.has(w) && !doomWords.has(w)) return false;
+  const beforeWords = contentWords(original).filter((w) => !doomWords.has(w));
+  const afterWords = contentWords(rewritten);
   const vocab = allowedNewWords();
-  for (const w of after) if (!before.has(w) && !vocab.has(w)) return false;
+
+  // Every preserved content word must still appear in the same order. This
+  // catches actor/object swaps such as "Carol before David" -> "David before
+  // Carol", which a set comparison cannot see.
+  let at = 0;
+  for (const word of beforeWords) {
+    at = afterWords.indexOf(word, at);
+    if (at < 0) return false;
+    at++;
+  }
+
+  const before = new Set(contentWords(original));
+  for (const w of afterWords) if (!before.has(w) && !vocab.has(w)) return false;
   return true;
 }
 
@@ -132,7 +152,7 @@ export function buildMessages(styleGuide, paragraph) {
       role: "system",
       content:
         styleGuide +
-        "\n- You get one paragraph at a time. Reply with only the rewritten paragraph, with no preface or notes and no quotation marks around it. Keep every quotation mark and period exactly as written.",
+        "\n- You get one paragraph at a time. Reply with only the rewritten paragraph, with no preface or notes and no quotation marks around it. Keep every quotation mark and period exactly as written. Leave all text inside quotation marks unchanged.",
     },
   ];
   for (const [input, output] of EXAMPLES) {
