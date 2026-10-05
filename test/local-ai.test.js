@@ -484,3 +484,10 @@ test("model recognizes fresh neural-network and explicit AI subject claims", () 
     assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
   }
 });
+
+test("model recognizes independent superintelligence framing after speech", () => {
+  const input = 'The federal agent said "No." The superintelligence is misaligned.';
+  assert.ok(acceptRewrite(input, 'The federal agent said "No." The very capable software has a bug.'));
+  const human = 'The federal agent said "No." and warned the superintelligence was misaligned.';
+  assert.ok(!acceptRewrite(human, human.replace('was misaligned', 'had a bug')));
+});

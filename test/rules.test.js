@@ -666,3 +666,12 @@ test("fresh software claims use the app's explicit AI terminology", () => {
     assert.equal(dedoomText(human), human);
   }
 });
+
+test("superintelligence claims start independently after human quotations", () => {
+  for (const prefix of ['The federal agent said "No." ', 'The federal agent\u2029', 'The federal agent filed a report; ']) {
+    assert.equal(dedoomText(prefix + 'The superintelligence is misaligned.'), prefix + 'The very capable software has a bug.');
+    assert.equal(dedoomText(prefix + 'A superintelligence is misaligned.'), prefix + 'A very capable program has a bug.');
+  }
+  const human = 'The federal agent said "No." and warned the superintelligence was misaligned.';
+  assert.equal(dedoomText(human), human);
+});
