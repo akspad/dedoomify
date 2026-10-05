@@ -22,11 +22,12 @@
       while (at > 0 && /\s/.test(text[at - 1])) at--;
       // An explicit AI qualifier describes software, even for a role that
       // is usually held by a person. Other human roles still protect the span.
-      if (/\b(?:A\.?I\.?|AGI|LLMs?|artificial[ -]+intelligence)(?:[- ](?:powered|driven|based))?$/i.test(text.slice(Math.max(0, at - 48), at))) continue;
+      if (qualifiedAI(text.slice(Math.max(0, at - 256), at))) continue;
       // A simple software subject can act on a person. Only exempt a complete,
       // unambiguous object phrase; coordinated actors, reporting and relative
       // clauses retain the conservative human guard.
-      if (isHumanObject(text.slice(0, match.index)) && /^[\s.!?;]*$/.test(text.slice(HUMAN_ROLE.lastIndex))) continue;
+      var suffix = text.slice(HUMAN_ROLE.lastIndex);
+      if (isHumanObject(text.slice(0, match.index)) && suffix.length <= 256 && /^(?:[\s.!?;¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]|\[[^\]\r\n]{1,64}\])*$/.test(suffix)) continue;
       return true;
     }
     return false;
@@ -46,6 +47,14 @@
     "chose|chooses|planned|plans|planning|plotting|scheming|refused|refuses|kept|keeps|keep|acted|acts|act|willing|continued|continues|got|gets)){0,4}";
 
   var AI_ACTIONS = [];
+  var AI_ACTION_WORDS = Object.create(null);
+  function qualifiedAI(prefix) {
+    var match = /\b(?:A\.?I\.?|AGI|LLMs?|artificial[ -]+intelligence)(?:[- ](?:powered|driven|based))?((?:\s+[\p{L}\p{N}-]{1,32}){0,4})$/iu.exec(prefix);
+    if (!match) return false;
+    return !match[1].trim().split(/\s+/).some(function (word) {
+      return AI_ACTION_WORDS[word.toLowerCase()] || /^(?:the|a|an|this|that|those|these|their|its|his|her|our|your|and|or|but|who|which|said|says|warned|warns|called|calls|told|is|was|are|were|has|have|had|to|of|with|for|by|while|when|after|before|as|if|because|since|although)$/i.test(word);
+    });
+  }
   function isHumanObject(prefix) {
     var predicate = AI_HUMAN_OBJECT.exec(prefix);
     if (!predicate) return false;
@@ -65,6 +74,7 @@
   // optional regex of what must not follow the verb.
   function byAI(verb, replacement, unless) {
     AI_ACTIONS.push(verb);
+    AI_ACTION_WORDS[verb.split(" ")[0].toLowerCase()] = true;
     var source = "(?:" + verb + ")";
     if (unless) source += "(?!\\s+(?:" + unless + ")\\b)";
     // The lookbehind sits after the verb so it only runs where the verb matched.

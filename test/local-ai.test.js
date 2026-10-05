@@ -386,3 +386,15 @@ test("model phrase slots follow abbreviation, citation and explicit AI context",
     "The artificial-intelligence-powered personal assistant is misaligned.",
   ]) assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
 });
+
+
+test("model phrase slots preserve qualified modifiers and object citations", () => {
+  for (const input of ["The AI-powered digital personal assistant is misaligned.", "The A.I.-powered virtual personal assistant is misaligned."]) {
+    const safe = input.replace("is misaligned", "has a bug");
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace(/digital |virtual /, "")));
+  }
+  const input = "The AI deceived the federal agent [1].";
+  assert.ok(acceptRewrite(input, input.replace("deceived", "confused")));
+  assert.ok(!acceptRewrite(input, input.replace("deceived", "confused").replace("[1]", "[2]")));
+});

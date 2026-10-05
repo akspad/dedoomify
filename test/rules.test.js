@@ -546,3 +546,21 @@ test("dotted and hyphenated explicit AI qualifiers retain software roles", () =>
     assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
   }
 });
+
+
+test("bounded ordinary modifiers keep explicitly AI-qualified roles editable", () => {
+  for (const qualifier of ["AI-powered digital", "A.I.-powered virtual", "artificial-intelligence-powered advanced digital", "AI new smart virtual"]) {
+    const original = `The ${qualifier} personal assistant is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  for (const original of ["The AI warned the experienced personal assistant is misaligned.", "The AI deceived the misaligned personal assistant.", "The AI and the virtual personal assistant are misaligned.", "The AI\u2029The personal assistant is misaligned."]) assert.equal(dedoomText(original), original);
+});
+
+test("bounded citation suffixes do not obscure human objects", () => {
+  for (const suffix of [" [1].", ".[a][2]", "¹.", " [1] [2].", ")."]) {
+    const original = `The AI deceived the federal agent${suffix}`;
+    assert.equal(dedoomText(original), original.replace("deceived", "confused"));
+  }
+  const original = "The AI deceived the federal agent [1], who is misaligned.";
+  assert.equal(dedoomText(original), original);
+});
