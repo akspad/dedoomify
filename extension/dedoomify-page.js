@@ -35,7 +35,9 @@
     var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
       acceptNode: function (node) {
         var parent = node.parentElement;
-        if (!parent || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        // Whitespace-only nodes separate inline words and count toward quote
+        // offsets, even though they never produce a rewrite themselves.
         if (parent.closest("[contenteditable=''], [contenteditable='true'], mark.dedoomify, .dedoomify-tip")) return NodeFilter.FILTER_REJECT;
         for (var el = parent; el; el = el.parentElement) {
           if (SKIP[el.tagName.toUpperCase()]) return NodeFilter.FILTER_REJECT;

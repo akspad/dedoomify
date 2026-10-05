@@ -85,6 +85,15 @@ test("extension keeps human roles across nodes and skips quoted/code/editable co
   }
 });
 
+test("extension retains whitespace separators in paragraph protection", () => {
+  const { document, run } = extensionPage('<p id="human">The <em>federal agent</em> <span>warned of an existential risk.</span></p><p id="speech">She <b>said,</b> <span>\'The model is misaligned.\'</span> Outside it is misaligned.</p>');
+  assert.equal(run().added, 1);
+  assert.equal(document.querySelector("#human").textContent, "The federal agent warned of an existential risk.");
+  assert.equal(document.querySelector("#human mark"), null);
+  assert.equal(document.querySelector("#speech span").textContent, "'The model is misaligned.'");
+  assert.match(document.querySelector("#speech").textContent, /Outside it has a bug/);
+});
+
 test("automatic mode picks out articles with AI doom", () => {
   assert.ok(looksDoomy("Experts warn a rogue AI could wipe out humanity."));
   assert.ok(looksDoomy("The chatbot is misaligned, researchers say."));
