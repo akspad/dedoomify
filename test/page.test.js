@@ -8,6 +8,33 @@ import { createHash } from "node:crypto";
 import { renderPage, PAGE_CSP, PAGE_SCRIPT } from "../lib/page.js";
 import handler from "../api/page.js";
 
+test("Tom's Hardware account backdrop cannot blur or block the static article", () => {
+  // This account dashboard starts cloaked. Without Alpine, its fullscreen
+  // backdrop has no working dismissal control and must not cover the story.
+  const source = `<!doctype html><html><head><title>AI news</title>
+    <style>.backdrop-blur-sm{backdrop-filter:blur(4px)}
+      .fixed{position:fixed;inset:0}.story{max-width:800px}</style>
+    <script>Alpine.start()</script></head><body>
+    <article class="story"><h1>The model went rogue.</h1><p>Public article text.</p>
+      <img class="illustration" style="filter:blur(2px)" src="image.jpg"></article>
+    <div class="fixed inset-0 z-[12000] pointer-events-none"
+      x-data="custom_widgets_1774442034_userDashboard" x-show="isUserAuthenticated" x-cloak>
+      <div id="slide_out-page_cover" class="fixed inset-0 bg-black/60 w-full h-full cursor-pointer z-10 backdrop-blur-sm pointer-events-auto"
+        x-show="isExpanded" x-on:click="isExpanded = false"></div>
+      <p>The model went rogue.</p>
+    </div></body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://www.tomshardware.com/news/story").html);
+  assert.equal(document.querySelector("#slide_out-page_cover"), null);
+  assert.equal(document.querySelector(".fixed"), null);
+  assert.equal(document.querySelectorAll("script").length, 1);
+  assert.equal(document.querySelector("script").textContent, PAGE_SCRIPT);
+  assert.equal(document.querySelector("article").className, "story");
+  assert.equal(document.querySelector("article p").textContent, "Public article text.");
+  assert.equal(document.querySelectorAll("mark.dd").length, 1);
+  // Honor the hidden widget without stripping the article's legitimate effects.
+  assert.equal(document.querySelector(".illustration").getAttribute("style"), "filter:blur(2px)");
+});
+
 const { collectGroups, groupStrings, rewriteGroup, dedoomElement } = globalThis.DedoomPage;
 const { diffEdits } = globalThis.DedoomDiff;
 
