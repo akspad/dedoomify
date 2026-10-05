@@ -48,13 +48,17 @@
 
   var AI_ACTIONS = [];
   function qualifiedAI(prefix) {
-    var match = /\b(?:A\.?I\.?|AGI|LLMs?|artificial[ -]+intelligence)(?:[- ](?:powered|driven|based|enabled|controlled))?((?:\s+[\p{L}\p{N}-]{1,32}){0,4})$/iu.exec(prefix);
+    var match = /\b(?:A\.?I\.?|AGI|LLMs?|artificial[ -]+intelligence)([- ](?:powered|driven|based|enabled|controlled))?((?:\s+[\p{L}\p{N}-]{1,32}){0,4})$/iu.exec(prefix);
     if (!match) return false;
+    // "AI powered assistants" can be a past-tense human-object sentence.
+    // A hyphen makes the relationship explicit; "driven" is not a finite verb.
+    if (match[1] && match[1][0] !== "-" && !/^ driven$/i.test(match[1])) return false;
     // Ordinary predicates cannot qualify a later human role: "AI hired
     // experienced personal assistants" still describes people. Permit only
     // familiar software modifiers; ambiguous or unfamiliar prose stays human.
-    var modifiers = match[1].trim();
+    var modifiers = match[2].trim();
     return !modifiers || modifiers.split(/\s+/).every(function (word) {
+      if (!match[1] && /^(?:advanced|automated|personalized|prototype)$/i.test(word)) return false;
       return /^(?:new|latest|frontier|experimental|prototype|advanced|digital|virtual|smart|autonomous|automated|intelligent|personalized|custom|general|large|small|interactive|conversational|online|robotic)$/i.test(word);
     });
   }

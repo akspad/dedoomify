@@ -458,3 +458,12 @@ test("model permits framing changes with people as affected parties", () => {
   }
   for (const input of ["The AI warned of an existential risk to federal agents.", "The AI poses an existential risk to misaligned federal agents."]) assert.ok(!acceptRewrite(input, input.replace("an existential risk", "a product risk")));
 });
+
+test("model preserves human roles after ambiguous finite qualifier words", () => {
+  for (const verb of ["advanced", "automated", "personalized", "powered", "enabled", "controlled", "based"]) {
+    const input = `The AI ${verb} personal assistants who were misaligned.`;
+    assert.ok(!acceptRewrite(input, input.replace("were misaligned", "had bugs")));
+  }
+  const input = "The AI-powered advanced personal assistant is misaligned.";
+  assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+});

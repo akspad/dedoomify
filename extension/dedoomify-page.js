@@ -27,7 +27,8 @@
   // Rewrites text nodes in place and marks each change. Returns
   // { added, total }: phrases changed this time and on the page so far.
   function run() {
-    var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1, KBD: 1, SAMP: 1, TEMPLATE: 1, SVG: 1, MATH: 1, Q: 1, BLOCKQUOTE: 1 };
+    var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1, KBD: 1, SAMP: 1, TEMPLATE: 1, SVG: 1, MATH: 1, Q: 1, BLOCKQUOTE: 1, IFRAME: 1 };
+    var NON_RENDERED = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEMPLATE: 1, IFRAME: 1 };
     var blockSelector = "address, article, aside, blockquote, button, caption, dd, details, dialog, div, dl, dt, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, hgroup, hr, label, legend, li, main, menu, nav, ol, p, pre, section, summary, table, tbody, td, tfoot, th, thead, tr, ul";
     function protectedElement(node) {
       return node.nodeType === 1 && (SKIP[node.tagName.toUpperCase()] || node.matches("[contenteditable=''], [contenteditable='true'], mark.dedoomify, .dedoomify-tip"));
@@ -70,7 +71,7 @@
         if (node.renderedBreak) { text.push("\u2029"); continue; }
         if (node.nodeType === 3) {
           if (!displayHidden(node.parentElement) && !visibilityHidden(node.parentElement)) text.push(node.nodeValue);
-        } else if (node.nodeType === 1 && !displayHidden(node)) {
+        } else if (node.nodeType === 1 && !displayHidden(node) && !NON_RENDERED[node.tagName.toUpperCase()]) {
           if (node.tagName.toUpperCase() === "BR") { text.push("\u2029"); continue; }
           var block = node !== el && (node.matches(blockSelector) || cssBlock(node));
           if (block) { text.push("\u2029"); stack.push({ renderedBreak: true }); }
@@ -104,7 +105,7 @@
       // empty blocks. Do not merge runs that revisit the same parent later.
       var protectedNode = protectedElement(node);
       // Invisible script/style/template contents supply no rendered context.
-      if (protectedNode && /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(node.tagName.toUpperCase())) continue;
+      if (protectedNode && NON_RENDERED[node.tagName.toUpperCase()]) continue;
       if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !protectedNode) {
         if (node.matches(blockSelector)) { previousOwner = null; previousFlowOwner = null; }
         else if (cssBlock(node)) breakPending = true;

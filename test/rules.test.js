@@ -628,3 +628,12 @@ test("human affected parties do not suppress a clear software framing claim", ()
     "The AI and the federal agent pose an existential risk.",
   ]) assert.equal(dedoomText(input), input);
 });
+
+test("ambiguous verb modifiers require explicit AI compounds", () => {
+  for (const verb of ["advanced", "automated", "personalized", "powered", "enabled", "controlled", "based"]) {
+    const input = `The AI ${verb} personal assistants who were misaligned.`;
+    assert.equal(dedoomText(input), input);
+  }
+  const input = "The AI-powered advanced personal assistant is misaligned.";
+  assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+});

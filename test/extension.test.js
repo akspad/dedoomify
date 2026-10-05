@@ -241,3 +241,12 @@ test("protected inline subtrees retain rendered breaks as immutable context", ()
     assert.match(document.querySelector("#speech").textContent, /Outside it has a bug/);
   }
 });
+
+test("iframe fallback text never supplies visible context or rewrite targets", () => {
+  const { document, run } = extensionPage(`<p><iframe>The federal agent</iframe>The AI is misaligned.</p><p><code><iframe>The federal agent</iframe></code>The AI is misaligned.</p><p>She said, 'The model <kbd><iframe>' Outside it is misaligned.</iframe>is</kbd> misaligned.' Outside it is misaligned.</p>`);
+  assert.equal(run().added, 3);
+  assert.equal(document.querySelectorAll("iframe mark").length, 0);
+  assert.equal(document.querySelectorAll("kbd mark").length, 0);
+  assert.equal(document.querySelectorAll("mark").length, 3);
+  assert.equal(run().added, 0);
+});
