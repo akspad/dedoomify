@@ -32,8 +32,9 @@
     if (!body || !root.Dedoom) return { added: 0, total: 0 };
     var added = 0;
 
-    var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+    var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
       acceptNode: function (node) {
+        if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR") return NodeFilter.FILTER_SKIP;
         var parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
         // Whitespace-only nodes separate inline words and count toward quote
@@ -46,21 +47,24 @@
       },
     });
 
-    var nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
+    var nodes = [], groups = new Map();
+    while (walker.nextNode()) {
+      var node = walker.currentNode;
+      var owner = node.parentElement.closest("p, li, h1, h2, h3, h4, h5, h6, div, td, th, figcaption, article, section, main") || body;
+      if (!groups.has(owner)) groups.set(owner, []);
+      // A br is a rendered separator without a text node. Keep a virtual
+      // newline in context, with its own offset but no DOM rewrite target.
+      var textNode = node.nodeType === 3;
+      if (textNode) nodes.push(node);
+      groups.get(owner).push({ node: textNode ? node : null, text: textNode ? node.nodeValue : "\n" });
+    }
 
     // Quote marks and explicit human actors can sit in adjacent inline nodes.
     // Compute protected spans over the whole paragraph before rewriting any
     // node; otherwise <em>is misaligned</em> inside speech lost its quotes.
-    var groups = new Map();
-    nodes.forEach(function (node) {
-      var owner = node.parentElement.closest("p, li, h1, h2, h3, h4, h5, h6, div, td, th, figcaption, article, section, main") || body;
-      if (!groups.has(owner)) groups.set(owner, []);
-      groups.get(owner).push(node);
-    });
     var protectedParts = new WeakMap();
     groups.forEach(function (group) {
-      var raw = group.map(function (node) { return node.nodeValue; }).join("");
+      var raw = group.map(function (part) { return part.text; }).join("");
       var ranges = [], offset = 0;
       root.Dedoom.dedoomSegments(raw).forEach(function (seg) {
         var length = seg.original === undefined ? seg.text.length : seg.original.length;
@@ -68,8 +72,10 @@
         offset += length;
       });
       var start = 0, rangeIndex = 0;
-      group.forEach(function (node) {
-        var end = start + node.nodeValue.length, parts = [], at = 0;
+      group.forEach(function (part) {
+        var end = start + part.text.length, parts = [], at = 0;
+        if (!part.node) { start = end; return; }
+        var node = part.node;
         while (rangeIndex < ranges.length && ranges[rangeIndex].end <= start) rangeIndex++;
         for (var i = rangeIndex; i < ranges.length && ranges[i].start < end; i++) {
           var lo = Math.max(start, ranges[i].start) - start;

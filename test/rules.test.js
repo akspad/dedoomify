@@ -19,7 +19,7 @@ test("explicit human roles stay factual even alongside AI context", () => {
   }
   assert.equal(dedoomText("The AI agents blackmailed the witness."), "The AI agents wrote a sternly worded email to the witness.");
   assert.equal(dedoomText("The chatbot lied to its users."), "The chatbot gave wrong answers to its users.");
-  for (const separator of [". ", "; ", "!\n"]) {
+  for (const separator of [". ", "; ", "!\n", ".[1] ", ".[1][2] ", ".[a] ", ".¹ ", ".) "]) {
     const text = "The federal agent blackmailed the witness" + separator + "The AI poses an existential risk.";
     assert.equal(dedoomText(text), text.replace("an existential risk", "a product risk"));
     assert.ok(hasDoom(text));

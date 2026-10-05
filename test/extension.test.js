@@ -59,7 +59,7 @@ function extensionPage(html) {
       return null;
     } };
   };
-  const context = vm.createContext({ document, window, NodeFilter: { SHOW_TEXT: 4, FILTER_ACCEPT: 1, FILTER_REJECT: 2 }, Dedoom: globalThis.Dedoom });
+  const context = vm.createContext({ document, window, NodeFilter: { SHOW_TEXT: 4, SHOW_ELEMENT: 1, FILTER_ACCEPT: 1, FILTER_REJECT: 2, FILTER_SKIP: 3 }, Dedoom: globalThis.Dedoom });
   vm.runInContext(fs.readFileSync(ext("dedoomify-page.js"), "utf8"), context);
   return { document, run: () => context.DedoomifyPage.run() };
 }
@@ -92,6 +92,16 @@ test("extension retains whitespace separators in paragraph protection", () => {
   assert.equal(document.querySelector("#human mark"), null);
   assert.equal(document.querySelector("#speech span").textContent, "'The model is misaligned.'");
   assert.match(document.querySelector("#speech").textContent, /Outside it has a bug/);
+});
+
+test("extension maps rendered line breaks without corrupting protection offsets", () => {
+  const { document, run } = extensionPage('<p id="mixed">The federal agent filed a report.<br>The AI is misaligned.</p><p id="speech">She said, \'The model<br><em>is misaligned.</em>\' Outside it is misaligned.</p><p id="human">The <em>federal</em><br><span>agent blackmailed the witness.</span></p>');
+  assert.equal(run().added, 2);
+  assert.match(document.querySelector("#mixed").textContent, /The AI has a bug/);
+  assert.equal(document.querySelector("#speech em").textContent, "is misaligned.");
+  assert.match(document.querySelector("#speech").textContent, /Outside it has a bug/);
+  assert.equal(document.querySelector("#human mark"), null);
+  assert.equal(document.querySelectorAll("br").length, 3);
 });
 
 test("automatic mode picks out articles with AI doom", () => {

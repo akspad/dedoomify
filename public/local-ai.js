@@ -76,11 +76,10 @@ function semanticInvariants(text) {
 
 // Keep short names, pronouns, units and non-English words too. Avoid stemming
 // or truncation: "Bob"/"Ian", "pm"/"am", and "researcher"/"research" differ.
-// Articles and the optional complementizer "that" are the only ignored words.
-const GRAMMAR = new Set(["a", "an", "the", "that"]);
+// Keep articles too: "A" can name a model and "[a]" can be a citation.
+const REPORTING = new Set(["warn", "warned", "say", "said", "says", "report", "reported", "reports", "noted", "notes", "wrote"]);
 function contentWords(text) {
-  return (text.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*|[^\s]/gu) || [])
-    .filter((word) => !GRAMMAR.has(word.toLowerCase()));
+  return text.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*|[^\s]/gu) || [];
 }
 // Accept a rewrite only if it plausibly kept the facts. Small models sometimes
 // invent details ("deceived its creators"), drop who said what, or drop and
@@ -127,7 +126,14 @@ export function acceptRewrite(original, rewritten) {
     for (const variant of variants) {
       const words = contentWords(variant);
       for (const at of positions) {
-        if (words.every((word, i) => afterWords[at + i] === word)) next.add(at + words.length);
+        let cursor = at;
+        const matches = words.every((word) => {
+          // Permit only an inserted reporting complementizer ("warn that").
+          // Existing "that" still has to survive, including as an object.
+          if (word !== "that" && afterWords[cursor] === "that" && REPORTING.has(afterWords[cursor - 1]) && afterWords[cursor + 1] === word) cursor++;
+          return afterWords[cursor++] === word;
+        });
+        if (matches) next.add(cursor);
       }
     }
     if (next.size === 0) return false;

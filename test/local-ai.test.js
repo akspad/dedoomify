@@ -41,6 +41,15 @@ test("matched phrases cannot grant vocabulary for unrelated claims or repetition
   ]) assert.ok(!acceptRewrite(original, rewritten), rewritten);
 });
 
+test("grammar exceptions cannot erase model names, citations or pronoun objects", () => {
+  for (const [before, after] of [
+    ["Model A is misaligned.", "Model has a bug."],
+    ["The model is misaligned.[a]", "The model has a bug.[]"],
+    ["The AI is misaligned and changed that.", "The AI has a bug and changed."],
+    ["They said that the model is misaligned.", "They said the model has a bug."],
+  ]) assert.ok(!acceptRewrite(before, after), after);
+});
+
 test("rules exemptions cannot authorize model euphemisms for human roles", () => {
   for (const [before, after] of [
     ["The fashion model lied about her income while discussing AI.", "The fashion model gave wrong answers about her income while discussing AI."],
