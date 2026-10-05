@@ -526,5 +526,12 @@ test("pop-ups that wait for a script to open them are dropped, not shown over th
   assert.doesNotMatch(document.body.textContent, /Get Started|Start typing|Create Account|Cookies|LinkedIn|newsletter/);
   assert.ok(document.getElementById("v"));
   assert.ok(document.getElementById("kept"));
+  // An app root cloaked until its framework starts is the page, not a pop-up.
+  for (const root of [`<body ng-cloak><div><h1>Title</h1><p>The model is misaligned.</p></div></body>`, `<body><div id="app" v-cloak><h1>Title</h1><p>The model is misaligned.</p></div><div x-cloak>Menu</div></body>`]) {
+    const page = parseHTML(renderPage(`<html>${root}</html>`, "https://example.com/").html).document;
+    assert.equal(page.querySelectorAll("h1").length, 1);
+    assert.equal(page.querySelectorAll("mark.dd").length, 1);
+    assert.doesNotMatch(page.body.textContent, /Menu/);
+  }
   assert.equal(document.querySelectorAll("body > article mark.dd").length, 1);
 });
