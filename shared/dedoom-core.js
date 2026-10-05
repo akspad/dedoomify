@@ -160,13 +160,15 @@
   var CLAUSE_WORD = "(?:\\s+(?!(?:that|who|whom|whose|which|where|when|while|because|since|if|unless|although|though|whereas|so|but|than|as|whether|according|said|says|say|told|tells|reported|reports|claimed|claims|warned|warns|believed|believes|thought|thinks|and|or|to|into|onto|from)\\b)[\\w'’-]+(?:\\.\\d+)?)";
   var CLAUSE_FILLER = "(?:" + FILLER + "(?:\\s+(?:observed|seen|found|shown))?" + FILLER + ")";
   // A model name may carry a tier or version: "Claude Opus 4", "Gemini 2.5 Pro".
-  var CLAUSE_SUBJECT = AI_SUBJECT + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+(?:" + AI_SUBJECT + "|[\\w.]+-(?:mini|preview|turbo|pro)|codex[\\w.-]*))?";
+  // Generic "agents" or "systems" may be people ("field agents"), so only
+  // explicit software words and "model(s)" start an AI clause.
+  var CLAUSE_SUBJECT = "(?:" + SOFTWARE_SUBJECT + "|\\bmodels?)" + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+(?:" + AI_SUBJECT + "|[\\w.]+-(?:mini|preview|turbo|pro)|codex[\\w.-]*))?";
   // The first of two coordinated verbs must itself be an AI action, so "the
   // AI observed soldiers march and defy orders" keeps the soldiers' verb.
   var DOOM_VERB = "(?:defy|defie[sd]|defying|resist(?:s|ed|ing)?|sabotag(?:e|es|ed|ing)|blackmail(?:s|ed|ing)?|deceiv(?:e|es|ed|ing)|lie[sd]?|lying|cheat(?:s|ed|ing)?|manipulat(?:e|es|ed|ing)|escap(?:e|es|ed|ing)|refus(?:e|es|ed|ing)|ignor(?:e|es|ed|ing))";
   // A recipient, not a preposition, conjunction or adverb: "blackmail
   // engineers" but not "blackmail if threatened", "once" or "repeatedly".
-  var OBJECT = "(?=\\s+(?!\\w+ly\\b)(?!(?:if|when|whenever|unless|under|during|in|on|at|to|for|as|because|while|after|before|or|and|but|than|with|without|again|too|instead|once|twice|often|sometimes|always|never|ever|yesterday|today|tonight|tomorrow|then|now|later|first|still|even|anyway|here|there|more|less|again|back|so|until|whether|rather|since|though|although|is|was|were|are)\\b)\\w)";
+  var OBJECT = "(?=\\s+(?!\\w+ly\\b)(?!(?:if|when|whenever|unless|under|during|in|on|at|to|for|as|because|while|after|before|or|and|but|than|with|without|again|too|instead|once|twice|often|sometimes|always|never|ever|yesterday|today|tonight|tomorrow|then|now|later|first|still|even|anyway|here|there|more|less|again|back|so|until|whether|rather|since|though|although|is|was|were|are|abroad|overseas|outside|inside|home|away|online|offline|together|alone|anywhere|everywhere|elsewhere|nearby|ahead|instead)\\b)\\w)";
   function inAIClause(verb, replacement, pronoun) {
     // Like byAI, a clear AI action may take a person as its object.
     AI_ACTIONS.push(/^[a-z]+/.exec(verb)[0]);
@@ -805,7 +807,7 @@
   // Share the rule predicates rather than maintaining a second verb list.
   // Longest first prevents "lied" consuming the start of "lied to".
   var AI_HUMAN_OBJECT = new RegExp(
-    "^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + FILLER +
+    "^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + CLAUSE_FILLER +
     "\\s+(?:" + AI_ACTIONS.slice().sort(function (a, b) { return b.length - a.length; }).map(function (verb) { return verb.replace(/ /g, "\\s+"); }).join("|") +
     "|(?:is|was|are|were)\\s+misaligned)\\b", "i");
 
