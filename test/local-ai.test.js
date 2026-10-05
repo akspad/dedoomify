@@ -415,3 +415,16 @@ test("model validates explicitly enabled and controlled software roles", () => {
     assert.ok(!acceptRewrite(original, safe.replace(/virtual |digital /, "")));
   }
 });
+
+test("model retains parenthesized citations after speech and human continuations", () => {
+  for (const citation of ["(Smith, 2020)", "(Smith et al., 2020)", "(Smith & Jones, 2020a)", "(1–3)", "(Smith, 2020) [2]"]) {
+    const input = `The federal agent said "No." ${citation} The AI is misaligned.`;
+    const safe = input.replace("is misaligned", "has a bug");
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace(citation, "(Jones, 2021)")));
+    const continued = `The federal agent said "No." ${citation} and warned of an existential risk.`;
+    assert.ok(!acceptRewrite(continued, continued.replace("an existential risk", "a product risk")));
+  }
+  const aside = 'The federal agent said "No." (and warned of an existential risk) The AI is misaligned.';
+  assert.ok(!acceptRewrite(aside, aside.replace("is misaligned", "has a bug")));
+});

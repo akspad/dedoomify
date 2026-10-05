@@ -883,11 +883,29 @@
   function dedoomSegments(input) {
     var segments = quoteProtectedSegments(input);
     var contextual = [], overflow = false, humanContext = false, quotedSentenceEnd = false;
+    function claimCitationLength(text) {
+      var citation = /^(?:\[[^\]\r\n]{1,64}\]|\(([^()\r\n]{1,64})\))/.exec(text);
+      if (!citation) return 0;
+      if (citation[1] === undefined) return citation[0].length;
+      // Recognize numeric and author-year references, rather than arbitrary
+      // parenthetical prose. The caller supplies at most 66 characters.
+      var contents = citation[1];
+      if (/^\d{1,4}(?:\s*[-–,;]\s*\d{1,4})*$/.test(contents) ||
+          /^(?:[\p{Lu}][\p{L}’'.-]*(?:\s*(?:&|and|,)\s*[\p{Lu}][\p{L}’'.-]*)*(?:\s+et\s+al\.)?),?\s+(?:1[5-9]\d{2}|20\d{2})[a-z]?(?:,\s*pp?\.\s*\d+(?:[-–]\d+)?)?$/u.test(contents)) return citation[0].length;
+      return 0;
+    }
     function startsAIClaim(text) {
       var lead = text.slice(0, 256);
       // A terminal quote can be followed by citations before the next subject.
       // Consume only this bounded prefix; citation contents remain unchanged.
-      lead = lead.replace(/^\s*(?:\[[^\]\r\n]{1,64}\]|[¹²³⁰⁴⁵⁶⁷⁸⁹)\]}])+/, "");
+      var start = 0;
+      while (start < lead.length) {
+        if (/[\s¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]/.test(lead[start])) { start++; continue; }
+        var length = claimCitationLength(lead.slice(start, start + 66));
+        if (!length) break;
+        start += length;
+      }
+      lead = lead.slice(start);
       if (/^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b/i.test(lead)) return true;
       // Vendor/name qualifiers are ordinary subject words, not a fixed vendor
       // dictionary. Bare "agent" after "federal [break]" is still a continuation.
@@ -919,10 +937,9 @@
             // suffix of a failed match and can become quadratic.
             while (end < seg.text.length) {
               if (/[¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]/.test(seg.text[end])) { end++; continue; }
-              if (seg.text[end] !== "[") break;
-              var citation = /^\[[^\]\r\n]{1,64}\]/.exec(seg.text.slice(end, end + 66));
-              if (!citation) break;
-              end += citation[0].length;
+              var length = claimCitationLength(seg.text.slice(end, end + 66));
+              if (!length) break;
+              end += length;
             }
             boundary.lastIndex = end;
             if (end < seg.text.length && !/\s/.test(seg.text[end])) continue;

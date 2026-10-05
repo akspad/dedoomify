@@ -532,11 +532,15 @@ test("sentence-final abbreviations allow independent AI subjects", () => {
 });
 
 test("citations after terminal speech do not hide a fresh AI subject", () => {
-  for (const citation of ["[1]", "[a][2]", "¹", ")[1]"]) {
+  for (const citation of ["[1]", "[a][2]", "¹", ")[1]", " (Smith, 2020)", " (Smith et al., 2020)", " (Smith & Jones, 2020a)", " (1–3)", " (Smith, 2020) [2]"]) {
     const input = `The federal agent said "No."${citation} The AI is misaligned.`;
     assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
     const continuation = `The federal agent said "No."${citation} and warned of an existential risk.`;
     assert.equal(dedoomText(continuation), continuation);
+  }
+  for (const aside of ["(and warned it posed an existential risk)", "(the federal agent warned in 2020)", "(" + "x".repeat(100_000) + ")"]) {
+    const input = `The federal agent said "No." ${aside} The AI is misaligned.`;
+    assert.equal(dedoomText(input), input);
   }
 });
 
