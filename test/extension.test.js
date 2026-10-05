@@ -132,6 +132,16 @@ test("extension retains skipped inline text as immutable sentence and quote cont
   }
 });
 
+test("extension excludes hidden subtrees from visible protection and rewriting", () => {
+  const { document, run } = extensionPage(`<p id="human"><span hidden>The federal agent </span>The AI is misaligned.</p><p id="code"><code hidden>The federal agent is misaligned.</code>The AI is misaligned.</p><p id="quote">She said, 'The model <span hidden>' Outside it is misaligned.</span><em>is misaligned.</em>' Outside it is misaligned.</p><section hidden><p>The AI is misaligned.</p></section>`);
+  assert.equal(run().added, 3);
+  assert.equal(document.querySelector("#human span").textContent, "The federal agent ");
+  assert.equal(document.querySelector("#code code").textContent, "The federal agent is misaligned.");
+  assert.equal(document.querySelector("#quote em").textContent, "is misaligned.");
+  for (const element of document.querySelectorAll("[hidden]")) assert.equal(element.querySelector("mark"), null);
+  assert.equal(run().added, 0);
+});
+
 test("automatic mode picks out articles with AI doom", () => {
   assert.ok(looksDoomy("Experts warn a rogue AI could wipe out humanity."));
   assert.ok(looksDoomy("The chatbot is misaligned, researchers say."));

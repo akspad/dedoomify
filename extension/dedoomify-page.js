@@ -38,12 +38,13 @@
 
     var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
       acceptNode: function (node) {
+        if (node.nodeType === 1 && node.hasAttribute("hidden")) return NodeFilter.FILTER_REJECT;
         if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !node.matches(blockSelector) && !protectedElement(node)) return NodeFilter.FILTER_SKIP;
         var parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
         // Whitespace-only nodes separate inline words and count toward quote
         // offsets, even though they never produce a rewrite themselves.
-        if (parent.closest("[contenteditable=''], [contenteditable='true'], mark.dedoomify, .dedoomify-tip")) return NodeFilter.FILTER_REJECT;
+        if (parent.closest("[hidden], [contenteditable=''], [contenteditable='true'], mark.dedoomify, .dedoomify-tip")) return NodeFilter.FILTER_REJECT;
         for (var el = parent; el; el = el.parentElement) {
           if (SKIP[el.tagName.toUpperCase()]) return NodeFilter.FILTER_REJECT;
         }
