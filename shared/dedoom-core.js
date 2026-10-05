@@ -175,6 +175,8 @@
     var subject = "(?:" +
       CLAUSE_SUBJECT + CLAUSE_FILLER + "|" +
       CLAUSE_SUBJECT + CLAUSE_FILLER + "\\s+" + DOOM_VERB + CLAUSE_WORD + "{0,3},?\\s+(?:and|or)" + FILLER + "|" +
+      // The AI must open its clause, so "Bob inspected Claude before" is Bob's.
+      "(?:^|[.!?;:,]\\s*|\\b(?:that|and|but|although|though|as|when)\\s+)(?:(?:the|a|an|its|their|our|this|these)\\s+)?(?:[\\w-]+['’]s\\s+)?" +
       CLAUSE_SUBJECT + CLAUSE_WORD + "{0,12}\\s+(?:before|after|by|while|without|instead\\s+of|rather\\s+than)";
     // "it" when a study of the AI found it did something: "tests on
     // Anthropic's Claude Opus 4 that found it would blackmail". Only the AI

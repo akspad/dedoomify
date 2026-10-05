@@ -718,6 +718,8 @@ test("AI clauses that defy orders and deceive users are rewritten", () => {
     "Claude and Bob deceived users.",
     "The AI inspected Bob because it defied orders.",
     "The field agents defied orders.",
+    "Bob inspected Claude before defying orders.",
+    "Alice tested ChatGPT before blackmailing Bob.",
     "They tested the robot. The AI found it defied orders.",
     "A robot was submitted. The AI found it would blackmail engineers.",
     "The AI was fine. Soldiers defied orders anyway.",
