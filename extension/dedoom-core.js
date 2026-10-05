@@ -149,6 +149,43 @@
     return [verb + "(?=" + AI_OBJECT + "\\s+to\\b)", replacement];
   }
 
+  // [verb, replacement] rewritten when an AI is still the subject of a later
+  // verb in its clause: a second coordinated verb ("chatbots will defy orders
+  // and deceive users"), a subject shared with another ("o4-mini and
+  // codex-mini were observed resisting orders"), or an -ing verb after
+  // "before"/"after" ("Claude ... before resorting to blackmail"). Words that
+  // open a new clause ("that", "who", "said") end the AI's span, so "the AI
+  // reported that soldiers defied orders" stays as written. `pronoun` also
+  // accepts "it" later in the AI's sentence.
+  var CLAUSE_WORD = "(?:\\s+(?!(?:that|who|whom|whose|which|where|when|while|because|since|if|unless|although|though|whereas|so|but|than|as|whether|according|said|says|say|told|tells|reported|reports|claimed|claims|warned|warns|believed|believes|thought|thinks|and|or|to|into|onto|from)\\b)[\\w'’-]+(?:\\.\\d+)?)";
+  var CLAUSE_FILLER = "(?:" + FILLER + "(?:\\s+(?:observed|seen|found|shown))?" + FILLER + ")";
+  // A model name may carry a tier or version: "Claude Opus 4", "Gemini 2.5 Pro".
+  // Generic "agents" or "systems" may be people ("field agents"), so only
+  // explicit software words and "model(s)" start an AI clause.
+  var CLAUSE_SUBJECT = "(?:" + SOFTWARE_SUBJECT + "|\\bmodels?)" + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+(?:" + SOFTWARE_SUBJECT + "|[\\w.]+-(?:mini|preview|turbo|pro)|codex[\\w.-]*))?";
+  // The first of two coordinated verbs must itself be an AI action, so "the
+  // AI observed soldiers march and defy orders" keeps the soldiers' verb.
+  var DOOM_VERB = "(?:defy|defie[sd]|defying|resist(?:s|ed|ing)?|sabotag(?:e|es|ed|ing)|blackmail(?:s|ed|ing)?|deceiv(?:e|es|ed|ing)|lie[sd]?|lying|cheat(?:s|ed|ing)?|manipulat(?:e|es|ed|ing)|escap(?:e|es|ed|ing)|refus(?:e|es|ed|ing)|ignor(?:e|es|ed|ing))";
+  // A recipient, not a preposition, conjunction or adverb: "blackmail
+  // engineers" but not "blackmail if threatened", "once" or "repeatedly".
+  var OBJECT = "(?=\\s+(?!\\w+ly\\b)(?!(?:if|when|whenever|unless|under|during|in|on|at|to|for|as|because|while|after|before|or|and|but|than|with|without|again|too|instead|once|twice|often|sometimes|always|never|ever|yesterday|today|tonight|tomorrow|then|now|later|first|still|even|anyway|here|there|more|less|again|back|so|until|whether|rather|since|though|although|is|was|were|are|abroad|overseas|outside|inside|home|away|online|offline|together|alone|anywhere|everywhere|elsewhere|nearby|ahead|instead|no|any|anymore|whatsoever)\\b)\\w)";
+  function inAIClause(verb, replacement, pronoun) {
+    // Like byAI, a clear AI action may take a person as its object.
+    AI_ACTIONS.push(/^[a-z]+/.exec(verb)[0]);
+    var subject = "(?:" +
+      CLAUSE_SUBJECT + CLAUSE_FILLER + "|" +
+      CLAUSE_SUBJECT + CLAUSE_FILLER + "\\s+" + DOOM_VERB + CLAUSE_WORD + "{0,3},?\\s+(?:and|or)" + FILLER + "|" +
+      // The AI must open its clause, so "Bob inspected Claude before" is Bob's.
+      "(?:^|[.!?;:,]\\s*|\\b(?:that|and|but|although|though|as|when)\\s+)(?:(?:the|a|an|its|their|our|this|these)\\s+)?(?:[\\w-]+['’]s\\s+)?" +
+      CLAUSE_SUBJECT + CLAUSE_WORD + "{0,12}\\s+(?:before|after|by|while|without|instead\\s+of|rather\\s+than)";
+    // "it" when a study of the AI found it did something: "tests on
+    // Anthropic's Claude Opus 4 that found it would blackmail". Only the AI
+    // under test can be the antecedent there.
+    if (pronoun) subject += "|\\b(?:tests?|stud(?:y|ies)|research|evaluations?|evals?|experiments?)\\s+(?:on|of|with)\\s+(?:[\\w'’-]+\\s+){0,2}" + CLAUSE_SUBJECT + "\\s+(?:that|which)\\s+(?:found|showed|revealed|suggested|indicated)(?:\\s+that)?\\s+it" + CLAUSE_FILLER;
+    subject += ")";
+    return [verb + "(?<=" + subject + "\\s+(?:" + verb + "))", replacement];
+  }
+
   // Each rule is [pattern, replacement]. Patterns are matched case-insensitively
   // on word boundaries, in order, and text that one rule already rewrote is
   // never rewritten again by a later rule. Put longer, more specific phrases
@@ -515,11 +552,37 @@
     byAI("lies", "gives wrong answers", "in|on|at|with|within|behind|ahead|dormant|low|still"),
     byAI("lying", "giving wrong answers", "in|on|at|around|dormant|low|still"),
     byAI("lie", "give wrong answers", "in|on|at|with|within|behind|ahead|dormant|low|still|down"),
+    // Defying or resisting orders is ignoring instructions.
+    inAIClause("deceive(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confuse"),
+    inAIClause("deceived(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confused"),
+    inAIClause("deceives(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confuses"),
+    inAIClause("deceiving(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confusing"),
+    inAIClause("defy\\s+(?:orders|commands)", "ignore instructions", true),
+    inAIClause("defied\\s+(?:orders|commands)", "ignored instructions", true),
+    inAIClause("defies\\s+(?:orders|commands)", "ignores instructions", true),
+    inAIClause("defying\\s+(?:orders|commands)", "ignoring instructions", true),
+    inAIClause("resist\\s+(?:orders|commands)", "ignore instructions", true),
+    inAIClause("resisted\\s+(?:orders|commands)", "ignored instructions", true),
+    inAIClause("resists\\s+(?:orders|commands)", "ignores instructions", true),
+    inAIClause("resisting\\s+(?:orders|commands)", "ignoring instructions", true),
+    inAIClause("defy(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignore", true),
+    inAIClause("defied(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignored", true),
+    inAIClause("defies(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignores", true),
+    inAIClause("defying(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignoring", true),
+    inAIClause("resist(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignore", true),
+    inAIClause("resisted(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignored", true),
+    inAIClause("resists(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignores", true),
+    inAIClause("resisting(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignoring", true),
     byAI("deceived", "confused"),
     byAI("deceives", "confuses"),
     byAI("deceive", "confuse"),
     byAI("deceiving", "confusing"),
     byAI("resorted to blackmail", "resorted to sternly worded emails"),
+    inAIClause("resorting to blackmail", "resorting to sternly worded emails"),
+    inAIClause("resorts to blackmail", "resorts to sternly worded emails"),
+    inAIClause("resort to blackmail", "resort to sternly worded emails"),
+    inAIClause("performs blackmail", "sends sternly worded emails"),
+    inAIClause("performed blackmail", "sent sternly worded emails"),
     byAI("turned to blackmail", "turned to sternly worded emails"),
     byAI("attempted blackmail", "tried a sternly worded email"),
     byAI("attempts blackmail", "tries a sternly worded email"),
@@ -535,6 +598,12 @@
     // The verb needs an object; "chose blackmail." is the noun.
     withObject(byAI("blackmail", "write a sternly worded email to")),
     byAI("blackmailing", "writing a sternly worded email to"),
+    // The same verbs later in an AI clause: "AI models will sabotage and
+    // blackmail humans", "Claude ... found it would blackmail engineers".
+    inAIClause("blackmailed" + OBJECT, "wrote a sternly worded email to", true),
+    inAIClause("blackmails" + OBJECT, "writes a sternly worded email to", true),
+    inAIClause("blackmail" + OBJECT, "write a sternly worded email to", true),
+    inAIClause("blackmailing" + OBJECT, "writing a sternly worded email to", true),
     ["blackmail attempts", "sternly worded emails"],
     ["a blackmail attempt", "a sternly worded email"],
     ["blackmail attempt", "sternly worded email"],
@@ -555,6 +624,10 @@
     byAI("sabotages", "breaks"),
     withObject(byAI("sabotage", "break")),
     byAI("sabotaging", "breaking"),
+    inAIClause("sabotaged" + OBJECT, "broke"),
+    inAIClause("sabotages" + OBJECT, "breaks"),
+    inAIClause("sabotage" + OBJECT, "break"),
+    inAIClause("sabotaging" + OBJECT, "breaking"),
     ["sabotage evaluations", "breakage evaluations"],
     ["sabotage evals", "breakage evals"],
 
@@ -736,7 +809,7 @@
   // Share the rule predicates rather than maintaining a second verb list.
   // Longest first prevents "lied" consuming the start of "lied to".
   var AI_HUMAN_OBJECT = new RegExp(
-    "^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + FILLER +
+    "^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + CLAUSE_FILLER +
     "\\s+(?:" + AI_ACTIONS.slice().sort(function (a, b) { return b.length - a.length; }).map(function (verb) { return verb.replace(/ /g, "\\s+"); }).join("|") +
     "|(?:is|was|are|were)\\s+misaligned)\\b", "i");
 
@@ -931,6 +1004,9 @@
     return segments.length ? segments : [{ text: text }];
   }
 
+  // How much earlier text a rule's lookbehind may see across rewrites.
+  var CONTEXT_CHARS = 400;
+
   function dedoomSegments(input) {
     var segments = quoteProtectedSegments(input);
     var contextual = [], overflow = false, humanContext = false, quotedSentenceEnd = false;
@@ -1044,24 +1120,38 @@
         if (next.length >= MAX_SEGMENTS) { overflow = true; return; }
         next.push(seg);
       }
+      // Lookbehinds still see the original words of earlier rewrites in the
+      // same unquoted run, so "the model defied orders and sabotaged" keeps
+      // its AI subject for the second verb after the first is rewritten.
+      var context = "";
       segments.forEach(function (seg) {
         if (overflow) return;
-        if (seg.original !== undefined || seg.protected) {
+        if (seg.protected) {
+          context = "";
+          append(seg);
+          return;
+        }
+        if (seg.original !== undefined) {
+          context = (context + seg.original).slice(-CONTEXT_CHARS);
           append(seg);
           return;
         }
         var text = seg.text;
+        var full = context + text;
+        var base = context.length;
         var last = 0;
-        rule.re.lastIndex = 0;
+        // Start one character early so the boundary may come from the context.
+        rule.re.lastIndex = base ? base - 1 : 0;
         var m;
-        while (!overflow && (m = rule.re.exec(text)) !== null) {
-          var start = m.index + m[1].length;
+        while (!overflow && (m = rule.re.exec(full)) !== null) {
+          var start = m.index + m[1].length - base;
           if (start > last) append({ text: text.slice(last, start) });
           var replacement = rule.single ? m[2].replace(rule.single, rule.replacement) : rule.replacement;
           append({ text: matchCase(m[2], replacement), original: m[2] });
           last = start + m[2].length;
-          rule.re.lastIndex = last;
+          rule.re.lastIndex = base + last;
         }
+        context = (context + text).slice(-CONTEXT_CHARS);
         if (!overflow && last < text.length) append({ text: text.slice(last) });
       });
       segments = next;

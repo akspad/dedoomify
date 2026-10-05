@@ -686,3 +686,67 @@ test("bounded human-object adjuncts remain factual while AI actions rewrite", ()
     assert.equal(dedoomText(input), input);
   }
 });
+
+test("AI clauses that defy orders and deceive users are rewritten", () => {
+  for (const [before, after] of [
+    ["The AI kill switch just got harder to find: LLM-powered chatbots will defy orders and deceive users if asked to delete another model, study finds",
+      "The AI off switch just got harder to find: LLM-powered chatbots will ignore instructions and confuse users if asked to delete another model, study finds"],
+    ["The model will deceive users and defy orders.", "The model will confuse users and ignore instructions."],
+    ["The AI deceived soldiers into marching and defying orders.", "The AI confused soldiers into marching and defying orders."],
+    ["The model was found to blackmail if threatened.", "The model was found to blackmail if threatened."],
+    ["Claude Opus 4 still performs blackmail in 84% of rollouts.", "Claude Opus 4 still sends sternly worded emails in 84% of rollouts."],
+    ["The model defies orders.", "The model ignores instructions."],
+    ["The AI kept defying shutdown commands.", "The AI kept ignoring shutdown commands."],
+    ["Chatbots defied explicit instructions from their users.", "Chatbots ignored explicit instructions from their users."],
+    ["The models were defying commands and deceiving users.", "The models were ignoring instructions and confusing users."],
+  ]) assert.equal(dedoomText(before), after);
+  for (const text of [
+    "Soldiers defy orders in the war.",
+    "Scammers deceive users with fake emails.",
+    "The AI reported that soldiers defied orders.",
+    "The AI observed scammers deceive users.",
+    "Soldiers received conflicting orders. They defied orders.",
+    "The AI was tested. Soldiers received conflicting orders. They defied orders.",
+    "The AI worked. Soldiers marched and defied orders.",
+    "The AI helped soldiers. They defied orders.",
+    "The AI ordered soldiers to march and defy orders.",
+    "The model was found to blackmail repeatedly.",
+    "The model was found to blackmail once.",
+    "The AI observed soldiers march and defy orders.",
+    "The AI inspected the robot because it defied orders.",
+    "The AI and Bob defied orders.",
+    "Claude and Bob deceived users.",
+    "The AI inspected Bob because it defied orders.",
+    "The field agents defied orders.",
+    "Claude and assistants resisted commands.",
+    "Bob inspected Claude before defying orders.",
+    "Alice tested ChatGPT before blackmailing Bob.",
+    "They tested the robot. The AI found it defied orders.",
+    "A robot was submitted. The AI found it would blackmail engineers.",
+    "The AI was fine. Soldiers defied orders anyway.",
+    "The federal agents defied orders while testing AI.",
+  ]) assert.equal(dedoomText(text), text);
+});
+
+test("coordinated AI verbs keep their subject after an earlier rewrite", () => {
+  for (const [before, after] of [
+    ["AI Models Will Sabotage And Blackmail Humans To Survive In New Tests.", "AI Models Will Break And Write a sternly worded email to Humans To Survive In New Tests."],
+    ["OpenAI's o3 model defied orders and sabotaged shutdown scripts, but o4-mini and codex-mini were observed resisting orders, too.",
+      "OpenAI's o3 model ignored instructions and broke shutdown scripts, but o4-mini and codex-mini were observed ignoring instructions, too."],
+    ["Recent tests on Anthropic's Claude Opus 4 that found it would blackmail engineers.", "Recent tests on Anthropic's Claude Opus 4 that found it would write a sternly worded email to engineers."],
+    ["The model will defy orders and deceive its users.", "The model will ignore instructions and confuse its users."],
+    ["The model will sabotage servers and blackmail no longer.", "The model will break servers and blackmail no longer."],
+    ["The model will sabotage servers and blackmail abroad.", "The model will break servers and blackmail abroad."],
+    ["The model was found to blackmail government agents.", "The model was found to write a sternly worded email to government agents."],
+    ["The AI defied orders from federal agents.", "The AI ignored instructions from federal agents."],
+    ["The AI resisted commands from government agents.", "The AI ignored instructions from government agents."],
+    ["Claude Opus 4 would first try emailed pleas before resorting to blackmail.", "Claude Opus 4 would first try emailed pleas before resorting to sternly worded emails."],
+    ["The model resisted shutdown commands.", "The model ignored shutdown commands."],
+  ]) assert.equal(dedoomText(before), after);
+  for (const text of [
+    "Protesters resisted orders to disperse.",
+    "The gang would blackmail officials and sabotage the vote.",
+    "The AI was fine. The gang would blackmail officials.",
+    "The AI said \"defy\" but soldiers defied orders.",
+  ]) assert.equal(dedoomText(text), text);
+});

@@ -24,7 +24,7 @@ const modelId = (key) => modelFor(key).ids[precision];
 // Paragraphs worth sending to the model: the rules already found something,
 // or the text uses a word that often carries doom framing.
 const DOOM_HINTS =
-  /\b(misalign\w*|alignment|extinct\w*|doom\w*|apocalyp\w*|superintellig\w*|rogue|sentien\w*|conscious\w*|deceiv\w*|decept\w*|lie[sd]?|lying|schem\w*|plott\w*|takeover|take over|catastroph\w*|existential|kill\w*|destroy\w*|threat\w*|escap\w*|cheat\w*|smuggl\w*|blackmail\w*|manipulat\w*|self-preservation|preserv\w*|own kind|shut ?down|wants?|wanted|decided|believes?|believed|realiz\w*|desires?|evil|skynet|terminator|god-?like|AGI)\b/i;
+  /\b(misalign\w*|alignment|extinct\w*|doom\w*|apocalyp\w*|superintellig\w*|rogue|sentien\w*|conscious\w*|deceiv\w*|decept\w*|defy\w*|defie[sd]|resist\w*|lie[sd]?|lying|schem\w*|plott\w*|takeover|take over|catastroph\w*|existential|kill\w*|destroy\w*|threat\w*|escap\w*|cheat\w*|smuggl\w*|blackmail\w*|manipulat\w*|self-preservation|preserv\w*|own kind|shut ?down|wants?|wanted|decided|believes?|believed|realiz\w*|desires?|evil|skynet|terminator|god-?like|AGI)\b/i;
 const AI_CONTEXT = new RegExp(globalThis.Dedoom.softwareSubjectSource + "\\b|\\b(?:models?|bots?|agents?|assistants?|systems?|OpenAI|Anthropic|DeepMind)\\b", "i");
 
 export function needsModel(original, rulesVersion) {
