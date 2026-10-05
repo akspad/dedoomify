@@ -657,3 +657,12 @@ test("bounded parenthesized citations preserve complete human-object phrases", (
   const human = "The AI deceived the federal agent (who is misaligned).";
   assert.equal(dedoomText(human), human);
 });
+
+test("fresh software claims use the app's explicit AI terminology", () => {
+  for (const subject of ["The neural net", "The neural network", "The neural\tnetwork", "Neural networks", "The machine-learning system", "Machine learning", "The A.I.", "AGI", "Artificial-intelligence"]) {
+    const input = `The federal agent said "No." ${subject} is misaligned.`;
+    assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    const human = `The federal agent said "No." and warned ${subject} was misaligned.`;
+    assert.equal(dedoomText(human), human);
+  }
+});

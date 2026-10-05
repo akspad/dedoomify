@@ -60,7 +60,7 @@
   // fire when an AI is the one doing them ("the model cheated", "Claude
   // secretly smuggled"). A few filler words may sit in between.
   var AI_SUBJECT =
-    "\\b(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?|" +
+    "\\b(?:AIs?|A\\.I\\.?|AGI|LLMs?|artificial[\\s-]+intelligence|language[\\s-]+models?|machine[\\s-]+learning|neural[\\s-]+(?:nets?|networks?)|models?|chatbots?|bots?|agents?|assistants?|systems?|" +
     "Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\\w.]+)?|o\\d+(?:[-.][\\w.]+)?|GPT-[\\w.]+)";
   var FILLER =
     "(?:\\s+(?:\\w+ly|\\w+n['\u2019]t|also|then|even|still|just|not|never|can|could|will|would|" +
@@ -943,7 +943,7 @@
       // at most two before requiring an explicit software subject; reporting
       // continuations such as "but warned the AI" still retain human context.
       lead = lead.replace(/^(?:(?:and|or|but|yet|then|however|nevertheless|nonetheless|instead|meanwhile|still|also|therefore|thus|consequently|finally|next|now)\b[,\s]+){1,2}/i, "");
-      if (/^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\w.]+)?|o\d+(?:[-.][\w.]+)?|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b/i.test(lead)) return true;
+      if (/^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|A\.I\.?|AGI|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\w.]+)?|o\d+(?:[-.][\w.]+)?|GPT-[\w.]+|artificial[\s-]+intelligence|language[\s-]+models?|machine[\s-]+learning|neural[\s-]+(?:nets?|networks?))\b/i.test(lead)) return true;
       // Vendor/name qualifiers are ordinary subject words, not a fixed vendor
       // dictionary. Bare "agent" after "federal [break]" is still a continuation.
       return /^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){0,4}|(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){1,4})(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\w.]+)?|o\d+(?:[-.][\w.]+)?|GPT-[\w.]+)\b/iu.test(lead);

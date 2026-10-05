@@ -477,3 +477,10 @@ test("model supports independent named models and cited human objects", () => {
   const human = "The AI deceived the federal agent (who is misaligned).";
   assert.ok(!acceptRewrite(human, human.replace("deceived", "confused")));
 });
+
+test("model recognizes fresh neural-network and explicit AI subject claims", () => {
+  for (const subject of ["The neural net", "The neural network", "Machine learning", "The A.I.", "AGI"]) {
+    const input = `The federal agent said "No." ${subject} is misaligned.`;
+    assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+  }
+});
