@@ -441,7 +441,6 @@ const DOOM_STORIES = [
   "https://time.com/7202784/ai-research-strategic-lying/",
   "https://gulfnews.com/technology/media/ai-that-lies-openai-study-finds-chatbots-can-deceive-users-1.500275771",
   "https://www.yahoo.com/news/ai-models-sabotage-blackmail-humans-163820126.html",
-  "https://www.democracynow.org/2026/9/17/headlines/openai_discloses_six_more_incidents_of_concerning_behavior_by_misalignedai_agents",
   "https://fortune.com/2026/04/03/ai-kill-switch-study-llm-chatbots-defy-orders-decieve-users-peer-preservation/",
   "https://fortune.com/2023/11/03/ai-bot-insider-trading-deceived-users/",
 ];
