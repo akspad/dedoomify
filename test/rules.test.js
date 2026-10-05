@@ -637,3 +637,23 @@ test("ambiguous verb modifiers require explicit AI compounds", () => {
   const input = "The AI-powered advanced personal assistant is misaligned.";
   assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
 });
+
+test("standalone model names start fresh claims after quotations and clauses", () => {
+  for (const subject of ["OpenAI's o3", "o3", "DeepSeek-R1", "The DeepSeek-R1 model"]) {
+    for (const prefix of ['The federal agent said "No." ', 'The federal agent filed a report; ', 'The federal agent\u2029']) {
+      const input = `${prefix}${subject} is misaligned.`;
+      assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    }
+  }
+  const human = 'The federal agent said "No." and warned DeepSeek-R1 was misaligned.';
+  assert.equal(dedoomText(human), human);
+});
+
+test("bounded parenthesized citations preserve complete human-object phrases", () => {
+  for (const citation of ["(Smith, 2020)", "(Smith et al., 2020)", "(1–3)", "(Smith, 2020) [2]"]) {
+    const input = `The AI deceived the federal agent ${citation}.`;
+    assert.equal(dedoomText(input), input.replace("deceived", "confused"));
+  }
+  const human = "The AI deceived the federal agent (who is misaligned).";
+  assert.equal(dedoomText(human), human);
+});

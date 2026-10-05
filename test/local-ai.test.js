@@ -467,3 +467,13 @@ test("model preserves human roles after ambiguous finite qualifier words", () =>
   const input = "The AI-powered advanced personal assistant is misaligned.";
   assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
 });
+
+test("model supports independent named models and cited human objects", () => {
+  for (const input of ['The federal agent said "No." OpenAI\'s o3 is misaligned.', 'The federal agent filed a report; DeepSeek-R1 is misaligned.']) assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+  const input = "The AI deceived the federal agent (Smith, 2020).";
+  const safe = input.replace("deceived", "confused");
+  assert.ok(acceptRewrite(input, safe));
+  assert.ok(!acceptRewrite(input, safe.replace("2020", "2021")));
+  const human = "The AI deceived the federal agent (who is misaligned).";
+  assert.ok(!acceptRewrite(human, human.replace("deceived", "confused")));
+});

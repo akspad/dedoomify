@@ -14,6 +14,17 @@
   // is mentioned elsewhere in the same sentence. A paragraph-level AI keyword
   // must not turn reporting about federal agents into a software euphemism.
   var HUMAN_ROLE = /\b(?:(?:fashion|runway|catwalk|male|female|human|role)\s+models?|(?:federal|government|police|fbi|cia|secret|undercover|double|human|talent|literary|travel|insurance|sports|real[ -]estate)\s+agents?|(?:personal|administrative|executive|medical|human|teaching|research|legal)\s+assistants?)\b/gi;
+  function claimCitationLength(text) {
+    var citation = /^(?:\[[^\]\r\n]{1,64}\]|\(([^()\r\n]{1,64})\))/.exec(text);
+    if (!citation) return 0;
+    if (citation[1] === undefined) return citation[0].length;
+    // Recognize numeric and author-year references, rather than arbitrary
+    // parenthetical prose. The caller supplies at most 66 characters.
+    var contents = citation[1];
+    if (/^\d{1,4}(?:\s*[-–,;]\s*\d{1,4})*$/.test(contents) ||
+        /^(?:[\p{Lu}][\p{L}’'.-]*(?:\s*(?:&|and|,)\s*[\p{Lu}][\p{L}’'.-]*)*(?:\s+et\s+al\.)?),?\s+(?:1[5-9]\d{2}|20\d{2})[a-z]?(?:,\s*pp?\.\s*\d+(?:[-–]\d+)?)?$/u.test(contents)) return citation[0].length;
+    return 0;
+  }
   function hasHumanRole(text) {
     HUMAN_ROLE.lastIndex = 0;
     var match;
@@ -27,10 +38,22 @@
       // unambiguous object phrase; coordinated actors, reporting and relative
       // clauses retain the conservative human guard.
       var suffix = text.slice(HUMAN_ROLE.lastIndex);
-      if (isHumanObject(text.slice(0, match.index)) && suffix.length <= 256 && /^(?:[\s.!?;¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]|\[[^\]\r\n]{1,64}\])*$/.test(suffix)) continue;
+      if (isHumanObject(text.slice(0, match.index)) && humanObjectSuffix(suffix)) continue;
       return true;
     }
     return false;
+  }
+
+  function humanObjectSuffix(text) {
+    if (text.length > 256) return false;
+    var at = 0;
+    while (at < text.length) {
+      if (/[\s.!?;¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]/.test(text[at])) { at++; continue; }
+      var length = claimCitationLength(text.slice(at, at + 66));
+      if (!length) return false;
+      at += length;
+    }
+    return true;
   }
 
   // Verbs like "cheated" or "asked" are everyday words, so these rules only
@@ -38,7 +61,7 @@
   // secretly smuggled"). A few filler words may sit in between.
   var AI_SUBJECT =
     "\\b(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?|" +
-    "Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\\w.]+)";
+    "Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\\w.]+)?|o\\d+(?:[-.][\\w.]+)?|GPT-[\\w.]+)";
   var FILLER =
     "(?:\\s+(?:\\w+ly|\\w+n['\u2019]t|also|then|even|still|just|not|never|can|could|will|would|" +
     "may|might|must|did|does|do|to|tried|tries|try|trying|learned|learns|began|begins|" +
@@ -904,17 +927,6 @@
   function dedoomSegments(input) {
     var segments = quoteProtectedSegments(input);
     var contextual = [], overflow = false, humanContext = false, quotedSentenceEnd = false;
-    function claimCitationLength(text) {
-      var citation = /^(?:\[[^\]\r\n]{1,64}\]|\(([^()\r\n]{1,64})\))/.exec(text);
-      if (!citation) return 0;
-      if (citation[1] === undefined) return citation[0].length;
-      // Recognize numeric and author-year references, rather than arbitrary
-      // parenthetical prose. The caller supplies at most 66 characters.
-      var contents = citation[1];
-      if (/^\d{1,4}(?:\s*[-–,;]\s*\d{1,4})*$/.test(contents) ||
-          /^(?:[\p{Lu}][\p{L}’'.-]*(?:\s*(?:&|and|,)\s*[\p{Lu}][\p{L}’'.-]*)*(?:\s+et\s+al\.)?),?\s+(?:1[5-9]\d{2}|20\d{2})[a-z]?(?:,\s*pp?\.\s*\d+(?:[-–]\d+)?)?$/u.test(contents)) return citation[0].length;
-      return 0;
-    }
     function startsAIClaim(text) {
       var lead = text.slice(0, 256);
       // A terminal quote can be followed by citations before the next subject.
@@ -931,10 +943,10 @@
       // at most two before requiring an explicit software subject; reporting
       // continuations such as "but warned the AI" still retain human context.
       lead = lead.replace(/^(?:(?:and|or|but|yet|then|however|nevertheless|nonetheless|instead|meanwhile|still|also|therefore|thus|consequently|finally|next|now)\b[,\s]+){1,2}/i, "");
-      if (/^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b/i.test(lead)) return true;
+      if (/^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\w.]+)?|o\d+(?:[-.][\w.]+)?|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b/i.test(lead)) return true;
       // Vendor/name qualifiers are ordinary subject words, not a fixed vendor
       // dictionary. Bare "agent" after "federal [break]" is still a continuation.
-      return /^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){0,4}|(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){1,4})(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+)\b/iu.test(lead);
+      return /^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){0,4}|(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){1,4})(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\w.]+)?|o\d+(?:[-.][\w.]+)?|GPT-[\w.]+)\b/iu.test(lead);
     }
     segments.forEach(function (seg) {
       if (overflow) return;
