@@ -613,3 +613,18 @@ test("nearby AI mentions and predicates do not qualify human roles", () => {
     "The AI-powered human personal assistant is misaligned.",
   ]) assert.equal(dedoomText(input), input);
 });
+
+test("human affected parties do not suppress a clear software framing claim", () => {
+  for (const input of [
+    "The AI poses an existential risk to federal agents.",
+    "The AI presents an existential risk for two experienced federal agents.",
+    "Claude creates an existential risk among research assistants.",
+    "The model represents an existential risk to the personal assistant.",
+  ]) assert.equal(dedoomText(input), input.replace("an existential risk", "a product risk"));
+  for (const input of [
+    "The AI warned of an existential risk to federal agents.",
+    "The AI poses an existential risk to federal agents who are misaligned.",
+    "The AI poses an existential risk to misaligned federal agents.",
+    "The AI and the federal agent pose an existential risk.",
+  ]) assert.equal(dedoomText(input), input);
+});

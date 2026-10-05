@@ -60,8 +60,23 @@
   }
   function isHumanObject(prefix) {
     var predicate = AI_HUMAN_OBJECT.exec(prefix);
-    if (!predicate) return false;
-    var bridge = prefix.slice(predicate[0].length);
+    var bridge;
+    if (predicate) bridge = prefix.slice(predicate[0].length);
+    else {
+      // A framing claim can name people as affected parties without using an
+      // action-rule verb: "AI poses an existential risk to federal agents".
+      // Require a single explicit software clause and a prepositional object;
+      // reporting, coordination and passive human actors remain ambiguous.
+      var subject = new RegExp("^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + "\\b", "i").exec(prefix);
+      if (!subject) return false;
+      var clause = prefix.slice(subject[0].length);
+      if (clause.length > 256 || /[.!?;\u2029]|\b(?:and|or|but|that|who|which|said|says|warned|warns|told|called|calls|by|while|when|after|before|as|if|because|since|although|however)\b/i.test(clause)) return false;
+      var affected = /\b(?:to|for|against|among|beside|near|around)\s+((?:[\p{L}\p{N}'’-]+\s+){0,8})$/iu.exec(clause);
+      if (!affected) return false;
+      var framing = clause.slice(0, affected.index);
+      if (!COMPILED.some(function (rule) { rule.re.lastIndex = 0; return rule.re.test(framing); })) return false;
+      bridge = " " + affected[1];
+    }
     // Bound ordinary object modifiers and noun/preposition phrases. Clause
     // openers, coordination and passive "by" cannot introduce a human actor.
     if (bridge.length > 256 || !/^\s+(?:(?!(?:and|or|but|that|who|which|said|says|is|was|are|were|has|have|had|by|while|when|after|before|as|if|because|since|although|however)\b)[\p{L}\p{N}'’-]+\s+){0,8}$/iu.test(bridge)) return false;

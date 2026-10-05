@@ -449,3 +449,12 @@ test("model cannot treat AI-employed people as explicitly qualified software", (
     assert.ok(!acceptRewrite(input, input.replace("were misaligned", "had bugs").replace("is misaligned", "has a bug")));
   }
 });
+
+test("model permits framing changes with people as affected parties", () => {
+  for (const input of ["The AI poses an existential risk to federal agents.", "The model represents an existential risk to two experienced personal assistants."]) {
+    const safe = input.replace("an existential risk", "a product risk");
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace("to", "from")));
+  }
+  for (const input of ["The AI warned of an existential risk to federal agents.", "The AI poses an existential risk to misaligned federal agents."]) assert.ok(!acceptRewrite(input, input.replace("an existential risk", "a product risk")));
+});
