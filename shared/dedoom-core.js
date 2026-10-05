@@ -535,15 +535,28 @@
     inAIClause("defied\\s+(?:orders|commands)", "ignored instructions", true),
     inAIClause("defies\\s+(?:orders|commands)", "ignores instructions", true),
     inAIClause("defying\\s+(?:orders|commands)", "ignoring instructions", true),
+    inAIClause("resist\\s+(?:orders|commands)", "ignore instructions", true),
+    inAIClause("resisted\\s+(?:orders|commands)", "ignored instructions", true),
+    inAIClause("resists\\s+(?:orders|commands)", "ignores instructions", true),
+    inAIClause("resisting\\s+(?:orders|commands)", "ignoring instructions", true),
     inAIClause("defy(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignore", true),
     inAIClause("defied(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignored", true),
     inAIClause("defies(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignores", true),
     inAIClause("defying(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignoring", true),
+    inAIClause("resist(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignore", true),
+    inAIClause("resisted(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignored", true),
+    inAIClause("resists(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignores", true),
+    inAIClause("resisting(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignoring", true),
     byAI("deceived", "confused"),
     byAI("deceives", "confuses"),
     byAI("deceive", "confuse"),
     byAI("deceiving", "confusing"),
     byAI("resorted to blackmail", "resorted to sternly worded emails"),
+    inAIClause("resorting to blackmail", "resorting to sternly worded emails"),
+    inAIClause("resorts to blackmail", "resorts to sternly worded emails"),
+    inAIClause("resort to blackmail", "resort to sternly worded emails"),
+    inAIClause("performs blackmail", "sends sternly worded emails"),
+    inAIClause("performed blackmail", "sent sternly worded emails"),
     byAI("turned to blackmail", "turned to sternly worded emails"),
     byAI("attempted blackmail", "tried a sternly worded email"),
     byAI("attempts blackmail", "tries a sternly worded email"),
@@ -559,6 +572,12 @@
     // The verb needs an object; "chose blackmail." is the noun.
     withObject(byAI("blackmail", "write a sternly worded email to")),
     byAI("blackmailing", "writing a sternly worded email to"),
+    // The same verbs later in an AI clause: "AI models will sabotage and
+    // blackmail humans", "Claude ... found it would blackmail engineers".
+    inAIClause("blackmailed(?=\\s+\\w)", "wrote a sternly worded email to"),
+    inAIClause("blackmails(?=\\s+\\w)", "writes a sternly worded email to"),
+    inAIClause("blackmail(?=\\s+\\w)", "write a sternly worded email to"),
+    inAIClause("blackmailing(?=\\s+\\w)", "writing a sternly worded email to"),
     ["blackmail attempts", "sternly worded emails"],
     ["a blackmail attempt", "a sternly worded email"],
     ["blackmail attempt", "sternly worded email"],
@@ -579,6 +598,10 @@
     byAI("sabotages", "breaks"),
     withObject(byAI("sabotage", "break")),
     byAI("sabotaging", "breaking"),
+    inAIClause("sabotaged(?=\\s+\\w)", "broke"),
+    inAIClause("sabotages(?=\\s+\\w)", "breaks"),
+    inAIClause("sabotage(?=\\s+\\w)", "break"),
+    inAIClause("sabotaging(?=\\s+\\w)", "breaking"),
     ["sabotage evaluations", "breakage evaluations"],
     ["sabotage evals", "breakage evals"],
 
@@ -955,6 +978,9 @@
     return segments.length ? segments : [{ text: text }];
   }
 
+  // How much earlier text a rule's lookbehind may see across rewrites.
+  var CONTEXT_CHARS = 400;
+
   function dedoomSegments(input) {
     var segments = quoteProtectedSegments(input);
     var contextual = [], overflow = false, humanContext = false, quotedSentenceEnd = false;
@@ -1068,24 +1094,38 @@
         if (next.length >= MAX_SEGMENTS) { overflow = true; return; }
         next.push(seg);
       }
+      // Lookbehinds still see the original words of earlier rewrites in the
+      // same unquoted run, so "the model defied orders and sabotaged" keeps
+      // its AI subject for the second verb after the first is rewritten.
+      var context = "";
       segments.forEach(function (seg) {
         if (overflow) return;
-        if (seg.original !== undefined || seg.protected) {
+        if (seg.protected) {
+          context = "";
+          append(seg);
+          return;
+        }
+        if (seg.original !== undefined) {
+          context = (context + seg.original).slice(-CONTEXT_CHARS);
           append(seg);
           return;
         }
         var text = seg.text;
+        var full = context + text;
+        var base = context.length;
         var last = 0;
-        rule.re.lastIndex = 0;
+        // Start one character early so the boundary may come from the context.
+        rule.re.lastIndex = base ? base - 1 : 0;
         var m;
-        while (!overflow && (m = rule.re.exec(text)) !== null) {
-          var start = m.index + m[1].length;
+        while (!overflow && (m = rule.re.exec(full)) !== null) {
+          var start = m.index + m[1].length - base;
           if (start > last) append({ text: text.slice(last, start) });
           var replacement = rule.single ? m[2].replace(rule.single, rule.replacement) : rule.replacement;
           append({ text: matchCase(m[2], replacement), original: m[2] });
           last = start + m[2].length;
-          rule.re.lastIndex = last;
+          rule.re.lastIndex = base + last;
         }
+        context = (context + text).slice(-CONTEXT_CHARS);
         if (!overflow && last < text.length) append({ text: text.slice(last) });
       });
       segments = next;

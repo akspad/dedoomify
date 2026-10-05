@@ -704,3 +704,20 @@ test("AI clauses that defy orders and deceive users are rewritten", () => {
     "The federal agents defied orders while testing AI.",
   ]) assert.equal(dedoomText(text), text);
 });
+
+test("coordinated AI verbs keep their subject after an earlier rewrite", () => {
+  for (const [before, after] of [
+    ["AI Models Will Sabotage And Blackmail Humans To Survive In New Tests.", "AI Models Will Break And Write a sternly worded email to Humans To Survive In New Tests."],
+    ["OpenAI's o3 model defied orders and sabotaged shutdown scripts, but o4-mini and codex-mini were observed resisting orders, too.",
+      "OpenAI's o3 model ignored instructions and broke shutdown scripts, but o4-mini and codex-mini were observed ignoring instructions, too."],
+    ["Tests on Claude Opus 4 found it would blackmail engineers to avoid being replaced.", "Tests on Claude Opus 4 found it would write a sternly worded email to engineers to avoid being replaced."],
+    ["Claude Opus 4 would first try emailed pleas before resorting to blackmail.", "Claude Opus 4 would first try emailed pleas before resorting to sternly worded emails."],
+    ["The model resisted shutdown commands.", "The model ignored shutdown commands."],
+  ]) assert.equal(dedoomText(before), after);
+  for (const text of [
+    "Protesters resisted orders to disperse.",
+    "The gang would blackmail officials and sabotage the vote.",
+    "The AI was fine. The gang would blackmail officials.",
+    "The AI said \"defy\" but soldiers defied orders.",
+  ]) assert.equal(dedoomText(text), text);
+});
