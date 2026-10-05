@@ -692,6 +692,7 @@ test("AI clauses that defy orders and deceive users are rewritten", () => {
     ["The AI kill switch just got harder to find: LLM-powered chatbots will defy orders and deceive users if asked to delete another model, study finds",
       "The AI off switch just got harder to find: LLM-powered chatbots will ignore instructions and confuse users if asked to delete another model, study finds"],
     ["The model will deceive users and defy orders.", "The model will confuse users and ignore instructions."],
+    ["The AI deceived soldiers into marching and defying orders.", "The AI confused soldiers into marching and defying orders."],
     ["The model was found to blackmail if threatened.", "The model was found to blackmail if threatened."],
     ["Claude Opus 4 still performs blackmail in 84% of rollouts.", "Claude Opus 4 still sends sternly worded emails in 84% of rollouts."],
     ["The model defies orders.", "The model ignores instructions."],
@@ -713,6 +714,9 @@ test("AI clauses that defy orders and deceive users are rewritten", () => {
     "The model was found to blackmail once.",
     "The AI observed soldiers march and defy orders.",
     "The AI inspected the robot because it defied orders.",
+    "The AI and Bob defied orders.",
+    "Claude and Bob deceived users.",
+    "The AI inspected Bob because it defied orders.",
     "The AI was fine. Soldiers defied orders anyway.",
     "The federal agents defied orders while testing AI.",
   ]) assert.equal(dedoomText(text), text);

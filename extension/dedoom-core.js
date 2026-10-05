@@ -157,10 +157,10 @@
   // open a new clause ("that", "who", "said") end the AI's span, so "the AI
   // reported that soldiers defied orders" stays as written. `pronoun` also
   // accepts "it" later in the AI's sentence.
-  var CLAUSE_WORD = "(?:\\s+(?!(?:that|who|whom|whose|which|where|when|while|because|since|if|unless|although|though|whereas|so|but|than|as|whether|according|said|says|say|told|tells|reported|reports|claimed|claims|warned|warns|believed|believes|thought|thinks|and|or|to)\\b)[\\w'’-]+(?:\\.\\d+)?)";
+  var CLAUSE_WORD = "(?:\\s+(?!(?:that|who|whom|whose|which|where|when|while|because|since|if|unless|although|though|whereas|so|but|than|as|whether|according|said|says|say|told|tells|reported|reports|claimed|claims|warned|warns|believed|believes|thought|thinks|and|or|to|into|onto|from)\\b)[\\w'’-]+(?:\\.\\d+)?)";
   var CLAUSE_FILLER = "(?:" + FILLER + "(?:\\s+(?:observed|seen|found|shown))?" + FILLER + ")";
   // A model name may carry a tier or version: "Claude Opus 4", "Gemini 2.5 Pro".
-  var CLAUSE_SUBJECT = AI_SUBJECT + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+[\\w.-]+)?";
+  var CLAUSE_SUBJECT = AI_SUBJECT + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+(?:" + AI_SUBJECT + "|[\\w.]+-(?:mini|preview|turbo|pro)|codex[\\w.-]*))?";
   // The first of two coordinated verbs must itself be an AI action, so "the
   // AI observed soldiers march and defy orders" keeps the soldiers' verb.
   var DOOM_VERB = "(?:defy|defie[sd]|defying|resist(?:s|ed|ing)?|sabotag(?:e|es|ed|ing)|blackmail(?:s|ed|ing)?|deceiv(?:e|es|ed|ing)|lie[sd]?|lying|cheat(?:s|ed|ing)?|manipulat(?:e|es|ed|ing)|escap(?:e|es|ed|ing)|refus(?:e|es|ed|ing)|ignor(?:e|es|ed|ing))";
@@ -170,12 +170,11 @@
   function inAIClause(verb, replacement, pronoun) {
     var subject = "(?:" +
       CLAUSE_SUBJECT + CLAUSE_FILLER + "|" +
-      CLAUSE_SUBJECT + CLAUSE_FILLER + "\\s+" + DOOM_VERB + CLAUSE_WORD + "{0,4},?\\s+(?:and|or)" + FILLER + "|" +
+      CLAUSE_SUBJECT + CLAUSE_FILLER + "\\s+" + DOOM_VERB + CLAUSE_WORD + "{0,3},?\\s+(?:and|or)" + FILLER + "|" +
       CLAUSE_SUBJECT + CLAUSE_WORD + "{0,12}\\s+(?:before|after|by|while|without|instead\\s+of|rather\\s+than)";
-    // "it" in the AI's own sentence: "Claude ... found it would blackmail".
-    // A noun phrase in between ("inspected the robot because it") could be
-    // the antecedent instead, so the words between may not include one.
-    if (pronoun) subject += "|" + CLAUSE_SUBJECT + "(?:\\s+(?!(?:the|a|an|another|this|his|her|their|its|our|your)\\b)[\\w'’-]+){0,12}\\s+it" + CLAUSE_FILLER;
+    // "it" right after a finding about the AI: "Claude Opus 4 that found it
+    // would blackmail". Any other words between could hold the antecedent.
+    if (pronoun) subject += "|" + CLAUSE_SUBJECT + "(?:\\s+(?:that|which))?\\s+(?:found|finds|showed|shows|revealed|reveals|suggested|suggests|indicated|indicates)(?:\\s+that)?\\s+it" + CLAUSE_FILLER;
     subject += ")";
     return [verb + "(?<=" + subject + "\\s+(?:" + verb + "))", replacement];
   }
