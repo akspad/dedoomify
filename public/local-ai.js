@@ -105,9 +105,18 @@ export function acceptRewrite(original, rewritten) {
   // Generic agents/models/assistants can be people, so require an explicit
   // AI qualifier or an unambiguous software/model name for this exception.
   const deception = new RegExp("(" + globalThis.Dedoom.softwareSubjectSource + ")\\s+decided to deceive\\b", "gi");
-  const reference = globalThis.Dedoom.quoteProtectedSegments(original).map((seg) =>
-    seg.protected ? seg.text : seg.text.replace(deception, "$1 produced misleading output for"),
-  ).join("");
+  let reference = "", editable = "";
+  for (const seg of globalThis.Dedoom.dedoomSegments(original)) {
+    // Reconstruct the original spans, combining contiguous editable text so
+    // the exception can cross rule-edit slots but never protected attribution
+    // or direct speech. Paragraph-selection hints grant no editing permission.
+    const raw = seg.original === undefined ? seg.text : seg.original;
+    if (seg.protected) {
+      reference += editable.replace(deception, "$1 produced misleading output for") + raw;
+      editable = "";
+    } else editable += raw;
+  }
+  reference += editable.replace(deception, "$1 produced misleading output for");
   const segments = globalThis.Dedoom.dedoomSegments(reference);
   const afterWords = contentWords(rewritten);
   // Match replacements in their original positions. Vocabulary and counts

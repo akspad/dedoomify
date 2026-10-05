@@ -513,3 +513,17 @@ test("model selection and deception exceptions share explicit software subjects"
     assert.ok(!acceptRewrite(input, `${subject} produced misleading output for its users.`), subject);
   }
 });
+
+test("deception exceptions cannot edit protected human reports or quoted speech", () => {
+  for (const input of [
+    'The federal agent said the AI decided to deceive its users.',
+    'The research assistant said DeepSeek-R1 decided to deceive its users.',
+    'The federal agent said "No." and warned o3 decided to deceive its users.',
+    'She said, "The AI decided to deceive its users."',
+  ]) {
+    assert.ok(!acceptRewrite(input, input.replace('decided to deceive', 'produced misleading output for')));
+    assert.ok(acceptRewrite(input, input));
+  }
+  const prefix = 'The federal agent said the AI decided to deceive its users. ';
+  assert.ok(acceptRewrite(prefix + 'DeepSeek-R1 decided to deceive its users.', prefix + 'DeepSeek-R1 produced misleading output for its users.'));
+});
