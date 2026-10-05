@@ -130,7 +130,7 @@ export function acceptRewrite(original, rewritten) {
         const matches = words.every((word) => {
           // Permit only an inserted reporting complementizer ("warn that").
           // Existing "that" still has to survive, including as an object.
-          if (word !== "that" && afterWords[cursor] === "that" && REPORTING.has(afterWords[cursor - 1]) && afterWords[cursor + 1] === word) cursor++;
+          if (word !== "that" && /^\p{L}/u.test(word) && afterWords[cursor] === "that" && REPORTING.has(afterWords[cursor - 1]) && afterWords[cursor + 1] === word) cursor++;
           return afterWords[cursor++] === word;
         });
         if (matches) next.add(cursor);

@@ -47,6 +47,8 @@ test("grammar exceptions cannot erase model names, citations or pronoun objects"
     ["The model is misaligned.[a]", "The model has a bug.[]"],
     ["The AI is misaligned and changed that.", "The AI has a bug and changed."],
     ["They said that the model is misaligned.", "They said the model has a bug."],
+    ["The model is misaligned, critics said.", "The model has a bug, critics said that."],
+    ["The model is misaligned.[reported]", "The model has a bug.[reported that]"],
   ]) assert.ok(!acceptRewrite(before, after), after);
 });
 
