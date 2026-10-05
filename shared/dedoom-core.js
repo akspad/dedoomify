@@ -752,6 +752,7 @@
     }
     var clear = { "'": -1, "\u2019": -1 };
     var last = { "'": -1, "\u2019": -1 };
+    var nextOpening = { "'": -1, "\u2019": -1 };
     var nextNonSpace = -1;
     // A reverse pass caches the outermost ending and elision evidence
     // for each quote kind. Every character is visited once, even when there
@@ -773,11 +774,12 @@
         // A temporal introduction identifies an abbreviated year even when
         // an unrelated quotation later supplies a clear closing delimiter.
         // Explicit speech introductions still permit numeric direct speech.
-        if (year && !reported.has(j) && /\b(?:in|by|since|during|before|after|until|through|from|of|year|the|a|an)\s*$/i.test(text.slice(Math.max(0, j - 24), j))) end = -1;
+        if (year && !reported.has(j) && nextOpening[close] >= 0 && nextOpening[close] < end && /\b(?:in|by|since|during|before|after|until|through|from|of|year|the|a|an)\s*$/i.test(text.slice(Math.max(0, j - 24), j))) end = -1;
         if (end >= 0) {
           if (endings.size >= MAX_SEGMENTS) return null;
           endings.set(j, end);
         }
+        nextOpening[close] = j;
       }
       if ((ch === "'" || ch === "\u2019") && !wordChar(text[j + 1])) {
         if (last[ch] < 0) last[ch] = j;

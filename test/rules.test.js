@@ -315,6 +315,9 @@ test("abbreviated years remain prose before unrelated later speech", () => {
     const before = `${prefix} '26 the model is misaligned. She said 'hello.'`;
     assert.equal(dedoomText(before), before.replace("is misaligned", "has a bug"));
   }
+  for (const numericQuote of ["It appears in '26 models are misaligned.'", "The caption is '26 models are misaligned.'"]) {
+    assert.equal(dedoomText(numericQuote), numericQuote);
+  }
   const reported = "She said, '26 models are misaligned.' In '27 it is misaligned. She said 'hello.'";
   // The scanner conservatively keeps the outermost plausible speech pair.
   assert.equal(dedoomText(reported), reported);

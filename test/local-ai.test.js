@@ -235,6 +235,7 @@ test("abbreviated years do not inherit later quotations in model validation", ()
   const before = "In '26 the model is misaligned. She said 'hello.'";
   assert.ok(acceptRewrite(before, "In '26 the model has a bug. She said 'hello.'"));
   assert.ok(!acceptRewrite(before, "In '26 the model has a bug. She said 'goodbye.'"));
+  assert.ok(!acceptRewrite("It appears in '26 models are misaligned.'", "It appears in '26 models have bugs.'"));
 });
 
 test("keeps plural/name possessives and human deception inside model output", () => {
