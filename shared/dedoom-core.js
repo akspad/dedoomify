@@ -735,15 +735,21 @@
   // A single quote opens speech only at a word boundary and with a plausible
   // closing quote. Internal apostrophes, possessives and abbreviated years
   // are ordinary prose. Curly apostrophes use the same closing-boundary check.
+  var MAX_SEGMENTS = 1024;
+  function preserveText(text) { return [{ text: String(text), protected: true }]; }
   function wordChar(ch) { return !!ch && /[\p{L}\p{N}_]/u.test(ch); }
   function singleQuoteEnds(text) {
     var endings = new Map();
+    if (!/['‘]/.test(text)) return endings;
     // Record speech introductions once, including arbitrary whitespace, rather
     // than repeatedly scanning the prefix at each possible opening apostrophe.
     var reported = new Set();
     var introductions = /(?:[,:]|\b(?:said|says|wrote|writes|told|tells|asked|asks|replied|replies|stated|states|quoted|quotes|report(?:ed|s)?|remark(?:ed|s)?|claim(?:ed|s)?|explain(?:ed|s)?|whisper(?:ed|s)?|shout(?:ed|s)?|note(?:d|s)?|add(?:ed|s)?|respond(?:ed|s)?|declare(?:d|s)?|announce(?:d|s)?|recount(?:ed|s)?))\s*/gi;
     var match;
-    while ((match = introductions.exec(text))) reported.add(introductions.lastIndex);
+    while ((match = introductions.exec(text))) {
+      if (reported.size >= MAX_SEGMENTS) return null;
+      reported.add(introductions.lastIndex);
+    }
     var clear = { "'": -1, "\u2019": -1 };
     var last = { "'": -1, "\u2019": -1 };
     var nextNonSpace = -1;
@@ -761,11 +767,17 @@
         // can leave intervening unquoted prose unchanged; preservation wins.
         var end = last[close];
         // An elision or abbreviated year followed only by a possessive is
-        // ordinary prose. Numeric speech still has clear endings or reporting
-        // context. Clear
-        // non-possessive endings and reporting context still permit speech.
+        // ordinary prose. Clear non-possessive endings and reporting context
+        // still permit numeric direct speech.
         if ((elision || year) && !reported.has(j) && clear[close] < 0) end = -1;
-        if (end >= 0) endings.set(j, end);
+        // A temporal introduction identifies an abbreviated year even when
+        // an unrelated quotation later supplies a clear closing delimiter.
+        // Explicit speech introductions still permit numeric direct speech.
+        if (year && !reported.has(j) && /\b(?:in|by|since|during|before|after|until|through|from|of|year|the|a|an)\s*$/i.test(text.slice(Math.max(0, j - 24), j))) end = -1;
+        if (end >= 0) {
+          if (endings.size >= MAX_SEGMENTS) return null;
+          endings.set(j, end);
+        }
       }
       if ((ch === "'" || ch === "\u2019") && !wordChar(text[j + 1])) {
         if (last[ch] < 0) last[ch] = j;
@@ -785,6 +797,7 @@
     var text = String(input);
     var segments = [];
     var singleEnds = singleQuoteEnds(text);
+    if (singleEnds === null) return preserveText(text);
     var start = 0;
     var quoted = false;
     var close = "";
@@ -793,25 +806,32 @@
       var ch = text.charAt(i);
       if (!quoted && (ch === "'" || ch === "\u2018")) singleEnd = singleEnds.get(i) ?? -1;
       if (!quoted && ((ch === "'" && singleEnd >= 0) || ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
+        if (segments.length >= MAX_SEGMENTS - 1) return preserveText(text);
         if (i > start) segments.push({ text: text.slice(start, i) });
         quoted = true;
         close = ch === "'" ? "'" : ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
         start = i;
       } else if (quoted && ch === close && ((close !== "'" && close !== "\u2019") || i === singleEnd)) {
+        if (segments.length >= MAX_SEGMENTS) return preserveText(text);
         segments.push({ text: text.slice(start, i + 1), protected: true });
         start = i + 1;
         quoted = false;
         close = "";
       }
     }
-    if (start < text.length) segments.push({ text: text.slice(start), protected: quoted });
+    if (start < text.length) {
+      if (segments.length >= MAX_SEGMENTS) return preserveText(text);
+      segments.push({ text: text.slice(start), protected: quoted });
+    }
     return segments.length ? segments : [{ text: text }];
   }
 
   function dedoomSegments(input) {
     var segments = quoteProtectedSegments(input);
-    var contextual = [];
+    var contextual = [], overflow = false;
     segments.forEach(function (seg) {
+      if (overflow) return;
+      if (contextual.length >= MAX_SEGMENTS) { overflow = true; return; }
       if (seg.protected || !HUMAN_ROLE.test(seg.text)) {
         contextual.push(seg);
       } else {
@@ -827,48 +847,58 @@
           // Untrusted pages may contain millions of tiny sentence breaks.
           // Bound allocations and rule passes; unusually fragmented prose is
           // safer to preserve as one span than to partially change its meaning.
-          if (sentences.length >= 1024) {
-            contextual.push({ text: seg.text, protected: true });
+          if (contextual.length + sentences.length >= MAX_SEGMENTS) {
+            overflow = true;
             return;
           }
           var end = stop.index + stop[0].length;
           sentences.push(seg.text.slice(previous, end));
           previous = end;
         }
-        if (previous < seg.text.length) sentences.push(seg.text.slice(previous));
+        if (previous < seg.text.length) {
+          if (contextual.length + sentences.length >= MAX_SEGMENTS) { overflow = true; return; }
+          sentences.push(seg.text.slice(previous));
+        }
         sentences.forEach(function (text) {
           contextual.push({ text: text, protected: HUMAN_ROLE.test(text) });
         });
       }
     });
+    if (overflow) return preserveText(input);
     segments = contextual;
     // Rules only rewrite untouched, unquoted parts of the input, so the input
     // decides which rules can match.
     var lower = String(input).toLowerCase();
     COMPILED.forEach(function (rule) {
-      if (!mayMatch(rule, lower)) return;
+      if (overflow || !mayMatch(rule, lower)) return;
       var next = [];
+      function append(seg) {
+        if (next.length >= MAX_SEGMENTS) { overflow = true; return; }
+        next.push(seg);
+      }
       segments.forEach(function (seg) {
+        if (overflow) return;
         if (seg.original !== undefined || seg.protected) {
-          next.push(seg);
+          append(seg);
           return;
         }
         var text = seg.text;
         var last = 0;
         rule.re.lastIndex = 0;
         var m;
-        while ((m = rule.re.exec(text)) !== null) {
+        while (!overflow && (m = rule.re.exec(text)) !== null) {
           var start = m.index + m[1].length;
-          if (start > last) next.push({ text: text.slice(last, start) });
+          if (start > last) append({ text: text.slice(last, start) });
           var replacement = rule.single ? m[2].replace(rule.single, rule.replacement) : rule.replacement;
-          next.push({ text: matchCase(m[2], replacement), original: m[2] });
+          append({ text: matchCase(m[2], replacement), original: m[2] });
           last = start + m[2].length;
           rule.re.lastIndex = last;
         }
-        if (last < text.length) next.push({ text: text.slice(last) });
+        if (!overflow && last < text.length) append({ text: text.slice(last) });
       });
       segments = next;
     });
+    if (overflow) return preserveText(input);
     return segments.filter(function (s) {
       return s.text.length > 0 || s.original !== undefined;
     });

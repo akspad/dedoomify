@@ -231,6 +231,12 @@ test("numeric ASCII speech cannot be rewritten by the model", () => {
   assert.ok(acceptRewrite("In '26 the model is misaligned and users' feedback agrees.", "In '26 the model has a bug and users' feedback agrees."));
 });
 
+test("abbreviated years do not inherit later quotations in model validation", () => {
+  const before = "In '26 the model is misaligned. She said 'hello.'";
+  assert.ok(acceptRewrite(before, "In '26 the model has a bug. She said 'hello.'"));
+  assert.ok(!acceptRewrite(before, "In '26 the model has a bug. She said 'goodbye.'"));
+});
+
 test("keeps plural/name possessives and human deception inside model output", () => {
   for (const quote of ["'The users' feedback is that the model is misaligned.'", "'James' report says the model is misaligned.'"]) {
     const original = `She said, ${quote} Outside it is misaligned.`;

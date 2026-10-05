@@ -104,6 +104,21 @@ test("extension maps rendered line breaks without corrupting protection offsets"
   assert.equal(document.querySelectorAll("br").length, 3);
 });
 
+test("extension separates definition lists and every rendered block run", () => {
+  for (const html of [
+    '<dl><dt>The federal agent</dt>\n<dd id="ai">The AI is misaligned.</dd></dl>',
+    '<fieldset><legend>The federal agent</legend><div id="ai">The AI is misaligned.</div></fieldset>',
+    '<article><header>The federal agent</header><footer id="ai">The AI is misaligned.</footer></article>',
+    '<div>The federal agent<aside>Filed a report</aside><span id="ai">The AI is misaligned.</span></div>',
+    '<div>The federal agent<hr><span id="ai">The AI is misaligned.</span></div>',
+  ]) {
+    const { document, run } = extensionPage(html);
+    assert.equal(run().added, 1, html);
+    assert.equal(document.querySelector("#ai").textContent, "The AI has a bug.", html);
+    assert.equal(run().added, 0);
+  }
+});
+
 test("automatic mode picks out articles with AI doom", () => {
   assert.ok(looksDoomy("Experts warn a rogue AI could wipe out humanity."));
   assert.ok(looksDoomy("The chatbot is misaligned, researchers say."));

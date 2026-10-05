@@ -28,13 +28,14 @@
   // { added, total }: phrases changed this time and on the page so far.
   function run() {
     var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1, SVG: 1, MATH: 1, Q: 1, BLOCKQUOTE: 1 };
+    var blockSelector = "address, article, aside, blockquote, button, caption, dd, details, dialog, div, dl, dt, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, hgroup, hr, label, legend, li, main, menu, nav, ol, p, pre, section, summary, table, tbody, td, tfoot, th, thead, tr, ul";
     var body = document.body;
     if (!body || !root.Dedoom) return { added: 0, total: 0 };
     var added = 0;
 
     var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
       acceptNode: function (node) {
-        if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR") return NodeFilter.FILTER_SKIP;
+        if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !node.matches(blockSelector)) return NodeFilter.FILTER_SKIP;
         var parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
         // Whitespace-only nodes separate inline words and count toward quote
@@ -47,16 +48,23 @@
       },
     });
 
-    var nodes = [], groups = new Map();
+    var nodes = [], groups = [], previousOwner = null, currentGroup;
     while (walker.nextNode()) {
       var node = walker.currentNode;
-      var owner = node.parentElement.closest("p, li, h1, h2, h3, h4, h5, h6, div, td, th, figcaption, article, section, main") || body;
-      if (!groups.has(owner)) groups.set(owner, []);
+      // Entering a rendered block ends the preceding text run, including
+      // empty blocks. Do not merge runs that revisit the same parent later.
+      if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR") { previousOwner = null; continue; }
+      var owner = node.parentElement.closest(blockSelector) || body;
+      if (owner !== previousOwner) {
+        currentGroup = [];
+        groups.push(currentGroup);
+        previousOwner = owner;
+      }
       // A br is a rendered separator without a text node. Keep a virtual
       // newline in context, with its own offset but no DOM rewrite target.
       var textNode = node.nodeType === 3;
       if (textNode) nodes.push(node);
-      groups.get(owner).push({ node: textNode ? node : null, text: textNode ? node.nodeValue : "\n" });
+      currentGroup.push({ node: textNode ? node : null, text: textNode ? node.nodeValue : "\n" });
     }
 
     // Quote marks and explicit human actors can sit in adjacent inline nodes.

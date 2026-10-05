@@ -41,6 +41,24 @@ test("hostile sentence fragmentation has bounded segmentation", () => {
   }
 });
 
+test("fragmentation limits cover quote separators, quote caches and rule output", () => {
+  const cases = [
+    ("The federal agent " + ". ".repeat(1024) + '"x"').repeat(1024),
+    '"x" a '.repeat(40_000),
+    "'a ".repeat(40_000) + "'done.'",
+    "said, ".repeat(40_000) + "'done.'",
+    "The AI is misaligned. ".repeat(40_000),
+  ];
+  for (const original of cases) {
+    const start = performance.now();
+    const segments = dedoomSegments(original);
+    assert.equal(segments.length, 1);
+    assert.equal(segments[0].text, original);
+    assert.equal(segments[0].protected, true);
+    assert.ok(performance.now() - start < 5000, "every segmentation stage must remain bounded");
+  }
+});
+
 test("rewrites common doom phrasing", () => {
   const cases = [
     ["Experts warn of existential risk from AI.", "Experts warn of product risk from AI."],
@@ -290,6 +308,16 @@ test("numeric speech stays quoted while abbreviated years remain prose", () => {
   ]) assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
   const year = "In '26 the model is misaligned and users' feedback agrees.";
   assert.equal(dedoomText(year), year.replace("is misaligned", "has a bug"));
+});
+
+test("abbreviated years remain prose before unrelated later speech", () => {
+  for (const prefix of ["In", "By", "Since", "During", "Before", "After", "Until", "From"]) {
+    const before = `${prefix} '26 the model is misaligned. She said 'hello.'`;
+    assert.equal(dedoomText(before), before.replace("is misaligned", "has a bug"));
+  }
+  const reported = "She said, '26 models are misaligned.' In '27 it is misaligned. She said 'hello.'";
+  // The scanner conservatively keeps the outermost plausible speech pair.
+  assert.equal(dedoomText(reported), reported);
 });
 
 test("possessives inside speech do not prematurely end quotations", () => {
