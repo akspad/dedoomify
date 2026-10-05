@@ -437,3 +437,15 @@ test("model recognizes fresh AI subjects after bounded sentence openers", () => 
     assert.ok(!acceptRewrite(continued, continued.replace("was misaligned", "had a bug")));
   }
 });
+
+test("model cannot treat AI-employed people as explicitly qualified software", () => {
+  for (const input of [
+    "AI research involved human personal assistants who were misaligned.",
+    "The AI hired experienced personal assistants who were misaligned.",
+    "The AI consulted virtual personal assistants who were misaligned.",
+    "AI-powered software employed digital personal assistants who were misaligned.",
+    "The AI-powered human personal assistant is misaligned.",
+  ]) {
+    assert.ok(!acceptRewrite(input, input.replace("were misaligned", "had bugs").replace("is misaligned", "has a bug")));
+  }
+});

@@ -47,12 +47,15 @@
     "chose|chooses|planned|plans|planning|plotting|scheming|refused|refuses|kept|keeps|keep|acted|acts|act|willing|continued|continues|got|gets)){0,4}";
 
   var AI_ACTIONS = [];
-  var AI_ACTION_WORDS = Object.create(null);
   function qualifiedAI(prefix) {
     var match = /\b(?:A\.?I\.?|AGI|LLMs?|artificial[ -]+intelligence)(?:[- ](?:powered|driven|based|enabled|controlled))?((?:\s+[\p{L}\p{N}-]{1,32}){0,4})$/iu.exec(prefix);
     if (!match) return false;
-    return !match[1].trim().split(/\s+/).some(function (word) {
-      return AI_ACTION_WORDS[word.toLowerCase()] || /^(?:the|a|an|this|that|those|these|their|its|his|her|our|your|and|or|but|who|which|said|says|warned|warns|called|calls|told|is|was|are|were|has|have|had|to|of|with|for|by|while|when|after|before|as|if|because|since|although)$/i.test(word);
+    // Ordinary predicates cannot qualify a later human role: "AI hired
+    // experienced personal assistants" still describes people. Permit only
+    // familiar software modifiers; ambiguous or unfamiliar prose stays human.
+    var modifiers = match[1].trim();
+    return !modifiers || modifiers.split(/\s+/).every(function (word) {
+      return /^(?:new|latest|frontier|experimental|prototype|advanced|digital|virtual|smart|autonomous|automated|intelligent|personalized|custom|general|large|small|interactive|conversational|online|robotic)$/i.test(word);
     });
   }
   function isHumanObject(prefix) {
@@ -74,7 +77,6 @@
   // optional regex of what must not follow the verb.
   function byAI(verb, replacement, unless) {
     AI_ACTIONS.push(verb);
-    AI_ACTION_WORDS[verb.split(" ")[0].toLowerCase()] = true;
     var source = "(?:" + verb + ")";
     if (unless) source += "(?!\\s+(?:" + unless + ")\\b)";
     // The lookbehind sits after the verb so it only runs where the verb matched.

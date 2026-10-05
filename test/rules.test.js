@@ -602,3 +602,14 @@ test("bounded sentence openers permit fresh AI claims without losing attribution
   const cited = 'The federal agent said "No." (Smith, 2020) However, the AI is misaligned.';
   assert.equal(dedoomText(cited), cited.replace("is misaligned", "has a bug"));
 });
+
+test("nearby AI mentions and predicates do not qualify human roles", () => {
+  for (const input of [
+    "AI research involved human personal assistants who were misaligned.",
+    "The AI hired experienced personal assistants who were misaligned.",
+    "The AI consulted virtual personal assistants who were misaligned.",
+    "AI-powered software employed digital personal assistants who were misaligned.",
+    "The AI interviewed new personal assistants who were misaligned.",
+    "The AI-powered human personal assistant is misaligned.",
+  ]) assert.equal(dedoomText(input), input);
+});
