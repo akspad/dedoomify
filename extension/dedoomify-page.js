@@ -27,15 +27,18 @@
   // Rewrites text nodes in place and marks each change. Returns
   // { added, total }: phrases changed this time and on the page so far.
   function run() {
-    var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1, SVG: 1, MATH: 1, Q: 1, BLOCKQUOTE: 1 };
+    var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1, KBD: 1, SAMP: 1, TEMPLATE: 1, SVG: 1, MATH: 1, Q: 1, BLOCKQUOTE: 1 };
     var blockSelector = "address, article, aside, blockquote, button, caption, dd, details, dialog, div, dl, dt, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, hgroup, hr, label, legend, li, main, menu, nav, ol, p, pre, section, summary, table, tbody, td, tfoot, th, thead, tr, ul";
+    function protectedElement(node) {
+      return node.nodeType === 1 && (SKIP[node.tagName.toUpperCase()] || node.matches("[contenteditable=''], [contenteditable='true'], mark.dedoomify, .dedoomify-tip"));
+    }
     var body = document.body;
     if (!body || !root.Dedoom) return { added: 0, total: 0 };
     var added = 0;
 
     var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
       acceptNode: function (node) {
-        if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !node.matches(blockSelector)) return NodeFilter.FILTER_SKIP;
+        if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !node.matches(blockSelector) && !protectedElement(node)) return NodeFilter.FILTER_SKIP;
         var parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
         // Whitespace-only nodes separate inline words and count toward quote
@@ -53,8 +56,11 @@
       var node = walker.currentNode;
       // Entering a rendered block ends the preceding text run, including
       // empty blocks. Do not merge runs that revisit the same parent later.
-      if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR") { previousOwner = null; continue; }
-      var owner = node.parentElement.closest(blockSelector) || body;
+      var protectedNode = protectedElement(node);
+      // Invisible script/style/template contents supply no rendered context.
+      if (protectedNode && /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(node.tagName.toUpperCase())) continue;
+      if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !protectedNode) { previousOwner = null; continue; }
+      var owner = protectedNode && node.matches(blockSelector) ? node : node.parentElement.closest(blockSelector) || body;
       if (owner !== previousOwner) {
         currentGroup = [];
         groups.push(currentGroup);
@@ -64,7 +70,9 @@
       // newline in context, with its own offset but no DOM rewrite target.
       var textNode = node.nodeType === 3;
       if (textNode) nodes.push(node);
-      currentGroup.push({ node: textNode ? node : null, text: textNode ? node.nodeValue : "\n" });
+      // Keep skipped rendered content as virtual, immutable context. Its
+      // punctuation and quotes must still delimit the neighboring prose.
+      currentGroup.push({ node: textNode ? node : null, text: textNode ? node.nodeValue : protectedNode ? node.textContent : "\n" });
     }
 
     // Quote marks and explicit human actors can sit in adjacent inline nodes.

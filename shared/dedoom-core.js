@@ -753,7 +753,7 @@
     var clear = { "'": -1, "\u2019": -1 };
     var last = { "'": -1, "\u2019": -1 };
     var nextOpening = { "'": -1, "\u2019": -1 };
-    var nextNonSpace = -1;
+    var nextNonSpace = -1, firstNonSpace = text.search(/\S/);
     // A reverse pass caches the outermost ending and elision evidence
     // for each quote kind. Every character is visited once, even when there
     // are thousands of unmatched openers or long runs of whitespace.
@@ -771,10 +771,11 @@
         // ordinary prose. Clear non-possessive endings and reporting context
         // still permit numeric direct speech.
         if ((elision || year) && !reported.has(j) && clear[close] < 0) end = -1;
-        // A temporal introduction identifies an abbreviated year even when
-        // an unrelated quotation later supplies a clear closing delimiter.
-        // Explicit speech introductions still permit numeric direct speech.
-        if (year && !reported.has(j) && nextOpening[close] >= 0 && nextOpening[close] < end && /\b(?:in|by|since|during|before|after|until|through|from|of|year|the|a|an)\s*$/i.test(text.slice(Math.max(0, j - 24), j))) end = -1;
+        // An unintroduced two-digit fragment after prose is an abbreviated
+        // year when another opening arrives before any clear ending. Numeric
+        // speech has a reporting introduction, starts the text, or closes
+        // before the next opening. This works without a preposition dictionary.
+        if (year && !reported.has(j) && j > firstNonSpace && nextOpening[close] >= 0 && nextOpening[close] < clear[close]) end = -1;
         if (end >= 0) {
           if (endings.size >= MAX_SEGMENTS) return null;
           endings.set(j, end);
@@ -845,7 +846,7 @@
           // Decimal points, initials and common abbreviations do not end a
           // sentence. Ellipses are ambiguous, so keep the human context.
           var terminal = /^[.!?;]+/.exec(stop[0])[0];
-          if (/^\.+$/.test(terminal) && (terminal.length > 1 || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|No|approx|etc|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
+          if (/^\.+$/.test(terminal) && (terminal.length > 1 || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|No|approx|etc|Inc|Ltd|Co|Corp|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|Dept|Univ|Assn|Est|Ave|Blvd|Rd|Bldg|Mt|Ft|Fig|Figs|Vol|Ed|Eds|Ch|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
           // Untrusted pages may contain millions of tiny sentence breaks.
           // Bound allocations and rule passes; unusually fragmented prose is
           // safer to preserve as one span than to partially change its meaning.

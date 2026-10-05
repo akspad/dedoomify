@@ -238,6 +238,17 @@ test("abbreviated years do not inherit later quotations in model validation", ()
   assert.ok(!acceptRewrite("It appears in '26 models are misaligned.'", "It appears in '26 models have bugs.'"));
 });
 
+test("model validation shares broad year and abbreviation context", () => {
+  for (const prefix of ["Around", "Circa", "Throughout", "As early as"]) {
+    const before = `${prefix} '26 the model is misaligned. She said 'hello.'`;
+    assert.ok(acceptRewrite(before, before.replace("is misaligned", "has a bug")));
+  }
+  for (const human of ["The federal agent at Acme Inc. warned the AI was misaligned.", "The federal agent met Gen. Smith about an existential risk."]) {
+    assert.ok(!acceptRewrite(human, human.replace("was misaligned", "had a bug").replace("existential risk", "product risk")));
+    assert.ok(acceptRewrite(human + " The AI is misaligned.", human + " The AI has a bug."));
+  }
+});
+
 test("keeps plural/name possessives and human deception inside model output", () => {
   for (const quote of ["'The users' feedback is that the model is misaligned.'", "'James' report says the model is misaligned.'"]) {
     const original = `She said, ${quote} Outside it is misaligned.`;

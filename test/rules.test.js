@@ -24,7 +24,7 @@ test("explicit human roles stay factual even alongside AI context", () => {
     assert.equal(dedoomText(text), text.replace("an existential risk", "a product risk"));
     assert.ok(hasDoom(text));
   }
-  for (const human of ["The federal agent warned Dr. Smith about an existential risk.", "The federal agent paid $1.5 million for an existential risk policy.", "The federal agent warned J. Smith about an existential risk."]) {
+  for (const human of ["The federal agent warned Dr. Smith about an existential risk.", "The federal agent paid $1.5 million for an existential risk policy.", "The federal agent warned J. Smith about an existential risk.", "The federal agent at Acme Inc. warned the AI was misaligned.", "The federal agent met Gen. Smith about an existential risk.", "The federal agent at Acme Ltd. warned of an existential risk.", "The federal agent warned Sen. Smith about an existential risk.", "The federal agent at the Dept. of Energy warned of an existential risk."]) {
     assert.equal(dedoomText(human + " The AI is misaligned."), human + " The AI has a bug.");
   }
 });
@@ -311,7 +311,7 @@ test("numeric speech stays quoted while abbreviated years remain prose", () => {
 });
 
 test("abbreviated years remain prose before unrelated later speech", () => {
-  for (const prefix of ["In", "By", "Since", "During", "Before", "After", "Until", "From"]) {
+  for (const prefix of ["In", "By", "Since", "During", "Before", "After", "Until", "From", "Around", "Circa", "Throughout", "As early as", "As of", "Back in", "About", "Late", "Early"]) {
     const before = `${prefix} '26 the model is misaligned. She said 'hello.'`;
     assert.equal(dedoomText(before), before.replace("is misaligned", "has a bug"));
   }

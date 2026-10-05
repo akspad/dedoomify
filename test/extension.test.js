@@ -119,6 +119,19 @@ test("extension separates definition lists and every rendered block run", () => 
   }
 });
 
+test("extension retains skipped inline text as immutable sentence and quote context", () => {
+  for (const tag of ["code", "kbd", "samp", "q", "span contenteditable=true"]) {
+    const close = tag.split(" ")[0];
+    const { document, run } = extensionPage(`<p id="mixed">The federal agent <${tag}>filed a report.</${close}> The AI is misaligned.</p><p id="speech">She said, 'The model <${tag}>is</${close}> misaligned.' Outside it is misaligned.</p>`);
+    assert.equal(run().added, 2, tag);
+    assert.match(document.querySelector("#mixed").textContent, /The AI has a bug/);
+    assert.equal(document.querySelector(`#mixed ${close}`).textContent, "filed a report.");
+    assert.equal(document.querySelector(`#speech ${close}`).textContent, "is");
+    assert.match(document.querySelector("#speech").textContent, /The model is misaligned.' Outside it has a bug/);
+    assert.equal(run().added, 0);
+  }
+});
+
 test("automatic mode picks out articles with AI doom", () => {
   assert.ok(looksDoomy("Experts warn a rogue AI could wipe out humanity."));
   assert.ok(looksDoomy("The chatbot is misaligned, researchers say."));
