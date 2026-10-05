@@ -445,3 +445,16 @@ test("page protected inline breaks preserve sentence and quote context", () => {
   assert.match(document.querySelector("#speech").textContent, /Outside it has a bug/);
   assert.equal(document.querySelectorAll("mark").length, 2);
 });
+
+
+test("hidden page content retains visibility state and supplies no rewrite context", () => {
+  const { html } = renderPage(`<html><body><p id="mixed"><span hidden>The federal agent </span>The AI is misaligned.</p><p id="speech">She said, 'The model <code hidden>' Outside it is misaligned.</code>is misaligned.' Outside it is misaligned.</p><div hidden><p>The AI is misaligned.</p></div></body></html>`, "https://example.com/article");
+  const { document } = parseHTML(html);
+  assert.equal(document.querySelector("#mixed span").hasAttribute("hidden"), true);
+  assert.equal(document.querySelector("#mixed span").textContent, "The federal agent ");
+  assert.equal(document.querySelector("#mixed mark").textContent, "has a bug");
+  assert.equal(document.querySelectorAll("[hidden] mark").length, 0);
+  assert.equal(document.querySelector("#speech").querySelectorAll("mark").length, 1);
+  assert.deepEqual(collectGroups(document.querySelector("div[hidden]")), []);
+  assert.equal(document.querySelectorAll("mark").length, 2);
+});

@@ -405,3 +405,13 @@ test("model cannot erase human attribution after a semicolon", () => {
   assert.ok(!acceptRewrite(original, original.replace("an existential risk", "a product risk")));
   assert.ok(acceptRewrite(original + " The AI is misaligned.", original + " The AI has a bug."));
 });
+
+
+test("model validates explicitly enabled and controlled software roles", () => {
+  for (const qualifier of ["AI-enabled virtual", "AI-controlled digital"]) {
+    const original = `The ${qualifier} personal assistant is misaligned.`;
+    const safe = original.replace("is misaligned", "has a bug");
+    assert.ok(acceptRewrite(original, safe));
+    assert.ok(!acceptRewrite(original, safe.replace(/virtual |digital /, "")));
+  }
+});

@@ -39,6 +39,7 @@
 
   // Returns an array of groups; each group is an array of text nodes.
   function collectGroups(rootEl) {
+    if (rootEl && rootEl.nodeType === 1 && rootEl.closest("[hidden]")) return [];
     var groups = [];
     var current = null;
     // Untrusted HTML can have thousands of nested inline elements. An explicit
@@ -66,6 +67,7 @@
           current.push(child);
           if (frame.immutable) immutable.add(child);
         } else if (child.nodeType === 1) {
+          if (child.hasAttribute("hidden")) continue;
           var tag = String(child.tagName).toUpperCase();
           if (frame.immutable && tag === "BR") {
             if (!current) { current = []; groups.push(current); }

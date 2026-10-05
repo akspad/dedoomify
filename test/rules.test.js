@@ -577,3 +577,13 @@ test("semicolon continuations retain human attribution until a fresh AI subject"
     assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
   }
 });
+
+
+test("enabled and controlled AI role compounds identify software", () => {
+  for (const qualifier of ["AI-enabled virtual", "AI-controlled digital", "A.I.-enabled virtual", "artificial-intelligence-controlled digital"]) {
+    const original = `The ${qualifier} personal assistant is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  const human = "The personal assistant uses an AI-enabled tool and is misaligned.";
+  assert.equal(dedoomText(human), human);
+});

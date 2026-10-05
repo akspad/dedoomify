@@ -49,7 +49,7 @@
   var AI_ACTIONS = [];
   var AI_ACTION_WORDS = Object.create(null);
   function qualifiedAI(prefix) {
-    var match = /\b(?:A\.?I\.?|AGI|LLMs?|artificial[ -]+intelligence)(?:[- ](?:powered|driven|based))?((?:\s+[\p{L}\p{N}-]{1,32}){0,4})$/iu.exec(prefix);
+    var match = /\b(?:A\.?I\.?|AGI|LLMs?|artificial[ -]+intelligence)(?:[- ](?:powered|driven|based|enabled|controlled))?((?:\s+[\p{L}\p{N}-]{1,32}){0,4})$/iu.exec(prefix);
     if (!match) return false;
     return !match[1].trim().split(/\s+/).some(function (word) {
       return AI_ACTION_WORDS[word.toLowerCase()] || /^(?:the|a|an|this|that|those|these|their|its|his|her|our|your|and|or|but|who|which|said|says|warned|warns|called|calls|told|is|was|are|were|has|have|had|to|of|with|for|by|while|when|after|before|as|if|because|since|although)$/i.test(word);
