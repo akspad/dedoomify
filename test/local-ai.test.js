@@ -361,3 +361,10 @@ test("modified human objects retain modifiers and actor order", () => {
   }
   assert.ok(!acceptRewrite("The AI deceived the misaligned federal agent.", "The AI confused the buggy federal agent."));
 });
+
+
+test("model cannot lose human attribution across a quoted phrase", () => {
+  const original = 'The federal agent called the AI "misaligned" and warned it posed an existential risk.';
+  assert.ok(!acceptRewrite(original, original.replace("an existential risk", "a product risk")));
+  assert.ok(acceptRewrite(original + " The AI is misaligned.", original + " The AI has a bug."));
+});

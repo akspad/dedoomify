@@ -872,11 +872,23 @@
 
   function dedoomSegments(input) {
     var segments = quoteProtectedSegments(input);
-    var contextual = [], overflow = false;
+    var contextual = [], overflow = false, humanContext = false, quotedSentenceEnd = false;
+    function startsAIClaim(text) {
+      return /^\s*(?:(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b|(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?)\b)/i.test(text.slice(0, 256));
+    }
     segments.forEach(function (seg) {
       if (overflow) return;
       if (contextual.length >= MAX_SEGMENTS) { overflow = true; return; }
-      if (seg.protected || !hasHumanRole(seg.text)) {
+      if (seg.protected) {
+        // Quoted punctuation does not reset the actor of a continuing sentence.
+        // A terminal quote followed by a fresh AI subject can start a new one.
+        quotedSentenceEnd = humanContext && /[.!?][”"’'][\s)\]}]*$/.test(seg.text);
+        contextual.push(seg);
+        return;
+      }
+      if (humanContext && quotedSentenceEnd && startsAIClaim(seg.text)) humanContext = false;
+      quotedSentenceEnd = false;
+      if (!humanContext && !hasHumanRole(seg.text)) {
         contextual.push(seg);
       } else {
         // Keep independent AI claims editable. Sentence/clause boundaries
@@ -907,7 +919,7 @@
           // misaligned" keep their human actor's context. Quotes stay intact.
           if (/\u2029/.test(stop[0])) {
             var following = seg.text.slice(end, end + 256);
-            if (!/^\s*(?:(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b|(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?)\b)/i.test(following)) continue;
+            if (!startsAIClaim(following)) continue;
           }
           if (/^\.+$/.test(terminal) && (terminal.length > 1 || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|No|approx|etc|Inc|Ltd|Co|Corp|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|Dept|Univ|Assn|Est|Ave|Blvd|Rd|Bldg|Mt|Ft|Fig|Figs|Vol|Ed|Eds|Ch|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
           // Untrusted pages may contain millions of tiny sentence breaks.
@@ -917,15 +929,17 @@
             overflow = true;
             return;
           }
-          sentences.push(seg.text.slice(previous, end));
+          sentences.push({ text: seg.text.slice(previous, end), complete: true });
           previous = end;
         }
         if (previous < seg.text.length) {
           if (contextual.length + sentences.length >= MAX_SEGMENTS) { overflow = true; return; }
-          sentences.push(seg.text.slice(previous));
+          sentences.push({ text: seg.text.slice(previous), complete: false });
         }
-        sentences.forEach(function (text) {
-          contextual.push({ text: text, protected: hasHumanRole(text) });
+        sentences.forEach(function (sentence) {
+          var protect = humanContext || hasHumanRole(sentence.text);
+          contextual.push({ text: sentence.text, protected: protect });
+          humanContext = !sentence.complete && protect;
         });
       }
     });

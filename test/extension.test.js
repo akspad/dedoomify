@@ -194,3 +194,11 @@ test("automatic mode judges a long page quickly", () => {
   const perPage = (performance.now() - start) / 100;
   assert.ok(perPage < 5, `took ${perPage.toFixed(2)} ms per page`);
 });
+
+
+test("extension retains human actor context around split quoted wording", () => {
+  const { document, run } = extensionPage('<p id="human">The <em>federal agent</em> called the AI "<b>misaligned</b>" and warned it posed <span>an existential risk.</span></p><p>The AI is misaligned.</p>');
+  assert.equal(run().added, 1);
+  assert.equal(document.querySelector("#human mark"), null);
+  assert.equal(document.querySelector("#human").textContent, 'The federal agent called the AI "misaligned" and warned it posed an existential risk.');
+});

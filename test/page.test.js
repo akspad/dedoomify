@@ -412,3 +412,11 @@ test("model page edits cannot modify skipped inline text or span across it", () 
   assert.equal(rendered.querySelector("p").textContent, "The federal agent filed a report. The AI has a bug.");
   assert.equal(rendered.querySelector("code mark"), null);
 });
+
+
+test("page view preserves human attribution around quoted words across tags", () => {
+  const { html } = renderPage('<html><body><p>The federal agent called the AI "<em>misaligned</em>" and warned it posed an existential risk. The AI is misaligned.</p></body></html>', "https://example.com/article");
+  const { document } = parseHTML(html);
+  assert.equal(document.querySelector("p").textContent, 'The federal agent called the AI "misaligned" and warned it posed an existential risk. The AI has a bug.');
+  assert.equal(document.querySelectorAll("p mark").length, 1);
+});

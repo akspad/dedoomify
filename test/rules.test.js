@@ -483,3 +483,18 @@ test("ordinary modifiers retain an AI predicate's human object", () => {
   }
   for (const input of ["The AI deceived the misaligned federal agent.", "The AI was manipulated by the federal agent.", "The AI deceived Bob while the federal agent lied."]) assert.equal(dedoomText(input), input);
 });
+
+
+test("human actor context survives quoted words until an independent sentence", () => {
+  for (const [open, close] of [['"', '"'], ['“', '”'], ["'", "'"], ['‘', '’']]) {
+    const original = `The federal agent called the AI ${open}misaligned${close} and warned it posed an existential risk.`;
+    assert.equal(dedoomText(original), original);
+    assert.equal(dedoomText(original + " The AI is misaligned."), original + " The AI has a bug.");
+    const reported = `The federal agent said ${open}AI is misaligned.${close} The AI is misaligned.`;
+    assert.equal(dedoomText(reported), reported.replace(/The AI is misaligned.$/, "The AI has a bug."));
+    const quotedPerson = `The AI mentioned ${open}the federal agent${close} and is misaligned.`;
+    assert.equal(dedoomText(quotedPerson), quotedPerson.replace("is misaligned", "has a bug"));
+  }
+  const continued = 'The federal agent said "AI is misaligned." and warned of an existential risk.';
+  assert.equal(dedoomText(continued), continued);
+});
