@@ -815,7 +815,17 @@
       } else {
         // Keep independent AI claims editable. Sentence/clause boundaries
         // narrow the conservative human guard without rewriting their action.
-        var sentences = seg.text.match(/[^.!?;]*[.!?;]+|[^.!?;]+$/g) || [seg.text];
+        var sentences = [], boundary = /[.!?;]+(?=\s|$)/g, previous = 0, stop;
+        while ((stop = boundary.exec(seg.text)) !== null) {
+          var prefix = seg.text.slice(Math.max(previous, stop.index - 20), stop.index);
+          // Decimal points, initials and common abbreviations do not end a
+          // sentence. Ellipses are ambiguous, so keep the human context.
+          if (/^\.+$/.test(stop[0]) && (stop[0].length > 1 || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|No|approx|etc|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
+          var end = stop.index + stop[0].length;
+          sentences.push(seg.text.slice(previous, end));
+          previous = end;
+        }
+        if (previous < seg.text.length) sentences.push(seg.text.slice(previous));
         sentences.forEach(function (text) {
           contextual.push({ text: text, protected: HUMAN_ROLE.test(text) });
         });

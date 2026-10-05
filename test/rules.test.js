@@ -24,6 +24,9 @@ test("explicit human roles stay factual even alongside AI context", () => {
     assert.equal(dedoomText(text), text.replace("an existential risk", "a product risk"));
     assert.ok(hasDoom(text));
   }
+  for (const human of ["The federal agent warned Dr. Smith about an existential risk.", "The federal agent paid $1.5 million for an existential risk policy.", "The federal agent warned J. Smith about an existential risk."]) {
+    assert.equal(dedoomText(human + " The AI is misaligned."), human + " The AI has a bug.");
+  }
 });
 
 test("rewrites common doom phrasing", () => {
