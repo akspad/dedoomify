@@ -250,3 +250,16 @@ test("iframe fallback text never supplies visible context or rewrite targets", (
   assert.equal(document.querySelectorAll("mark").length, 3);
   assert.equal(run().added, 0);
 });
+
+test("semantic quote boundaries survive nested immutable subtrees", () => {
+  for (const tag of ["code", "kbd", "samp", "span contenteditable='true'"]) {
+    const close = tag.split(' ')[0];
+    const { document, run } = extensionPage(`<p id="claim"><${tag}><q>The federal agent</q></${close}> The AI is misaligned.</p><p id="speech">She said, 'The model <${tag}><q>is misaligned</q></${close}>.' Outside it is misaligned.</p>`);
+    assert.equal(run().added, 2, tag);
+    assert.match(document.querySelector('#claim').textContent, /The AI has a bug/);
+    assert.equal(document.querySelectorAll('q mark').length, 0);
+    assert.equal(document.querySelector('#speech q').textContent, 'is misaligned');
+    assert.match(document.querySelector('#speech').textContent, /Outside it has a bug/);
+    assert.equal(run().added, 0);
+  }
+});

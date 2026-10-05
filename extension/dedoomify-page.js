@@ -69,12 +69,17 @@
       while (stack.length) {
         var node = stack.pop();
         if (node.renderedBreak) { text.push("\u2029"); continue; }
+        if (node.renderedQuoteEnd) { text.push("”"); continue; }
         if (node.nodeType === 3) {
           if (!displayHidden(node.parentElement) && !visibilityHidden(node.parentElement)) text.push(node.nodeValue);
         } else if (node.nodeType === 1 && !displayHidden(node) && !NON_RENDERED[node.tagName.toUpperCase()]) {
           if (node.tagName.toUpperCase() === "BR") { text.push("\u2029"); continue; }
           var block = node !== el && (node.matches(blockSelector) || cssBlock(node));
           if (block) { text.push("\u2029"); stack.push({ renderedBreak: true }); }
+          if (node.tagName.toUpperCase() === "Q") {
+            text.push("“");
+            stack.push({ renderedQuoteEnd: true });
+          }
           for (var child = node.lastChild; child; child = child.previousSibling) stack.push(child);
         }
       }
@@ -131,7 +136,6 @@
       // Keep skipped rendered content as virtual, immutable context. Its
       // punctuation and quotes must still delimit the neighboring prose.
       var contextText = textNode ? node.nodeValue : protectedNode ? renderedText(node) : "\u2029";
-      if (protectedNode && node.tagName.toUpperCase() === "Q") contextText = "“" + contextText + "”";
       currentGroup.push({ node: textNode ? node : null, text: contextText });
     }
 
