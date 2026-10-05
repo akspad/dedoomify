@@ -535,3 +535,13 @@ test("pop-ups that wait for a script to open them are dropped, not shown over th
   }
   assert.equal(document.querySelectorAll("body > article mark.dd").length, 1);
 });
+
+test("nested pop-up candidates are sized in one pass", () => {
+  const depth = 5_000;
+  const html = `<html><body>${'<div x-cloak>'.repeat(depth)}<h1>Title</h1><p>The model is misaligned.</p>${'</div>'.repeat(depth)}<div role="dialog">Sign up</div></body></html>`;
+  const started = performance.now();
+  const { document } = parseHTML(renderPage(html, "https://example.com/deep").html);
+  assert.equal(document.querySelectorAll("mark.dd").length, 1);
+  assert.doesNotMatch(document.body.textContent, /Sign up/);
+  assert.ok(performance.now() - started < 5000, "nested candidates stay within the processing budget");
+});
