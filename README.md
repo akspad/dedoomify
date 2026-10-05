@@ -20,7 +20,7 @@ place; hover a highlight to see the original words. A reader view shows just the
 
 You can also [add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl) to de-doom the page you're reading with one click.
 
-[![dedoomify on a TechCrunch story about rogue AI: the link is pasted, 9 doom phrases are highlighted in place, and hovering one shows the original words](docs/demo.gif)](public/demo.mp4)
+[![dedoomify on a TechCrunch story about rogue AI: the link is pasted, 8 doom phrases are highlighted in place, and hovering one shows the original words](docs/demo.gif)](public/demo.mp4)
 
 *dedoomify on TechCrunch's [OpenAI still doesn't seem to have a handle on all
 of its rogue AI activity](https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/)
