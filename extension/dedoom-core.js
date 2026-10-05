@@ -162,13 +162,13 @@
   // A model name may carry a tier or version: "Claude Opus 4", "Gemini 2.5 Pro".
   // Generic "agents" or "systems" may be people ("field agents"), so only
   // explicit software words and "model(s)" start an AI clause.
-  var CLAUSE_SUBJECT = "(?:" + SOFTWARE_SUBJECT + "|\\bmodels?)" + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+(?:" + AI_SUBJECT + "|[\\w.]+-(?:mini|preview|turbo|pro)|codex[\\w.-]*))?";
+  var CLAUSE_SUBJECT = "(?:" + SOFTWARE_SUBJECT + "|\\bmodels?)" + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+(?:" + SOFTWARE_SUBJECT + "|[\\w.]+-(?:mini|preview|turbo|pro)|codex[\\w.-]*))?";
   // The first of two coordinated verbs must itself be an AI action, so "the
   // AI observed soldiers march and defy orders" keeps the soldiers' verb.
   var DOOM_VERB = "(?:defy|defie[sd]|defying|resist(?:s|ed|ing)?|sabotag(?:e|es|ed|ing)|blackmail(?:s|ed|ing)?|deceiv(?:e|es|ed|ing)|lie[sd]?|lying|cheat(?:s|ed|ing)?|manipulat(?:e|es|ed|ing)|escap(?:e|es|ed|ing)|refus(?:e|es|ed|ing)|ignor(?:e|es|ed|ing))";
   // A recipient, not a preposition, conjunction or adverb: "blackmail
   // engineers" but not "blackmail if threatened", "once" or "repeatedly".
-  var OBJECT = "(?=\\s+(?!\\w+ly\\b)(?!(?:if|when|whenever|unless|under|during|in|on|at|to|for|as|because|while|after|before|or|and|but|than|with|without|again|too|instead|once|twice|often|sometimes|always|never|ever|yesterday|today|tonight|tomorrow|then|now|later|first|still|even|anyway|here|there|more|less|again|back|so|until|whether|rather|since|though|although|is|was|were|are|abroad|overseas|outside|inside|home|away|online|offline|together|alone|anywhere|everywhere|elsewhere|nearby|ahead|instead)\\b)\\w)";
+  var OBJECT = "(?=\\s+(?!\\w+ly\\b)(?!(?:if|when|whenever|unless|under|during|in|on|at|to|for|as|because|while|after|before|or|and|but|than|with|without|again|too|instead|once|twice|often|sometimes|always|never|ever|yesterday|today|tonight|tomorrow|then|now|later|first|still|even|anyway|here|there|more|less|again|back|so|until|whether|rather|since|though|although|is|was|were|are|abroad|overseas|outside|inside|home|away|online|offline|together|alone|anywhere|everywhere|elsewhere|nearby|ahead|instead|no|any|anymore|whatsoever)\\b)\\w)";
   function inAIClause(verb, replacement, pronoun) {
     // Like byAI, a clear AI action may take a person as its object.
     AI_ACTIONS.push(/^[a-z]+/.exec(verb)[0]);
@@ -553,10 +553,10 @@
     byAI("lying", "giving wrong answers", "in|on|at|around|dormant|low|still"),
     byAI("lie", "give wrong answers", "in|on|at|with|within|behind|ahead|dormant|low|still|down"),
     // Defying or resisting orders is ignoring instructions.
-    inAIClause("deceive users", "confuse users"),
-    inAIClause("deceived users", "confused users"),
-    inAIClause("deceives users", "confuses users"),
-    inAIClause("deceiving users", "confusing users"),
+    inAIClause("deceive(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confuse"),
+    inAIClause("deceived(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confused"),
+    inAIClause("deceives(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confuses"),
+    inAIClause("deceiving(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confusing"),
     inAIClause("defy\\s+(?:orders|commands)", "ignore instructions", true),
     inAIClause("defied\\s+(?:orders|commands)", "ignored instructions", true),
     inAIClause("defies\\s+(?:orders|commands)", "ignores instructions", true),
