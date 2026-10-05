@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import vm from "node:vm";
+import { parseHTML } from "linkedom";
 import "../shared/dedoom-core.js";
 import "../extension/dedoomify-page.js";
 
@@ -43,6 +45,45 @@ test("the extension loads no remote code", () => {
 });
 
 const { looksDoomy } = globalThis.DedoomifyPage;
+
+function extensionPage(html) {
+  const { document, window } = parseHTML(`<html><body>${html}</body></html>`);
+  // Linkedom omits TreeWalker's filter argument; supply its browser behavior.
+  const walk = document.createTreeWalker.bind(document);
+  document.createTreeWalker = (root, mask, filter) => {
+    const walker = walk(root, mask);
+    return { currentNode: null, nextNode() {
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (filter.acceptNode(node) === 1) { this.currentNode = node; return node; }
+      }
+      return null;
+    } };
+  };
+  const context = vm.createContext({ document, window, NodeFilter: { SHOW_TEXT: 4, FILTER_ACCEPT: 1, FILTER_REJECT: 2 }, Dedoom: globalThis.Dedoom });
+  vm.runInContext(fs.readFileSync(ext("dedoomify-page.js"), "utf8"), context);
+  return { document, run: () => context.DedoomifyPage.run() };
+}
+
+test("extension preserves speech across inline formatting and rewrites outside it", () => {
+  for (const [open, close] of [['"', '"'], ["'", "'"], ["“", "”"], ["‘", "’"]]) {
+    const { document, run } = extensionPage(`<p>She said, ${open}The model <em>is misaligned</em>.${close} Outside it is misaligned.</p>`);
+    assert.equal(run().added, 1);
+    assert.equal(document.querySelector("em").textContent, "is misaligned");
+    assert.match(document.querySelector("p").textContent, /Outside it has a bug/);
+    assert.equal(run().added, 0, "running twice does not rewrite existing marks");
+    assert.equal(document.querySelectorAll("mark.dedoomify").length, 1);
+  }
+});
+
+test("extension keeps human roles across nodes and skips quoted/code/editable content", () => {
+  const { document, run } = extensionPage('<p>The <em>federal agents</em> blackmailed the witness while discussing AI.</p><p>The model is misaligned.</p><blockquote>The model is misaligned.</blockquote><q>The model is misaligned.</q><pre>The model is misaligned.</pre><p contenteditable="true">The model is misaligned.</p>');
+  assert.equal(run().added, 1);
+  assert.equal(document.querySelector("p").textContent, "The federal agents blackmailed the witness while discussing AI.");
+  for (const selector of ["blockquote", "q", "pre", "[contenteditable]"]) {
+    assert.equal(document.querySelector(selector).textContent, "The model is misaligned.");
+    assert.equal(document.querySelector(selector).querySelector("mark"), null);
+  }
+});
 
 test("automatic mode picks out articles with AI doom", () => {
   assert.ok(looksDoomy("Experts warn a rogue AI could wipe out humanity."));

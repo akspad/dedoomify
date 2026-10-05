@@ -47,8 +47,47 @@
     var nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
 
+    // Quote marks and explicit human actors can sit in adjacent inline nodes.
+    // Compute protected spans over the whole paragraph before rewriting any
+    // node; otherwise <em>is misaligned</em> inside speech lost its quotes.
+    var groups = new Map();
     nodes.forEach(function (node) {
-      var segments = root.Dedoom.dedoomSegments(node.nodeValue);
+      var owner = node.parentElement.closest("p, li, h1, h2, h3, h4, h5, h6, div, td, th, figcaption, article, section, main") || body;
+      if (!groups.has(owner)) groups.set(owner, []);
+      groups.get(owner).push(node);
+    });
+    var protectedParts = new WeakMap();
+    groups.forEach(function (group) {
+      var raw = group.map(function (node) { return node.nodeValue; }).join("");
+      var ranges = [], offset = 0;
+      root.Dedoom.dedoomSegments(raw).forEach(function (seg) {
+        var length = seg.original === undefined ? seg.text.length : seg.original.length;
+        if (seg.protected) ranges.push({ start: offset, end: offset + length });
+        offset += length;
+      });
+      var start = 0, rangeIndex = 0;
+      group.forEach(function (node) {
+        var end = start + node.nodeValue.length, parts = [], at = 0;
+        while (rangeIndex < ranges.length && ranges[rangeIndex].end <= start) rangeIndex++;
+        for (var i = rangeIndex; i < ranges.length && ranges[i].start < end; i++) {
+          var lo = Math.max(start, ranges[i].start) - start;
+          var hi = Math.min(end, ranges[i].end) - start;
+          if (lo > at) parts.push({ text: node.nodeValue.slice(at, lo) });
+          parts.push({ text: node.nodeValue.slice(lo, hi), protected: true });
+          at = hi;
+        }
+        if (at < node.nodeValue.length) parts.push({ text: node.nodeValue.slice(at) });
+        protectedParts.set(node, parts);
+        start = end;
+      });
+    });
+
+    nodes.forEach(function (node) {
+      var segments = [];
+      protectedParts.get(node).forEach(function (part) {
+        if (part.protected) segments.push(part);
+        else root.Dedoom.dedoomSegments(part.text).forEach(function (seg) { segments.push(seg); });
+      });
       if (!segments.some(function (s) { return s.original !== undefined; })) return;
       var frag = document.createDocumentFragment();
       segments.forEach(function (seg) {

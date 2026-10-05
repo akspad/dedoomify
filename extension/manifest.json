@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "dedoomify",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Rewrites AI doom framing into reasonable facts :)",
   "homepage_url": "https://dedoomify.com",
   "permissions": ["activeTab", "scripting"],
