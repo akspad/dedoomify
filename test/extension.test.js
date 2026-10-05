@@ -215,6 +215,15 @@ test("semantic inline quotes do not leak human context to neighboring AI claims"
 
 test("extension detection recognizes dotted and hyphenated AI qualifiers", () => {
   assert.ok(looksDoomy("The A.I. personal assistant is misaligned."));
+  for (const suffix of ["powered", "driven", "based", "enabled", "controlled"]) {
+    assert.ok(looksDoomy(`The A.I.-${suffix} personal assistant is misaligned.`));
+    const { document, run } = extensionPage(`<p>The A.I.-${suffix} personal assistant is misaligned.</p>`);
+    assert.equal(run().added, 1);
+    assert.match(document.body.textContent, /has a bug/);
+  }
+  assert.ok(!looksDoomy("A.I.-powered software helps with email."));
+  assert.ok(!looksDoomy("The A.I.-powerful personal assistant is misaligned."));
+  assert.ok(!looksDoomy("The a.i.-powered personal assistant is misaligned."));
   assert.ok(looksDoomy("The artificial-intelligence-powered personal assistant is misaligned."));
   const { document, run } = extensionPage('<p>The A.I. personal assistant is misaligned.</p><p>The artificial-intelligence-powered personal assistant is misaligned.</p>');
   assert.equal(run().added, 2);

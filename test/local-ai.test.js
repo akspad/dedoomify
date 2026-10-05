@@ -428,3 +428,12 @@ test("model retains parenthesized citations after speech and human continuations
   const aside = 'The federal agent said "No." (and warned of an existential risk) The AI is misaligned.';
   assert.ok(!acceptRewrite(aside, aside.replace("is misaligned", "has a bug")));
 });
+
+test("model recognizes fresh AI subjects after bounded sentence openers", () => {
+  for (const opener of ["But", "Then", "However,", "And then"]) {
+    const input = `The federal agent said "No." ${opener} the AI is misaligned.`;
+    assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+    const continued = `The federal agent said "No." ${opener} warned the AI was misaligned.`;
+    assert.ok(!acceptRewrite(continued, continued.replace("was misaligned", "had a bug")));
+  }
+});

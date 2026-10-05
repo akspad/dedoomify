@@ -906,6 +906,10 @@
         start += length;
       }
       lead = lead.slice(start);
+      // A sentence can open with a conjunction or discourse marker. Consume
+      // at most two before requiring an explicit software subject; reporting
+      // continuations such as "but warned the AI" still retain human context.
+      lead = lead.replace(/^(?:(?:and|or|but|yet|then|however|nevertheless|nonetheless|instead|meanwhile|still|also|therefore|thus|consequently|finally|next|now)\b[,\s]+){1,2}/i, "");
       if (/^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b/i.test(lead)) return true;
       // Vendor/name qualifiers are ordinary subject words, not a fixed vendor
       // dictionary. Bare "agent" after "federal [break]" is still a continuation.

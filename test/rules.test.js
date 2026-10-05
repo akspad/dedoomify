@@ -591,3 +591,14 @@ test("enabled and controlled AI role compounds identify software", () => {
   const human = "The personal assistant uses an AI-enabled tool and is misaligned.";
   assert.equal(dedoomText(human), human);
 });
+
+test("bounded sentence openers permit fresh AI claims without losing attribution", () => {
+  for (const opener of ["But", "Then", "However,", "And then", "Meanwhile,", "Therefore,"]) {
+    const input = `The federal agent said "No." ${opener} the AI is misaligned.`;
+    assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    const continued = `The federal agent said "No." ${opener} warned the AI was misaligned.`;
+    assert.equal(dedoomText(continued), continued);
+  }
+  const cited = 'The federal agent said "No." (Smith, 2020) However, the AI is misaligned.';
+  assert.equal(dedoomText(cited), cited.replace("is misaligned", "has a bug"));
+});
