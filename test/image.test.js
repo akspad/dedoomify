@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchImage } from "../lib/fetch-article.js";
+import { fetchImage, fetchAsset } from "../lib/fetch-article.js";
 import handler from "../api/image.js";
 
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a6WQAAAAASUVORK5CYII=", "base64");
@@ -43,5 +43,32 @@ test("image proxy rejects special-purpose literals and redirects before connecti
   for (const url of ["http://192.0.0.1/x", "http://192.88.99.1/x", "http://[2001:db8::1]/x", "http://[3fff::1]/x"]) {
     await assert.rejects(fetchImage(url, () => { throw new Error("must not connect"); }), /publicly reachable/);
     await assert.rejects(fetchImage("http://93.184.216.34/a", async () => new Response(null, { status: 302, headers: { location: url } })), /publicly reachable/);
+  }
+});
+
+test("page assets allow CSS, fonts and SVG but reject documents and private redirects", async () => {
+  for (const type of ["text/css", "text/css; charset=utf-8", "font/woff2", "font/woff", "font/ttf", "image/svg+xml"]) {
+    const result = await fetchAsset("http://93.184.216.34/a", async () => new Response("asset", { headers: { "content-type": type } }));
+    assert.equal(result.contentType, type);
+  }
+  for (const type of ["text/html", "application/javascript", "text/javascript", "application/xml", "text/css-junk"]) {
+    await assert.rejects(fetchAsset("http://93.184.216.34/a", async () => new Response("active", { headers: { "content-type": type } })), /supported page resource/);
+  }
+  await assert.rejects(fetchAsset("http://127.0.0.1/a", () => { throw new Error("must not connect"); }), /publicly reachable/);
+  await assert.rejects(fetchAsset("http://93.184.216.34/a", async () => new Response(null, { status: 302, headers: { location: "http://192.168.1.1/admin" } })), /publicly reachable/);
+  await assert.rejects(fetchAsset("http://93.184.216.34/a", async () => new Response(Buffer.alloc(2 * 1024 * 1024 + 1), { headers: { "content-type": "text/css" } })), /too big/);
+});
+
+test("asset endpoint resolves nested CSS against the final redirected stylesheet URL", async () => {
+  const response = { headers: {}, setHeader(k, v) { this.headers[k] = v; }, end(body) { this.body = body; } };
+  await handler({ method: "GET", url: "/api/image?asset=1&url=https://example.com/start.css" }, response, {
+    rateLimit: () => ({ allowed: true }),
+    fetchAsset: async () => ({ body: Buffer.from('@import "extra.css";@font-face{font-family:News;src:url(../fonts/news.woff2)}.logo{background:url(logo.svg)}'), contentType: "text/css", finalUrl: "https://cdn.example.com/styles/main.css" }),
+  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.headers["content-type"], "text/css; charset=utf-8");
+  assert.match(response.headers["content-security-policy"], /default-src 'none'; sandbox/);
+  for (const url of ["https://cdn.example.com/styles/extra.css", "https://cdn.example.com/fonts/news.woff2", "https://cdn.example.com/styles/logo.svg"]) {
+    assert.ok(response.body.includes("/api/image?asset=1&url=" + encodeURIComponent(url)), url);
   }
 });

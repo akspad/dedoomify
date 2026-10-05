@@ -18,6 +18,7 @@
     "@anthropic-ai/sdk": "^0.129.0",
     "@mlc-ai/web-llm": "0.2.85",
     "@mozilla/readability": "^0.6.0",
+    "css-tree": "3.2.1",
     "linkedom": "^0.18.13"
   },
   "type": "module",
