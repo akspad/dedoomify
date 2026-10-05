@@ -32,7 +32,7 @@
     if (!tab) return;
     tabId = tab.id;
     if (/^https?:/.test(tab.url || "")) {
-      site.href = "https://dedoomify.com/?url=" + encodeURIComponent(tab.url);
+      site.href = "https://dedoomify.com/?url=" + encodeURIComponent(tab.url) + "&mode=local";
     }
     // If this page was de-doomed earlier, show where it stands.
     inPage(function () {

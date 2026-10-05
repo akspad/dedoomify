@@ -18,12 +18,26 @@ ask for is in this folder. The listing text is below, ready to paste.
 Before each new store upload, bump `version` in `extension/manifest.json`
 and run `npm run build:extension`.
 
+## Version 1.1.2
+
+- Includes the latest shared phrase rules, quotation protection, human-actor
+  context handling, and exclusions for hidden, editable and code content.
+- The popup's optional on-device AI link now selects that engine on the website.
+- The listing distinguishes local phrase-rule rewriting from the website's
+  optional on-device model and explains the website's server fetches.
+- Automated regression coverage exercises rewriting, highlight toggles, exact
+  text restoration, automatic-mode opt-in and revocation, and AI-link parameters.
+
+The extension ZIP contains only `extension/` files, with `manifest.json` at its
+root. Upload it to the existing listing; the source update alone does not update
+installed extensions. Complete an installed-Chrome smoke test before submission.
+
 ## Listing text
 
 **Name:** dedoomify
 
 **Summary** (Chrome, 132 characters max; also the manifest description):
-Rewrites AI doom framing into reasonable facts :)
+Reframes AI doom language with local phrase rules, highlights each change, and lets you restore the original.
 
 **Subtitle** (App Store, 30 characters max): AI news, minus the doom
 
@@ -37,13 +51,13 @@ Rewrites AI doom framing into reasonable facts :)
 > • "Superintelligence" becomes "very capable software"
 > • "p(doom)" becomes "estimated failure rate"
 >
-> Facts, names and numbers stay the same; only the framing changes. Every change is highlighted in place, and hovering a highlight shows the original words. Turn the highlights off for a clean read, or undo everything with one click.
+> The extension uses built-in phrase rules to change the framing. Direct quotations are left untouched, and every edit is highlighted so you can compare it with the original. Hover a highlight to see the original words, turn the highlights off for a clean read, or undo everything with one click.
 >
 > Turn on "De-doom automatically" and articles about AI doom are rewritten as they load. A quick check on your device picks them out, so other pages load exactly as before.
 >
 > Private by design: the rewriting happens entirely in your browser with built-in phrase rules. The extension collects no data and sends nothing over the network. Until you turn on automatic mode, it only touches the page you click it on.
 >
-> For a fuller rewrite by a small AI model that runs on your own device, the popup links straight to the same page on dedoomify.com.
+> The extension itself uses phrase rules, not an AI model. For an optional rewrite by a small on-device AI model, the popup opens the same article on dedoomify.com with that engine selected. The website fetches the article through its server and downloads the model into your browser; model inference happens on your device. Browsers without WebGPU use phrase rules instead.
 >
 > dedoomify reframes articles; it doesn't fact-check them. It's open source: github.com/akspad/dedoomify
 
@@ -71,9 +85,9 @@ Open any news article about AI (for example a search for "AI existential risk"),
 ## Chrome Web Store
 
 1. Register at https://chrome.google.com/webstore/devconsole with the Google account that should own the listing, and pay the one-time $5 fee. Verify the contact email it asks for.
-2. Click **New item** and upload `dist/dedoomify-extension-1.1.0.zip`.
+2. For the existing dedoomify listing, open its **Package** tab and upload `dist/dedoomify-extension-1.1.2.zip`. Create a new item only for a first release.
 3. **Store listing:** paste the description, pick the category and English, then upload `icons/chrome-store-128.png`, the four screenshots, `promo-440x280.png` and, optionally, `marquee-1400x560.png`. Homepage URL: https://dedoomify.com.
-4. **Privacy:** paste the single purpose and the two permission justifications, answer No for remote code, tick no data types, certify the three statements, and enter https://dedoomify.com/privacy.html.
+4. **Privacy:** paste the single purpose and all permission justifications (including optional site access), answer No for remote code, tick no data types, certify the three statements, and enter https://dedoomify.com/privacy.html.
 5. **Distribution:** Free, Public, all regions.
 6. Click **Submit for review**. Reviews usually take a few days; you get an email when it's live.
 
