@@ -22,7 +22,7 @@
       while (at > 0 && /\s/.test(text[at - 1])) at--;
       // An explicit AI qualifier describes software, even for a role that
       // is usually held by a person. Other human roles still protect the span.
-      if (/\b(?:AI|AGI|LLMs?|artificial intelligence)(?:[- ](?:powered|driven|based))?$/i.test(text.slice(Math.max(0, at - 48), at))) continue;
+      if (/\b(?:A\.?I\.?|AGI|LLMs?|artificial[ -]+intelligence)(?:[- ](?:powered|driven|based))?$/i.test(text.slice(Math.max(0, at - 48), at))) continue;
       // A simple software subject can act on a person. Only exempt a complete,
       // unambiguous object phrase; coordinated actors, reporting and relative
       // clauses retain the conservative human guard.
@@ -875,6 +875,9 @@
     var contextual = [], overflow = false, humanContext = false, quotedSentenceEnd = false;
     function startsAIClaim(text) {
       var lead = text.slice(0, 256);
+      // A terminal quote can be followed by citations before the next subject.
+      // Consume only this bounded prefix; citation contents remain unchanged.
+      lead = lead.replace(/^\s*(?:\[[^\]\r\n]{1,64}\]|[¹²³⁰⁴⁵⁶⁷⁸⁹)\]}])+/, "");
       if (/^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b/i.test(lead)) return true;
       // Vendor/name qualifiers are ordinary subject words, not a fixed vendor
       // dictionary. Bare "agent" after "federal [break]" is still a continuation.
@@ -926,7 +929,13 @@
             if (!startsAIClaim(following)) continue;
           }
           var numberedNo = /\bNo$/i.test(prefix) && /^\s*\d/.test(seg.text.slice(end, end + 64));
-          if (/^\.+$/.test(terminal) && (terminal.length > 1 || numberedNo || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|approx|etc|Inc|Ltd|Co|Corp|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|Dept|Univ|Assn|Est|Ave|Blvd|Rd|Bldg|Mt|Ft|Fig|Figs|Vol|Ed|Eds|Ch|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
+          var abbreviation = /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|approx|etc|Inc|Ltd|Co|Corp|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|Dept|Univ|Assn|Est|Ave|Blvd|Rd|Bldg|Mt|Ft|Fig|Figs|Vol|Ed|Eds|Ch|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|[A-Z](?:\.[A-Z])*)$/i.test(prefix);
+          var afterStop = seg.text.slice(end, end + 256);
+          var titleOrInitial = /\b(?:Mr|Mrs|Ms|Dr|Prof|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|[A-Z](?:\.[A-Z])*)$/i.test(prefix);
+          // Company/month abbreviations can end a sentence. Titles and initials
+          // before a name retain attribution ("Dr. Claude" is not a new claim).
+          var freshAfterAbbreviation = startsAIClaim(afterStop) && (!titleOrInitial || /^\s*(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+/i.test(afterStop));
+          if (/^\.+$/.test(terminal) && (terminal.length > 1 || numberedNo || (abbreviation && !freshAfterAbbreviation))) continue;
           // Untrusted pages may contain millions of tiny sentence breaks.
           // Bound allocations and rule passes; unusually fragmented prose is
           // safer to preserve as one span than to partially change its meaning.

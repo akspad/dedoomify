@@ -376,3 +376,13 @@ test("independent vendor AI claims remain model-editable after speech and no", (
     assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
   }
 });
+
+
+test("model phrase slots follow abbreviation, citation and explicit AI context", () => {
+  for (const input of [
+    "The federal agent worked at Acme Inc. The AI is misaligned.",
+    'The federal agent said "No."[1] The AI is misaligned.',
+    "The A.I. personal assistant is misaligned.",
+    "The artificial-intelligence-powered personal assistant is misaligned.",
+  ]) assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+});

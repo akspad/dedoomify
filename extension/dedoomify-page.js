@@ -7,8 +7,8 @@
   // phrase rules change it? The rules skip any phrase whose key word isn't in
   // the text, so a page is judged in a few milliseconds at most. The short
   // forms of "AI" must be capitalised, since "ai" turns up inside ordinary words.
-  var AI_SHORT = /\b(?:AI|A\.I\.|AGI|LLMs?)\b/;
-  var AI_LONG = /artificial intelligence|chatbot|language model|superintelligen|machine learning|neural net|\bGPT|OpenAI|Anthropic|DeepMind/i;
+  var AI_SHORT = /\b(?:AI|AGI|LLMs?)\b|\bA\.I\.(?=\s|$|[,:;])/;
+  var AI_LONG = /artificial[ -]+intelligence|chatbot|language model|superintelligen|machine learning|neural net|\bGPT|OpenAI|Anthropic|DeepMind/i;
 
   function looksDoomy(text) {
     if (!text || (!AI_SHORT.test(text) && !AI_LONG.test(text))) return false;

@@ -211,3 +211,12 @@ test("semantic inline quotes do not leak human context to neighboring AI claims"
   assert.equal(document.querySelectorAll("q mark").length, 0);
   assert.equal(document.querySelector("#outer").textContent, "She said, 'The model is misaligned.' Outside it has a bug.");
 });
+
+
+test("extension detection recognizes dotted and hyphenated AI qualifiers", () => {
+  assert.ok(looksDoomy("The A.I. personal assistant is misaligned."));
+  assert.ok(looksDoomy("The artificial-intelligence-powered personal assistant is misaligned."));
+  const { document, run } = extensionPage('<p>The A.I. personal assistant is misaligned.</p><p>The artificial-intelligence-powered personal assistant is misaligned.</p>');
+  assert.equal(run().added, 2);
+  assert.equal(document.querySelectorAll("mark").length, 2);
+});

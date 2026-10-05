@@ -519,3 +519,30 @@ test("sentence-final no differs from a numbered No. abbreviation", () => {
   const numbered = "The federal agent at No. 5 warned of an existential risk.";
   assert.equal(dedoomText(numbered + " The AI is misaligned."), numbered + " The AI has a bug.");
 });
+
+
+test("sentence-final abbreviations allow independent AI subjects", () => {
+  for (const abbreviation of ["Inc", "Ltd", "Co", "Corp", "etc", "Feb"]) {
+    for (const subject of ["The AI", "Claude", "OpenAI's model"]) {
+      const input = `The federal agent worked at Acme ${abbreviation}. ${subject} is misaligned.`;
+      assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    }
+  }
+  for (const input of ["The federal agent warned Dr. Claude about an existential risk.", "The federal agent warned J. GPT-5 about an existential risk."]) assert.equal(dedoomText(input), input);
+});
+
+test("citations after terminal speech do not hide a fresh AI subject", () => {
+  for (const citation of ["[1]", "[a][2]", "¹", ")[1]"]) {
+    const input = `The federal agent said "No."${citation} The AI is misaligned.`;
+    assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    const continuation = `The federal agent said "No."${citation} and warned of an existential risk.`;
+    assert.equal(dedoomText(continuation), continuation);
+  }
+});
+
+test("dotted and hyphenated explicit AI qualifiers retain software roles", () => {
+  for (const qualifier of ["A.I.", "A.I.-powered", "artificial-intelligence-powered", "artificial-intelligence driven"]) {
+    const input = `The ${qualifier} personal assistant is misaligned.`;
+    assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+  }
+});
