@@ -202,3 +202,12 @@ test("extension retains human actor context around split quoted wording", () => 
   assert.equal(document.querySelector("#human mark"), null);
   assert.equal(document.querySelector("#human").textContent, 'The federal agent called the AI "misaligned" and warned it posed an existential risk.');
 });
+
+
+test("semantic inline quotes do not leak human context to neighboring AI claims", () => {
+  const { document, run } = extensionPage(`<p id="quote"><q>The federal agent</q> The AI is misaligned.</p><p id="outer">She said, 'The model <q>is misaligned</q>.' Outside it is misaligned.</p>`);
+  assert.equal(run().added, 2);
+  assert.equal(document.querySelector("#quote").textContent, "The federal agent The AI has a bug.");
+  assert.equal(document.querySelectorAll("q mark").length, 0);
+  assert.equal(document.querySelector("#outer").textContent, "She said, 'The model is misaligned.' Outside it has a bug.");
+});

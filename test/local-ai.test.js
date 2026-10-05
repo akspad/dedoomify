@@ -368,3 +368,11 @@ test("model cannot lose human attribution across a quoted phrase", () => {
   assert.ok(!acceptRewrite(original, original.replace("an existential risk", "a product risk")));
   assert.ok(acceptRewrite(original + " The AI is misaligned.", original + " The AI has a bug."));
 });
+
+
+test("independent vendor AI claims remain model-editable after speech and no", () => {
+  for (const prefix of ['The federal agent said "No." ', "The federal agent said no. "]) {
+    const input = `${prefix}OpenAI's model is misaligned.`;
+    assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+  }
+});

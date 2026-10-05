@@ -125,7 +125,9 @@
       if (textNode) nodes.push(node);
       // Keep skipped rendered content as virtual, immutable context. Its
       // punctuation and quotes must still delimit the neighboring prose.
-      currentGroup.push({ node: textNode ? node : null, text: textNode ? node.nodeValue : protectedNode ? renderedText(node) : "\u2029" });
+      var contextText = textNode ? node.nodeValue : protectedNode ? renderedText(node) : "\u2029";
+      if (protectedNode && node.tagName.toUpperCase() === "Q") contextText = "“" + contextText + "”";
+      currentGroup.push({ node: textNode ? node : null, text: contextText });
     }
 
     // Quote marks and explicit human actors can sit in adjacent inline nodes.

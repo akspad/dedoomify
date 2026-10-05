@@ -874,7 +874,11 @@
     var segments = quoteProtectedSegments(input);
     var contextual = [], overflow = false, humanContext = false, quotedSentenceEnd = false;
     function startsAIClaim(text) {
-      return /^\s*(?:(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b|(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?)\b)/i.test(text.slice(0, 256));
+      var lead = text.slice(0, 256);
+      if (/^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b/i.test(lead)) return true;
+      // Vendor/name qualifiers are ordinary subject words, not a fixed vendor
+      // dictionary. Bare "agent" after "federal [break]" is still a continuation.
+      return /^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){0,4}|(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){1,4})(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+)\b/iu.test(lead);
     }
     segments.forEach(function (seg) {
       if (overflow) return;
@@ -921,7 +925,8 @@
             var following = seg.text.slice(end, end + 256);
             if (!startsAIClaim(following)) continue;
           }
-          if (/^\.+$/.test(terminal) && (terminal.length > 1 || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|No|approx|etc|Inc|Ltd|Co|Corp|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|Dept|Univ|Assn|Est|Ave|Blvd|Rd|Bldg|Mt|Ft|Fig|Figs|Vol|Ed|Eds|Ch|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
+          var numberedNo = /\bNo$/i.test(prefix) && /^\s*\d/.test(seg.text.slice(end, end + 64));
+          if (/^\.+$/.test(terminal) && (terminal.length > 1 || numberedNo || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|approx|etc|Inc|Ltd|Co|Corp|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|Dept|Univ|Assn|Est|Ave|Blvd|Rd|Bldg|Mt|Ft|Fig|Figs|Vol|Ed|Eds|Ch|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
           // Untrusted pages may contain millions of tiny sentence breaks.
           // Bound allocations and rule passes; unusually fragmented prose is
           // safer to preserve as one span than to partially change its meaning.

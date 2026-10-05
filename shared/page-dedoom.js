@@ -50,6 +50,11 @@
       var child = frame.next;
       if (!child) {
         stack.pop();
+        if (frame.quote && current) {
+          var closeQuote = { nodeValue: "”", parentNode: null };
+          immutable.add(closeQuote);
+          current.push(closeQuote);
+        }
         if (frame.block) current = null;
       } else {
         frame.next = child.nextSibling;
@@ -68,7 +73,13 @@
           if (!protectedChild || (!block && !/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|TEXTAREA|SELECT|OPTION|SVG|MATH|TITLE|IFRAME)$/.test(tag))) {
             // Rendered skipped inline text supplies immutable punctuation and
             // quotation context. Invisible/non-prose subtrees supply none.
-            stack.push({ next: child.firstChild, block: block, immutable: frame.immutable || !!protectedChild });
+            if (tag === "Q") {
+              if (!current) { current = []; groups.push(current); }
+              var openQuote = { nodeValue: "“", parentNode: null };
+              immutable.add(openQuote);
+              current.push(openQuote);
+            }
+            stack.push({ next: child.firstChild, block: block, immutable: frame.immutable || !!protectedChild, quote: tag === "Q" });
           } else if (block) current = null;
         }
       }

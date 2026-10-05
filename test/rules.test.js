@@ -498,3 +498,24 @@ test("human actor context survives quoted words until an independent sentence", 
   const continued = 'The federal agent said "AI is misaligned." and warned of an existential risk.';
   assert.equal(dedoomText(continued), continued);
 });
+
+
+test("vendor-qualified software claims start independently after speech and rendered breaks", () => {
+  for (const subject of ["OpenAI's model", "The OpenAI model", "Anthropic’s Claude", "The ExampleVendor experimental model"]) {
+    for (const prefix of ['The federal agent said "No." ', "The federal agent\u2029"]) {
+      const input = `${prefix}${subject} is misaligned.`;
+      assert.equal(dedoomText(input), input.replace(/is misaligned.$/, "has a bug."));
+    }
+  }
+  const continuation = 'The federal agent said "No." and warned the OpenAI model was misaligned.';
+  assert.equal(dedoomText(continuation), continuation);
+});
+
+test("sentence-final no differs from a numbered No. abbreviation", () => {
+  for (const no of ["no", "No", "NO"]) {
+    const original = `The federal agent said ${no}. The AI is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  const numbered = "The federal agent at No. 5 warned of an existential risk.";
+  assert.equal(dedoomText(numbered + " The AI is misaligned."), numbered + " The AI has a bug.");
+});

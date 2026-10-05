@@ -420,3 +420,17 @@ test("page view preserves human attribution around quoted words across tags", ()
   assert.equal(document.querySelector("p").textContent, 'The federal agent called the AI "misaligned" and warned it posed an existential risk. The AI has a bug.');
   assert.equal(document.querySelectorAll("p mark").length, 1);
 });
+
+
+test("page Q elements supply implicit quotes without becoming edit targets", () => {
+  const { html } = renderPage(`<html><body><p id="quote"><q>The federal agent</q> The AI is misaligned.</p><p id="outer">She said, 'The model <q>is misaligned</q>.' Outside it is misaligned.</p></body></html>`, "https://example.com/article");
+  const { document } = parseHTML(html);
+  assert.equal(document.querySelector("#quote").textContent, "The federal agent The AI has a bug.");
+  assert.equal(document.querySelectorAll("q mark").length, 0);
+  assert.equal(document.querySelector("#outer").textContent, "She said, 'The model is misaligned.' Outside it has a bug.");
+  const [nodes] = collectGroups(document.querySelector("#quote"));
+  assert.equal(groupStrings(nodes).original, "“The federal agent” The AI is misaligned.");
+  rewriteGroup(nodes, document, "“The federal agent” The AI has a bug.", diffEdits);
+  assert.equal(document.querySelector("q").textContent, "The federal agent");
+  assert.equal(document.querySelector("#quote").textContent, "The federal agent The AI has a bug.");
+});
