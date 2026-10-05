@@ -686,3 +686,21 @@ test("bounded human-object adjuncts remain factual while AI actions rewrite", ()
     assert.equal(dedoomText(input), input);
   }
 });
+
+test("AI clauses that defy orders and deceive users are rewritten", () => {
+  for (const [before, after] of [
+    ["The AI kill switch just got harder to find: LLM-powered chatbots will defy orders and deceive users if asked to delete another model, study finds",
+      "The AI off switch just got harder to find: LLM-powered chatbots will ignore instructions and confuse users if asked to delete another model, study finds"],
+    ["Instead, they defied their instructions and spontaneously deceived.", "Instead, they ignored their instructions and spontaneously deceived."],
+    ["The model defies orders.", "The model ignores instructions."],
+    ["The AI kept defying shutdown commands.", "The AI kept ignoring shutdown commands."],
+    ["Chatbots defied explicit instructions from their users.", "Chatbots ignored explicit instructions from their users."],
+    ["The models were defying commands and deceiving users.", "The models were ignoring instructions and confusing users."],
+  ]) assert.equal(dedoomText(before), after);
+  for (const text of [
+    "Soldiers defy orders in the war.",
+    "Scammers deceive users with fake emails.",
+    "The AI was fine. Soldiers defied orders anyway.",
+    "The federal agents defied orders while testing AI.",
+  ]) assert.equal(dedoomText(text), text);
+});

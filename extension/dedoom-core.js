@@ -149,6 +149,16 @@
     return [verb + "(?=" + AI_OBJECT + "\\s+to\\b)", replacement];
   }
 
+  // [verb, replacement] rewritten when an AI is the subject earlier in the
+  // same clause, even past an object or "and": "chatbots will defy orders and
+  // deceive users". `pronoun` also accepts "they"/"it" right before the verb,
+  // for follow-on sentences like "Instead, they defied their instructions".
+  function inAIClause(verb, replacement, pronoun) {
+    var subject = AI_SUBJECT + "[^.!?;\u2029]{0,160}?";
+    if (pronoun) subject = "(?:" + subject + "|\\b(?:they|it)" + FILLER + ")";
+    return [verb + "(?<=" + subject + "\\s+(?:" + verb + "))", replacement];
+  }
+
   // Each rule is [pattern, replacement]. Patterns are matched case-insensitively
   // on word boundaries, in order, and text that one rule already rewrote is
   // never rewritten again by a later rule. Put longer, more specific phrases
@@ -515,6 +525,20 @@
     byAI("lies", "gives wrong answers", "in|on|at|with|within|behind|ahead|dormant|low|still"),
     byAI("lying", "giving wrong answers", "in|on|at|around|dormant|low|still"),
     byAI("lie", "give wrong answers", "in|on|at|with|within|behind|ahead|dormant|low|still|down"),
+    // Defying orders is ignoring instructions. Coordinated verbs see the AI
+    // subject only while the clause is unrewritten, so "deceive users" goes first.
+    inAIClause("deceive users", "confuse users"),
+    inAIClause("deceived users", "confused users"),
+    inAIClause("deceives users", "confuses users"),
+    inAIClause("deceiving users", "confusing users"),
+    inAIClause("defy\\s+(?:orders|commands)", "ignore instructions", true),
+    inAIClause("defied\\s+(?:orders|commands)", "ignored instructions", true),
+    inAIClause("defies\\s+(?:orders|commands)", "ignores instructions", true),
+    inAIClause("defying\\s+(?:orders|commands)", "ignoring instructions", true),
+    inAIClause("defy(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignore", true),
+    inAIClause("defied(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignored", true),
+    inAIClause("defies(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignores", true),
+    inAIClause("defying(?=\\s+(?:(?:their|its|the|explicit|direct|human|user|shutdown)\\s+){0,2}(?:orders|commands|instructions)\\b)", "ignoring", true),
     byAI("deceived", "confused"),
     byAI("deceives", "confuses"),
     byAI("deceive", "confuse"),
