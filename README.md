@@ -15,7 +15,7 @@ language an engineer would use about software with defects:
 | What's your **p(doom)**? | What's your **estimated failure rate**? |
 
 Designed to preserve names, numbers and factual claims while changing the
-framing. Direct quotations are left untouched. Single-quoted passages use the outermost plausible pair to preserve speech across possessives, nested fragments and whitespace padding. Intervening prose may also stay unchanged. Page view keeps article markup and images with safe formatting, with every change highlighted in
+framing. Direct quotations are left untouched. Single-quoted passages use the outermost plausible pair to preserve speech across possessives, nested fragments and whitespace padding. Intervening prose may also stay unchanged. Page view keeps publisher layout, styles, fonts and images, with every change highlighted in
 place; hover a highlight to see the original words. A reader view shows just the text.
 
 You can also [add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl) to de-doom the page you're reading with one click.
@@ -66,15 +66,19 @@ Files:
   `privacy.html`, and the homepage demo clip (`demo.mp4`, with `demo.webm` for
   browsers without H.264, and `demo-poster.jpg`). `npm run build` copies the
   shared scripts and WebLLM into `public/vendor/`.
-- **`api/page.js`** returns article markup with third-party CSS, active media, scripts, frames and
-  event handlers removed and the phrase rules applied in place
+- **`api/page.js`** retains publisher CSS, scoped attributes and static SVG artwork,
+  with active media, scripts, frames and event handlers removed and the phrase rules applied in place
   (`lib/page.js`, `shared/page-dedoom.js`). It is only served into
   dedoomify's own sandboxed frame, under a policy that allows only the hash-pinned tooltip script;
   opening it directly redirects to the site.
-- **`api/image.js`** serves raster images through the same public-only, DNS-pinned
-  fetch path, checking every redirect and limiting images to 2 MB. The frame
-  cannot load remote styles, fonts or media; inline styling uses a small formatting
-  allowlist. Source pages cannot forge generated highlights or tooltip IDs.
+- **`api/image.js`** serves images and, with `asset=1`, stylesheets, fonts and SVG
+  artwork through the same public-only, DNS-pinned fetch path, checking every
+  redirect and limiting each resource to 2 MB. `lib/page-css.js` parses CSS and
+  proxies nested imports, fonts and background images against the final stylesheet
+  URL. The frame cannot fetch third-party resources directly or execute publisher
+  scripts. Publisher CSS can hide or reposition content inside the frame; the
+  disclosure banner remains outside it. Source markup cannot forge generated
+  highlights or tooltip IDs.
 - **`lib/rate-limit.js`** throttles article requests to 30 per minute per client
   and images to 120, before fetching or calling a model. Local servers trust the
   socket address; Vercel trusts its overwritten forwarding header. Counters are

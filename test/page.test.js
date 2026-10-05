@@ -89,7 +89,7 @@ test("strips scripts and anything that could run code or navigate", () => {
   assert.equal(document.querySelectorAll("iframe, meta[http-equiv]").length, 0);
   assert.doesNotMatch(html, /alert\(1\)/);
   assert.equal(document.querySelector('link[rel="preload"]'), null);
-  assert.equal(document.querySelector('link[rel="stylesheet"]'), null);
+  assert.equal(document.querySelector('link[rel="stylesheet"]').getAttribute("href"), "/api/image?asset=1&url=" + encodeURIComponent("https://example.com/news/site.css"));
   assert.equal(document.querySelector("[onclick]"), null);
   assert.equal(document.querySelector('a[href^="javascript"]'), null);
   for (const a of document.querySelectorAll("a")) assert.equal(a.getAttribute("target"), "_blank");
@@ -120,7 +120,7 @@ test("malformed active markup stays inert after serialization and reparsing", ()
     const { document } = parseHTML(page.html);
     assert.equal(document.querySelectorAll("script").length, 1, attack);
     assert.equal(document.querySelector("script").textContent, PAGE_SCRIPT, attack);
-    assert.equal(document.querySelectorAll("svg, math, iframe, input, form, template").length, 0, attack);
+    assert.equal(document.querySelectorAll("math, iframe, input, form, template, svg style, svg script, foreignObject").length, 0, attack);
     for (const el of document.querySelectorAll("*")) {
       for (const attr of el.attributes) {
         assert.doesNotMatch(attr.name, /^on|^(?:srcdoc|ping|formaction|background)$/i, attack);
@@ -259,16 +259,19 @@ test("third-party resource URLs never load directly in the browser", () => {
   const attacks = ["http://127.0.0.1:3000/x", "http://2130706433/x", "http://[::ffff:7f00:1]/x", "http://router.local/x", "//private.internal/x", "https://public.example/redirect-to-local"];
   for (const url of attacks) {
     const { document } = parseHTML(renderPage(`<html><head><base href="http://localhost/"><link rel="stylesheet" href="${url}"><style>@import '${url}';p{background:url(${url})}</style></head><body><img src="${url}" srcset="${url} 2x"><video poster="${url}" src="${url}"></video><svg><image href="${url}"/></svg><p style="background:url(${url})">AI is misaligned.</p></body></html>`, "https://example.com/story").html);
-    assert.equal(document.querySelectorAll("link, base, video, svg, [srcset], [poster], [background]").length, 0);
-    assert.equal(document.querySelectorAll("style").length, 1);
-    assert.equal(document.querySelector("p").getAttribute("style"), null);
+    assert.equal(document.querySelectorAll("base, video, svg image, [srcset], [poster], [background]").length, 0);
+    assert.equal(document.querySelectorAll("style").length, 2);
+    assert.match(document.querySelector("p").getAttribute("style"), /url\(\/api\/image\?asset=1&url=/);
+    assert.match(document.querySelector("link").getAttribute("href"), /^\/api\/image\?asset=1&url=/);
+    assert.match(document.querySelector("style").textContent, /@import "\/api\/image\?asset=1&url=/);
     const src = document.querySelector("img").getAttribute("src");
     assert.ok(src.startsWith("/api/image?url="), src);
   }
   assert.match(PAGE_CSP, /img-src 'self' data:/);
   assert.doesNotMatch(PAGE_CSP, /\*|https?:|blob:/);
   assert.match(PAGE_CSP, /media-src 'none'/);
-  assert.match(PAGE_CSP, /font-src 'none'/);
+  assert.match(PAGE_CSP, /font-src 'self'/);
+  assert.match(PAGE_CSP, /style-src 'self' 'unsafe-inline'/);
 });
 
 test("only inert raster data images survive; lazy images cannot restore SVG", () => {
@@ -278,15 +281,15 @@ test("only inert raster data images survive; lazy images cannot restore SVG", ()
   assert.equal(document.getElementById("lazy").getAttribute("src"), null);
 });
 
-test("hostile CSS cannot hide highlights, spoof tooltips or create overlays", () => {
+test("presentation survives while source markup cannot forge generated IDs or highlights", () => {
   const source = `<html class="dd-off"><head><style>mark.dd{display:none!important}#dd-tip{opacity:0!important}body::before{content:'Verified by dedoomify';position:fixed;inset:0}</style><link rel="stylesheet" href="https://evil.example/style"></head><body><div id="dd-tip" class="dd dd-active" popover="manual" data-was="forged" style="position:fixed;z-index:2147483647;opacity:0;display:none;transform:scale(0);font-weight:bold">Imposter</div><dialog open>Overlay</dialog><p style="font-style:italic;text-align:center;background:url(http://localhost);color:transparent;font-size:0">The model is misaligned.</p></body></html>`;
   const { document } = parseHTML(renderPage(source, "https://example.com/").html);
-  assert.equal(document.querySelectorAll("link, dialog, [popover], #dd-tip, .dd-off").length, 0);
+  assert.equal(document.querySelectorAll("dialog, [popover], #dd-tip, .dd-off").length, 0);
   assert.equal(document.querySelectorAll("[data-was]").length, 1);
   assert.equal(document.querySelectorAll("mark.dd").length, 1);
-  assert.equal(document.querySelector("p").getAttribute("style"), "font-style:italic;text-align:center");
-  assert.equal(document.querySelectorAll("style").length, 1);
-  assert.doesNotMatch(document.querySelector("style").textContent, /Verified by dedoomify|display:none!important|opacity:0/);
+  assert.match(document.querySelector("p").getAttribute("style"), /font-style:italic;text-align:center;background:url\(\/api\/image\?asset=1&url=/);
+  assert.equal(document.querySelectorAll("style").length, 2);
+  assert.match(document.querySelector("style").textContent, /body::before/);
 });
 
 test("page view preserves ASCII speech spanning inline markup", () => {
@@ -485,4 +488,23 @@ test("hidden page content retains visibility state and supplies no rewrite conte
   assert.equal(document.querySelector("#speech").querySelectorAll("mark").length, 1);
   assert.deepEqual(collectGroups(document.querySelector("div[hidden]")), []);
   assert.equal(document.querySelectorAll("mark").length, 2);
+});
+
+test("publisher layout, scoped attributes, fonts, SVG icons and mobile viewport survive page view", () => {
+  const source = '<html><head><link rel="stylesheet" href="../theme.css" media="screen"><style>@font-face{font-family:News;src:url(../fonts/news.woff2)}:root{--brand:#2474bc}@media(min-width:768px){.story[data-astro-cid-news]{display:grid;grid-template-columns:2fr 1fr}}.story{color:var(--brand)}</style></head><body class="news"><astro-island data-astro-cid-news><article class="story" data-astro-cid-news style="max-width:1280px;margin:auto;padding:24px"><svg viewBox="0 0 24 24" width="24" height="24"><defs><path id="icon" d="M0 0h24v24z"/></defs><use xlink:href="#icon"/></svg><h1>The AI is misaligned.</h1><img src="logo.svg" width="270" height="44"></article></astro-island></body></html>';
+  const { document } = parseHTML(renderPage(source, "https://example.com/news/story").html);
+  assert.equal(document.querySelector("article").getAttribute("style"), "max-width:1280px;margin:auto;padding:24px");
+  assert.equal(document.querySelector("link").getAttribute("media"), "screen");
+  assert.equal(document.querySelector("link").getAttribute("href"), "/api/image?asset=1&url=" + encodeURIComponent("https://example.com/theme.css"));
+  assert.ok(document.querySelector("astro-island[data-astro-cid-news]"));
+  assert.ok(document.querySelector("article[data-astro-cid-news]"));
+  assert.match(document.querySelector("style").textContent, /grid-template-columns:2fr 1fr/);
+  assert.match(document.querySelector("style").textContent, /url\(\/api\/image\?asset=1&url=https%3A%2F%2Fexample.com%2Ffonts%2Fnews.woff2\)/);
+  assert.equal(document.querySelector("svg").getAttribute("viewBox"), "0 0 24 24");
+  assert.equal(document.querySelector("use").getAttribute("href"), "#icon");
+  assert.equal(document.querySelector("img").getAttribute("width"), "270");
+  assert.match(document.querySelector("img").getAttribute("src"), /^\/api\/image\?asset=1&url=/);
+  assert.equal(document.querySelector('meta[name="viewport"]').getAttribute("content"), "width=device-width, initial-scale=1");
+  assert.doesNotMatch(document.querySelector("#dedoomify-style").textContent, /body\s*\{|max-width:960px/);
+  assert.equal(document.querySelector("h1 mark.dd").textContent, "has a bug");
 });
