@@ -39,8 +39,18 @@
   function collectGroups(rootEl) {
     var groups = [];
     var current = null;
-    function visit(node) {
-      for (var child = node.firstChild; child; child = child.nextSibling) {
+    // Untrusted HTML can have thousands of nested inline elements. An explicit
+    // stack keeps traversal bounded by the document size instead of the JS
+    // call-stack limit, while preserving block boundaries on entry and exit.
+    var stack = rootEl ? [{ next: rootEl.firstChild, block: false }] : [];
+    while (stack.length) {
+      var frame = stack[stack.length - 1];
+      var child = frame.next;
+      if (!child) {
+        stack.pop();
+        if (frame.block) current = null;
+      } else {
+        frame.next = child.nextSibling;
         if (child.nodeType === 3) {
           if (!current) {
             current = [];
@@ -51,12 +61,12 @@
           var tag = String(child.tagName).toUpperCase();
           var block = BLOCK[tag];
           if (block) current = null;
-          if (!SKIP[tag] && child.getAttribute("contenteditable") == null) visit(child);
-          if (block) current = null;
+          if (!SKIP[tag] && child.getAttribute("contenteditable") == null) {
+            stack.push({ next: child.firstChild, block: block });
+          } else if (block) current = null;
         }
       }
     }
-    if (rootEl) visit(rootEl);
     return groups.filter(function (nodes) {
       return /\S/.test(groupText(nodes));
     });

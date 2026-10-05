@@ -39,13 +39,13 @@
     </div>
 
     <form id="form" class="card" autocomplete="off">
-      <div class="tabs" role="tablist">
+      <div class="tabs" role="tablist" aria-label="Article source">
         <button type="button" role="tab" class="tab" id="tab-url" aria-selected="true" aria-controls="panel-url">Link</button>
-        <button type="button" role="tab" class="tab" id="tab-text" aria-selected="false" aria-controls="panel-text">Paste text</button>
+        <button type="button" role="tab" class="tab" id="tab-text" tabindex="-1" aria-selected="false" aria-controls="panel-text">Paste text</button>
       </div>
       <div id="panel-url" role="tabpanel" aria-labelledby="tab-url">
         <label for="url" class="sr-only">Article link</label>
-        <input id="url" name="url" type="url" inputmode="url" placeholder="https://example.com/ai-will-end-us-all" >
+        <input id="url" name="url" type="text" inputmode="url" placeholder="https://example.com/ai-will-end-us-all" >
       </div>
       <div id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden>
         <label for="text" class="sr-only">Article text</label>

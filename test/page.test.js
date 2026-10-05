@@ -76,6 +76,33 @@ test("strips scripts and anything that could run code or navigate", () => {
   assert.match(html, /^<!DOCTYPE html>/);
 });
 
+test("malformed active markup stays inert after serialization and reparsing", () => {
+  const attacks = [
+    '<svg><style><img src=x onerror=alert(1)></style></svg>',
+    '<math><mtext><table><mglyph><style><!--</style><img src=x onerror=alert(1)>',
+    '<form><input name=innerHTML><button formaction="http://127.0.0.1/">Send</button></form>',
+    '<iframe srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"></iframe>',
+    '<p><a href="java&#x73;cript:alert(1)" ping="http://127.0.0.1/">click</a></p>',
+    '<img src="data:image/svg+xml,&lt;svg onload=alert(1)&gt;" onerror=alert(1)>',
+    '<x-a><template shadowrootmode=open><script>alert(1)</script></template></x-a>',
+    '<table background="http://127.0.0.1/" style="background:url(http://127.0.0.1/)"><tr><td>Story</td></tr></table>',
+  ];
+  for (const attack of attacks) {
+    const page = renderPage(`<html><body>${attack}<p>The model is misaligned.</p></body></html>`, "https://example.com/story");
+    const { document } = parseHTML(page.html);
+    assert.equal(document.querySelectorAll("script").length, 1, attack);
+    assert.equal(document.querySelector("script").textContent, PAGE_SCRIPT, attack);
+    assert.equal(document.querySelectorAll("svg, math, iframe, input, form, template").length, 0, attack);
+    for (const el of document.querySelectorAll("*")) {
+      for (const attr of el.attributes) {
+        assert.doesNotMatch(attr.name, /^on|^(?:srcdoc|ping|formaction|background)$/i, attack);
+        if (attr.name === "href") assert.match(attr.value, /^https?:\/\//, attack);
+        if (attr.name === "src") assert.match(attr.value, /^\/api\/image\?|^data:image\/(?:png|jpeg|gif|webp|avif);base64,/, attack);
+      }
+    }
+  }
+});
+
 test("the frame's policy allows only the hover card's script", () => {
   assert.match(PAGE_CSP, /default-src 'none'/);
   const scriptSrc = PAGE_CSP.split("; ").find((d) => d.startsWith("script-src"));
@@ -105,6 +132,18 @@ test("groups break at block elements but not inline ones", () => {
   const document = apply("<div>AI is <b>very</b> smart<p>and is</p> misaligned</div>", () => {});
   const groups = collectGroups(document.querySelector("div")).map((g) => g.map((n) => n.nodeValue).join(""));
   assert.deepEqual(groups, ["AI is very smart", "and is", " misaligned"]);
+});
+
+test("deeply nested hostile markup cannot exhaust the rewrite call stack", () => {
+  const depth = 15_000;
+  const html = `<html><body><p>${"<em>".repeat(depth)}The model is misaligned.${"</em>".repeat(depth)}</p><blockquote>The model is misaligned.</blockquote><p>Outside it is misaligned.</p></body></html>`;
+  const started = performance.now();
+  const rendered = renderPage(html, "https://example.com/deep");
+  const { document } = parseHTML(rendered.html);
+  assert.equal(document.querySelectorAll("mark.dd").length, 2);
+  assert.equal(document.querySelector("blockquote").textContent, "The model is misaligned.");
+  assert.match(document.body.textContent, /The model has a bug/);
+  assert.ok(performance.now() - started < 5000, "deep traversal stays within the processing budget");
 });
 
 test("rewrites from the model replace only the words that changed, across tags", () => {

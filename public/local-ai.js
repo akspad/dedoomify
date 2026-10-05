@@ -74,36 +74,19 @@ function semanticInvariants(text) {
   return (text.match(SEMANTIC_INVARIANTS) || []).map((w) => w.toLowerCase());
 }
 
-const STOPWORDS = new Set(
-  ("that this these those with from into onto over under about than then there their they them " +
-   "which while where when what who whom whose have been being were also very such each other said says").split(" "),
-);
-
-// Words we compare on: four letters or more, lowercased and lightly stemmed so
-// "users" matches "user" and "decided" matches "decide".
+// Keep short names, pronouns, units and non-English words too. Avoid stemming
+// or truncation: "Bob"/"Ian", "pm"/"am", and "researcher"/"research" differ.
+// Articles and the optional complementizer "that" are the only ignored words.
+const GRAMMAR = new Set(["a", "an", "the", "that"]);
 function contentWords(text) {
-  return (text.toLowerCase().match(/[a-z][a-z'-]{3,}/g) || [])
-    .filter((w) => !STOPWORDS.has(w))
-    .map((w) => w.replace(/'s$/, "").replace(/(ies|es|s|ed|ing|ly)$/, "").slice(0, 7));
+  return (text.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*|[^\s]/gu) || [])
+    .filter((word) => !GRAMMAR.has(word.toLowerCase()));
 }
-
-let replacementVocab = null;
-function allowedNewWords() {
-  // Words the phrase rules themselves introduce ("bug", "output", "malfunction").
-  // Plus the style guide's "produced false or misleading output", which no rule uses.
-  replacementVocab ??= new Set(
-    globalThis.Dedoom.RULES.map(([, replacement]) => replacement)
-      .concat("produced false or misleading output")
-      .flatMap(contentWords),
-  );
-  return replacementVocab;
-}
-
 // Accept a rewrite only if it plausibly kept the facts. Small models sometimes
 // invent details ("deceived its creators"), drop who said what, or drop and
 // straighten quotation marks or periods, so besides
 // the shape checks, every content word must survive unless it's doom framing
-// the rules also change, and every new word must be one the rules use.
+// the rules also change, and new words must come from the phrases that actually changed.
 // Otherwise the caller keeps the phrase-rules version.
 export function acceptRewrite(original, rewritten) {
   if (!rewritten) return false;
@@ -112,6 +95,9 @@ export function acceptRewrite(original, rewritten) {
   if (ratio < 0.6 || ratio > 1.7) return false;
   if (numbersIn(rewritten).join("\u0000") !== numbersIn(original).join("\u0000")) return false;
   if (semanticInvariants(rewritten).join("\u0000") !== semanticInvariants(original).join("\u0000")) return false;
+  // Numbers alone miss currency, percentages and mathematical qualifiers.
+  if ((rewritten.match(/[$€£¥%+−<>≤≥=]/g) || []).join("") !==
+      (original.match(/[$€£¥%+−<>≤≥=]/g) || []).join("")) return false;
   if (quoteMarks(rewritten) !== quoteMarks(original)) return false;
   if (quotedText(rewritten) !== quotedText(original)) return false;
   if (stops(rewritten) !== stops(original)) return false;
@@ -122,26 +108,32 @@ export function acceptRewrite(original, rewritten) {
   // AI qualifier or an unambiguous software/model name for this exception.
   const deception = /\b(AIs?(?:\s+(?:models?|systems?|agents?|assistants?|bots?))?|LLMs?|language models?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+)\s+decided to deceive\b/gi;
   const reference = globalThis.Dedoom.quoteProtectedSegments(original).map((seg) =>
-    seg.protected ? seg.text : seg.text.replace(deception, "$1 produced misleading output"),
+    seg.protected ? seg.text : seg.text.replace(deception, "$1 produced misleading output for"),
   ).join("");
-  const beforeWords = globalThis.Dedoom.dedoomSegments(reference).flatMap((seg) =>
-    seg.original === undefined ? contentWords(seg.text) : [],
-  );
+  const segments = globalThis.Dedoom.dedoomSegments(reference);
   const afterWords = contentWords(rewritten);
-  const vocab = allowedNewWords();
-
-  // Every preserved content word must still appear in the same order. This
-  // catches actor/object swaps such as "Carol before David" -> "David before
-  // Carol", which a set comparison cannot see.
-  let at = 0;
-  for (const word of beforeWords) {
-    at = afterWords.indexOf(word, at);
-    if (at < 0) return false;
-    at++;
+  // Match replacements in their original positions. Vocabulary and counts
+  // alone cannot stop "The model is misaligned. Bob spoke." becoming
+  // "The model. Bob has a bug spoke." Keep punctuation in these tokens too,
+  // so sentence boundaries, units and currency remain attached to their facts.
+  let positions = new Set([0]);
+  for (const seg of segments) {
+    const variants = [seg.text];
+    if (seg.original !== undefined) {
+      variants.push(seg.original);
+      if (seg.original.toLowerCase() === "human extinction") variants.push("a very bad outage");
+    }
+    const next = new Set();
+    for (const variant of variants) {
+      const words = contentWords(variant);
+      for (const at of positions) {
+        if (words.every((word, i) => afterWords[at + i] === word)) next.add(at + words.length);
+      }
+    }
+    if (next.size === 0) return false;
+    positions = next;
   }
-
-  const before = new Set(contentWords(original));
-  for (const w of afterWords) if (!before.has(w) && !vocab.has(w)) return false;
+  if (!positions.has(afterWords.length)) return false;
   return true;
 }
 

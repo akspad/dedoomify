@@ -5,6 +5,42 @@ import "../shared/dedoom-prompt.js";
 import "../shared/dedoom-core.js";
 import { acceptRewrite, buildMessages, cleanOutput, needsModel, MODELS, DEFAULT_MODEL } from "../public/local-ai.js";
 
+test("rejects changes to short names, pronouns, units and exact lexical facts", () => {
+  const facts = [
+    ["Bob warned Ian", "Ian warned Bob"], ["risk to him", "risk to her"],
+    ["at 3 pm", "at 3 am"], ["uses 3 kg", "uses 3 mg"], ["uses 3 mW", "uses 3 MW"],
+    ["bad data", "bad bad data"], ["researchers agreed", "research agreed"],
+    ["lab in Perú", "lab in Peru"], ["costs $3", "costs €3"],
+    ["failed in 3% of runs", "failed in 3 of runs"],
+    ["affects us", "affects them"], ["then stopped", "stopped"],
+    ["if x < 3", "if x > 3"], ["uses 3 °C", "uses 3 °F"],
+  ];
+  for (const [fact, changed] of facts) {
+    const original = `The model is misaligned; ${fact}.`;
+    const safe = original.replace("is misaligned", "has a bug");
+    assert.ok(acceptRewrite(original, safe), fact);
+    assert.ok(!acceptRewrite(original, safe.replace(fact, changed)), `${fact} -> ${changed}`);
+  }
+});
+
+test("replacements and punctuation stay attached to their original actors", () => {
+  for (const [before, after] of [
+    ["The model is misaligned. Bob spoke.", "The model. Bob has a bug spoke."],
+    ["The model is misaligned. Bob spoke.", "The model has a bug. Bob spoke misaligned."],
+    ["Bob, not Ian, said the model is misaligned.", "Bob not, Ian, said the model has a bug."],
+    ["Bob paid $3; Ian paid 5 euros for the misaligned model.", "Bob paid 3; Ian paid $5 euros for the buggy model."],
+  ]) assert.ok(!acceptRewrite(before, after), after);
+});
+
+test("matched phrases cannot grant vocabulary for unrelated claims or repetitions", () => {
+  const original = "The model is misaligned.";
+  for (const rewritten of [
+    "The model has a bug bug bug.", "The model has a bug and wrong answers.",
+    "The model has a bug and causes total downtime.", "The model has a bug and AI adoption.",
+    "The model has a bug and model model.",
+  ]) assert.ok(!acceptRewrite(original, rewritten), rewritten);
+});
+
 test("only paragraphs with doom framing go to the model", () => {
   assert.ok(needsModel("The model is misaligned.", "The model has a bug."));
   assert.ok(needsModel("The AI decided to deceive its users.", "The AI decided to deceive its users."));
