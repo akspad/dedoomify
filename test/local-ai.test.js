@@ -5,6 +5,63 @@ import "../shared/dedoom-prompt.js";
 import "../shared/dedoom-core.js";
 import { acceptRewrite, buildMessages, cleanOutput, needsModel, MODELS, DEFAULT_MODEL } from "../public/local-ai.js";
 
+test("rejects changes to short names, pronouns, units and exact lexical facts", () => {
+  const facts = [
+    ["Bob warned Ian", "Ian warned Bob"], ["risk to him", "risk to her"],
+    ["at 3 pm", "at 3 am"], ["uses 3 kg", "uses 3 mg"], ["uses 3 mW", "uses 3 MW"],
+    ["bad data", "bad bad data"], ["researchers agreed", "research agreed"],
+    ["lab in Perú", "lab in Peru"], ["costs $3", "costs €3"],
+    ["failed in 3% of runs", "failed in 3 of runs"],
+    ["affects us", "affects them"], ["then stopped", "stopped"],
+    ["if x < 3", "if x > 3"], ["uses 3 °C", "uses 3 °F"],
+  ];
+  for (const [fact, changed] of facts) {
+    const original = `The model is misaligned; ${fact}.`;
+    const safe = original.replace("is misaligned", "has a bug");
+    assert.ok(acceptRewrite(original, safe), fact);
+    assert.ok(!acceptRewrite(original, safe.replace(fact, changed)), `${fact} -> ${changed}`);
+  }
+});
+
+test("replacements and punctuation stay attached to their original actors", () => {
+  for (const [before, after] of [
+    ["The model is misaligned. Bob spoke.", "The model. Bob has a bug spoke."],
+    ["The model is misaligned. Bob spoke.", "The model has a bug. Bob spoke misaligned."],
+    ["Bob, not Ian, said the model is misaligned.", "Bob not, Ian, said the model has a bug."],
+    ["Bob paid $3; Ian paid 5 euros for the misaligned model.", "Bob paid 3; Ian paid $5 euros for the buggy model."],
+  ]) assert.ok(!acceptRewrite(before, after), after);
+});
+
+test("matched phrases cannot grant vocabulary for unrelated claims or repetitions", () => {
+  const original = "The model is misaligned.";
+  for (const rewritten of [
+    "The model has a bug bug bug.", "The model has a bug and wrong answers.",
+    "The model has a bug and causes total downtime.", "The model has a bug and AI adoption.",
+    "The model has a bug and model model.",
+  ]) assert.ok(!acceptRewrite(original, rewritten), rewritten);
+});
+
+test("grammar exceptions cannot erase model names, citations or pronoun objects", () => {
+  for (const [before, after] of [
+    ["Model A is misaligned.", "Model has a bug."],
+    ["The model is misaligned.[a]", "The model has a bug.[]"],
+    ["The AI is misaligned and changed that.", "The AI has a bug and changed."],
+    ["They said that the model is misaligned.", "They said the model has a bug."],
+    ["The model is misaligned, critics said.", "The model has a bug, critics said that."],
+    ["The model is misaligned.[reported]", "The model has a bug.[reported that]"],
+  ]) assert.ok(!acceptRewrite(before, after), after);
+});
+
+test("rules exemptions cannot authorize model euphemisms for human roles", () => {
+  for (const [before, after] of [
+    ["The fashion model lied about her income while discussing AI.", "The fashion model gave wrong answers about her income while discussing AI."],
+    ["The federal agents blackmailed the witness while discussing AI.", "The federal agents wrote a sternly worded email to the witness while discussing AI."],
+  ]) assert.ok(!acceptRewrite(before, after), after);
+  const mixed = "The federal agent blackmailed the witness. The AI poses an existential risk.";
+  assert.ok(acceptRewrite(mixed, mixed.replace("an existential risk", "a product risk")));
+  assert.ok(!acceptRewrite(mixed, mixed.replace("blackmailed", "confused").replace("an existential risk", "a product risk")));
+});
+
 test("only paragraphs with doom framing go to the model", () => {
   assert.ok(needsModel("The model is misaligned.", "The model has a bug."));
   assert.ok(needsModel("The AI decided to deceive its users.", "The AI decided to deceive its users."));
@@ -165,6 +222,40 @@ test("model and rules share ASCII speech boundaries including contractions", () 
   assert.ok(acceptRewrite("The model's output is misaligned.", "The model's output has a bug."));
 });
 
+test("numeric ASCII speech cannot be rewritten by the model", () => {
+  for (const prefix of ["She said, ", ""]) {
+    const before = `${prefix}'26 models are misaligned.' Outside it is misaligned.`;
+    assert.ok(!acceptRewrite(before, before.replace("are misaligned", "have bugs")));
+    assert.ok(acceptRewrite(before, before.replace("Outside it is misaligned", "Outside it has a bug")));
+  }
+  assert.ok(acceptRewrite("In '26 the model is misaligned and users' feedback agrees.", "In '26 the model has a bug and users' feedback agrees."));
+});
+
+test("abbreviated years do not inherit later quotations in model validation", () => {
+  const before = "In '26 the model is misaligned. She said 'hello.'";
+  assert.ok(acceptRewrite(before, "In '26 the model has a bug. She said 'hello.'"));
+  assert.ok(!acceptRewrite(before, "In '26 the model has a bug. She said 'goodbye.'"));
+  assert.ok(!acceptRewrite("It appears in '26 models are misaligned.'", "It appears in '26 models have bugs.'"));
+});
+
+test("model validation shares broad year and abbreviation context", () => {
+  for (const prefix of ["Around", "Circa", "Throughout", "As early as"]) {
+    const before = `${prefix} '26 the model is misaligned. She said 'hello.'`;
+    assert.ok(acceptRewrite(before, before.replace("is misaligned", "has a bug")));
+  }
+  for (const human of ["The federal agent at Acme Inc. warned the AI was misaligned.", "The federal agent met Gen. Smith about an existential risk."]) {
+    assert.ok(!acceptRewrite(human, human.replace("was misaligned", "had a bug").replace("existential risk", "product risk")));
+    assert.ok(acceptRewrite(human + " The AI is misaligned.", human + " The AI has a bug."));
+  }
+});
+
+test("model validation distinguishes AI-qualified roles from human roles", () => {
+  assert.ok(acceptRewrite("The AI personal assistant is misaligned.", "The AI personal assistant has a bug."));
+  assert.ok(acceptRewrite("The AI travel agent is misaligned.", "The AI travel agent has a bug."));
+  assert.ok(!acceptRewrite("The personal assistant discussed AI and is misaligned.", "The personal assistant discussed AI and has a bug."));
+  assert.ok(!acceptRewrite("The AI personal assistant and the federal agent discussed an existential risk.", "The AI personal assistant and the federal agent discussed a product risk."));
+});
+
 test("keeps plural/name possessives and human deception inside model output", () => {
   for (const quote of ["'The users' feedback is that the model is misaligned.'", "'James' report says the model is misaligned.'"]) {
     const original = `She said, ${quote} Outside it is misaligned.`;
@@ -239,4 +330,200 @@ test("model validation preserves quote-adjacent padding and multiline speech", (
     assert.ok(!acceptRewrite(original, original.replace("model is misaligned", "model has a bug")));
     assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
   }
+});
+
+
+test("model validation permits AI actions with human objects, preserving their roles", () => {
+  // The model guard retains threat invariants; the rules fallback can rewrite.
+  assert.ok(!acceptRewrite("Claude threatened the research assistant.", "Claude output threats against the research assistant."));
+  const original = "The AI is misaligned beside the federal agent.";
+  assert.ok(acceptRewrite(original, "The AI has a bug beside the federal agent."));
+  assert.ok(!acceptRewrite(original, "The federal agent has a bug beside the AI."));
+  assert.ok(!acceptRewrite("The federal agent said the AI is misaligned.", "The federal agent said the AI has a bug."));
+});
+
+
+test("model phrase slots allow existing predicates with human objects", () => {
+  for (const [before, after] of [["deceived", "confused"], ["lied to", "gave wrong answers to"], ["manipulated", "steered"], ["smuggled passwords past", "copied passwords past"]]) {
+    const original = `The AI ${before} the federal agent.`;
+    assert.ok(acceptRewrite(original, `The AI ${after} the federal agent.`), before);
+    assert.ok(!acceptRewrite(original, `The federal agent ${after} the AI.`), before);
+  }
+});
+
+
+test("modified human objects retain modifiers and actor order", () => {
+  for (const object of ["two federal agents", "an experienced federal agent", "several experienced research assistants"]) {
+    const input = `The AI deceived ${object}.`;
+    const safe = input.replace("deceived", "confused");
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace(object, "the federal agent")));
+  }
+  assert.ok(!acceptRewrite("The AI deceived the misaligned federal agent.", "The AI confused the buggy federal agent."));
+});
+
+
+test("model cannot lose human attribution across a quoted phrase", () => {
+  const original = 'The federal agent called the AI "misaligned" and warned it posed an existential risk.';
+  assert.ok(!acceptRewrite(original, original.replace("an existential risk", "a product risk")));
+  assert.ok(acceptRewrite(original + " The AI is misaligned.", original + " The AI has a bug."));
+});
+
+
+test("independent vendor AI claims remain model-editable after speech and no", () => {
+  for (const prefix of ['The federal agent said "No." ', "The federal agent said no. "]) {
+    const input = `${prefix}OpenAI's model is misaligned.`;
+    assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+  }
+});
+
+
+test("model phrase slots follow abbreviation, citation and explicit AI context", () => {
+  for (const input of [
+    "The federal agent worked at Acme Inc. The AI is misaligned.",
+    'The federal agent said "No."[1] The AI is misaligned.',
+    "The A.I. personal assistant is misaligned.",
+    "The artificial-intelligence-powered personal assistant is misaligned.",
+  ]) assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+});
+
+
+test("model phrase slots preserve qualified modifiers and object citations", () => {
+  for (const input of ["The AI-powered digital personal assistant is misaligned.", "The A.I.-powered virtual personal assistant is misaligned."]) {
+    const safe = input.replace("is misaligned", "has a bug");
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace(/digital |virtual /, "")));
+  }
+  const input = "The AI deceived the federal agent [1].";
+  assert.ok(acceptRewrite(input, input.replace("deceived", "confused")));
+  assert.ok(!acceptRewrite(input, input.replace("deceived", "confused").replace("[1]", "[2]")));
+});
+
+
+test("model cannot erase human attribution after a semicolon", () => {
+  const original = "The federal agent warned the AI was misaligned; and said it posed an existential risk.";
+  assert.ok(!acceptRewrite(original, original.replace("an existential risk", "a product risk")));
+  assert.ok(acceptRewrite(original + " The AI is misaligned.", original + " The AI has a bug."));
+});
+
+
+test("model validates explicitly enabled and controlled software roles", () => {
+  for (const qualifier of ["AI-enabled virtual", "AI-controlled digital"]) {
+    const original = `The ${qualifier} personal assistant is misaligned.`;
+    const safe = original.replace("is misaligned", "has a bug");
+    assert.ok(acceptRewrite(original, safe));
+    assert.ok(!acceptRewrite(original, safe.replace(/virtual |digital /, "")));
+  }
+});
+
+test("model retains parenthesized citations after speech and human continuations", () => {
+  for (const citation of ["(Smith, 2020)", "(Smith et al., 2020)", "(Smith & Jones, 2020a)", "(1–3)", "(Smith, 2020) [2]"]) {
+    const input = `The federal agent said "No." ${citation} The AI is misaligned.`;
+    const safe = input.replace("is misaligned", "has a bug");
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace(citation, "(Jones, 2021)")));
+    const continued = `The federal agent said "No." ${citation} and warned of an existential risk.`;
+    assert.ok(!acceptRewrite(continued, continued.replace("an existential risk", "a product risk")));
+  }
+  const aside = 'The federal agent said "No." (and warned of an existential risk) The AI is misaligned.';
+  assert.ok(!acceptRewrite(aside, aside.replace("is misaligned", "has a bug")));
+});
+
+test("model recognizes fresh AI subjects after bounded sentence openers", () => {
+  for (const opener of ["But", "Then", "However,", "And then"]) {
+    const input = `The federal agent said "No." ${opener} the AI is misaligned.`;
+    assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+    const continued = `The federal agent said "No." ${opener} warned the AI was misaligned.`;
+    assert.ok(!acceptRewrite(continued, continued.replace("was misaligned", "had a bug")));
+  }
+});
+
+test("model cannot treat AI-employed people as explicitly qualified software", () => {
+  for (const input of [
+    "AI research involved human personal assistants who were misaligned.",
+    "The AI hired experienced personal assistants who were misaligned.",
+    "The AI consulted virtual personal assistants who were misaligned.",
+    "AI-powered software employed digital personal assistants who were misaligned.",
+    "The AI-powered human personal assistant is misaligned.",
+  ]) {
+    assert.ok(!acceptRewrite(input, input.replace("were misaligned", "had bugs").replace("is misaligned", "has a bug")));
+  }
+});
+
+test("model permits framing changes with people as affected parties", () => {
+  for (const input of ["The AI poses an existential risk to federal agents.", "The model represents an existential risk to two experienced personal assistants."]) {
+    const safe = input.replace("an existential risk", "a product risk");
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace("to", "from")));
+  }
+  for (const input of ["The AI warned of an existential risk to federal agents.", "The AI poses an existential risk to misaligned federal agents."]) assert.ok(!acceptRewrite(input, input.replace("an existential risk", "a product risk")));
+});
+
+test("model preserves human roles after ambiguous finite qualifier words", () => {
+  for (const verb of ["advanced", "automated", "personalized", "powered", "enabled", "controlled", "based"]) {
+    const input = `The AI ${verb} personal assistants who were misaligned.`;
+    assert.ok(!acceptRewrite(input, input.replace("were misaligned", "had bugs")));
+  }
+  const input = "The AI-powered advanced personal assistant is misaligned.";
+  assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+});
+
+test("model supports independent named models and cited human objects", () => {
+  for (const input of ['The federal agent said "No." OpenAI\'s o3 is misaligned.', 'The federal agent filed a report; DeepSeek-R1 is misaligned.']) assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+  const input = "The AI deceived the federal agent (Smith, 2020).";
+  const safe = input.replace("deceived", "confused");
+  assert.ok(acceptRewrite(input, safe));
+  assert.ok(!acceptRewrite(input, safe.replace("2020", "2021")));
+  const human = "The AI deceived the federal agent (who is misaligned).";
+  assert.ok(!acceptRewrite(human, human.replace("deceived", "confused")));
+});
+
+test("model recognizes fresh neural-network and explicit AI subject claims", () => {
+  for (const subject of ["The neural net", "The neural network", "Machine learning", "The A.I.", "AGI"]) {
+    const input = `The federal agent said "No." ${subject} is misaligned.`;
+    assert.ok(acceptRewrite(input, input.replace("is misaligned", "has a bug")));
+  }
+});
+
+test("model recognizes independent superintelligence framing after speech", () => {
+  const input = 'The federal agent said "No." The superintelligence is misaligned.';
+  assert.ok(acceptRewrite(input, 'The federal agent said "No." The very capable software has a bug.'));
+  const human = 'The federal agent said "No." and warned the superintelligence was misaligned.';
+  assert.ok(!acceptRewrite(human, human.replace('was misaligned', 'had a bug')));
+});
+
+test("model preserves human-object adjunct facts while allowing framing", () => {
+  for (const suffix of [' yesterday.', ' in 2020.', ' at 9 pm.', ' during the test.']) {
+    const input = 'The AI deceived federal agents' + suffix;
+    const safe = input.replace('deceived', 'confused');
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace(suffix, '.')));
+  }
+});
+
+test("model selection and deception exceptions share explicit software subjects", () => {
+  for (const subject of ['DeepSeek-R1', 'o3', 'The neural network', 'The superintelligence', 'The A.I.', 'AGI', 'Artificial intelligence']) {
+    const hint = `${subject} wanted access.`;
+    assert.ok(needsModel(hint, hint), subject);
+    const input = `${subject} decided to deceive its users.`;
+    assert.ok(acceptRewrite(input, `${subject} produced misleading output for its users.`), subject);
+  }
+  for (const subject of ['The federal agent', 'The fashion model', 'The personal assistant']) {
+    const input = `${subject} decided to deceive its users.`;
+    assert.ok(!acceptRewrite(input, `${subject} produced misleading output for its users.`), subject);
+  }
+});
+
+test("deception exceptions cannot edit protected human reports or quoted speech", () => {
+  for (const input of [
+    'The federal agent said the AI decided to deceive its users.',
+    'The research assistant said DeepSeek-R1 decided to deceive its users.',
+    'The federal agent said "No." and warned o3 decided to deceive its users.',
+    'She said, "The AI decided to deceive its users."',
+  ]) {
+    assert.ok(!acceptRewrite(input, input.replace('decided to deceive', 'produced misleading output for')));
+    assert.ok(acceptRewrite(input, input));
+  }
+  const prefix = 'The federal agent said the AI decided to deceive its users. ';
+  assert.ok(acceptRewrite(prefix + 'DeepSeek-R1 decided to deceive its users.', prefix + 'DeepSeek-R1 produced misleading output for its users.'));
 });

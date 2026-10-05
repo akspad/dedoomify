@@ -61,7 +61,7 @@ header.site { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; pa
 .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
 .tab { font: inherit; border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
 .tab[aria-selected="true"] { background: var(--bg); color: var(--ink); font-weight: 600; }
-input[type="url"], textarea, select {
+#url, textarea, select {
   font: inherit; color: var(--ink); background: var(--bg);
   border: 1px solid var(--line); border-radius: 10px; width: 100%; padding: 12px;
 }

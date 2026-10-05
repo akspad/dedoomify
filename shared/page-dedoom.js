@@ -24,7 +24,7 @@
   // Entering or leaving one of these starts a new group.
   var BLOCK = {};
   ("ADDRESS ARTICLE ASIDE BLOCKQUOTE BODY BR BUTTON CAPTION DD DETAILS DIALOG DIV DL DT FIELDSET " +
-    "FIGCAPTION FIGURE FOOTER FORM H1 H2 H3 H4 H5 H6 HEADER HGROUP HR IMG LABEL LEGEND LI MAIN MENU Q " +
+    "FIGCAPTION FIGURE FOOTER FORM H1 H2 H3 H4 H5 H6 HEADER HGROUP HR IMG LABEL LEGEND LI MAIN MENU " +
     "NAV OL P PRE SECTION SUMMARY TABLE TBODY TD TFOOT TH THEAD TR UL")
     .split(" ")
     .forEach(function (tag) {
@@ -35,30 +35,66 @@
     return el && el.nodeType === 1 && /^(MARK|DEL)$/i.test(el.tagName) && el.hasAttribute("data-was");
   }
 
+  var immutable = new WeakSet();
+
   // Returns an array of groups; each group is an array of text nodes.
   function collectGroups(rootEl) {
+    if (rootEl && rootEl.nodeType === 1 && rootEl.closest("[hidden]")) return [];
     var groups = [];
     var current = null;
-    function visit(node) {
-      for (var child = node.firstChild; child; child = child.nextSibling) {
+    // Untrusted HTML can have thousands of nested inline elements. An explicit
+    // stack keeps traversal bounded by the document size instead of the JS
+    // call-stack limit, while preserving block boundaries on entry and exit.
+    var stack = rootEl ? [{ next: rootEl.firstChild, block: false, immutable: false }] : [];
+    while (stack.length) {
+      var frame = stack[stack.length - 1];
+      var child = frame.next;
+      if (!child) {
+        stack.pop();
+        if (frame.quote && current) {
+          var closeQuote = { nodeValue: "”", parentNode: null };
+          immutable.add(closeQuote);
+          current.push(closeQuote);
+        }
+        if (frame.block) current = null;
+      } else {
+        frame.next = child.nextSibling;
         if (child.nodeType === 3) {
           if (!current) {
             current = [];
             groups.push(current);
           }
           current.push(child);
+          if (frame.immutable) immutable.add(child);
         } else if (child.nodeType === 1) {
+          if (child.hasAttribute("hidden")) continue;
           var tag = String(child.tagName).toUpperCase();
+          if (frame.immutable && tag === "BR") {
+            if (!current) { current = []; groups.push(current); }
+            var renderedBreak = { nodeValue: "\u2029", parentNode: null };
+            immutable.add(renderedBreak);
+            current.push(renderedBreak);
+            continue;
+          }
           var block = BLOCK[tag];
           if (block) current = null;
-          if (!SKIP[tag] && child.getAttribute("contenteditable") == null) visit(child);
-          if (block) current = null;
+          var protectedChild = SKIP[tag] || child.getAttribute("contenteditable") != null;
+          if (!protectedChild || (!block && !/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|TEXTAREA|SELECT|OPTION|SVG|MATH|TITLE|IFRAME)$/.test(tag))) {
+            // Rendered skipped inline text supplies immutable punctuation and
+            // quotation context. Invisible/non-prose subtrees supply none.
+            if (tag === "Q") {
+              if (!current) { current = []; groups.push(current); }
+              var openQuote = { nodeValue: "“", parentNode: null };
+              immutable.add(openQuote);
+              current.push(openQuote);
+            }
+            stack.push({ next: child.firstChild, block: block, immutable: frame.immutable || !!protectedChild, quote: tag === "Q" });
+          } else if (block) current = null;
         }
       }
     }
-    if (rootEl) visit(rootEl);
     return groups.filter(function (nodes) {
-      return /\S/.test(groupText(nodes));
+      return nodes.some(function (node) { return !immutable.has(node) && /\S/.test(node.nodeValue); });
     });
   }
 
@@ -77,7 +113,7 @@
     var seen = [];
     nodes.forEach(function (n) {
       var parent = n.parentNode;
-      if (isChange(parent)) {
+      if (!immutable.has(n) && isChange(parent)) {
         if (seen.indexOf(parent) >= 0) return;
         seen.push(parent);
         original += parent.getAttribute("data-was");
@@ -95,7 +131,7 @@
     var out = [];
     nodes.forEach(function (n) {
       var parent = n.parentNode;
-      if (isChange(parent)) {
+      if (!immutable.has(n) && isChange(parent)) {
         var text = doc.createTextNode(parent.getAttribute("data-was"));
         parent.parentNode.replaceChild(text, parent);
         out.push(text);
@@ -123,19 +159,39 @@
   // Apply non-overlapping edits (sorted by start) to a group's text nodes.
   // Working from the last edit back keeps earlier offsets valid.
   function applyEdits(nodes, edits, doc) {
-    var starts = [];
+    var starts = [], ends = [], protectedRanges = [];
     var total = 0;
     nodes.forEach(function (n) {
       starts.push(total);
       total += n.nodeValue.length;
+      ends.push(total);
+      if (immutable.has(n) && n.nodeValue.length) {
+        var last = protectedRanges[protectedRanges.length - 1];
+        if (last && last.end === starts[starts.length - 1]) last.end = total;
+        else protectedRanges.push({ start: starts[starts.length - 1], end: total });
+      }
     });
     function nodeAt(pos, preferEarlier) {
-      for (var k = 0; k < nodes.length; k++) {
-        var end = starts[k] + nodes[k].nodeValue.length;
-        if (pos < end || (preferEarlier && pos === end)) return k;
+      var lo = 0, hi = ends.length;
+      while (lo < hi) {
+        var mid = Math.floor((lo + hi) / 2);
+        if (ends[mid] < pos || (!preferEarlier && ends[mid] === pos)) lo = mid + 1;
+        else hi = mid;
       }
-      return nodes.length - 1;
+      return Math.min(lo, nodes.length - 1);
     }
+    // Model and rule edits may read protected text for context but cannot
+    // change it, including an edit spanning editable and immutable nodes.
+    edits = edits.filter(function (edit) {
+      if (immutable.has(nodes[nodeAt(edit.start, false)])) return false;
+      var lo = 0, hi = protectedRanges.length;
+      while (lo < hi) {
+        var mid = Math.floor((lo + hi) / 2);
+        if (protectedRanges[mid].end <= edit.start) lo = mid + 1;
+        else hi = mid;
+      }
+      return lo === protectedRanges.length || edit.end <= protectedRanges[lo].start;
+    });
     for (var e = edits.length - 1; e >= 0; e--) {
       var edit = edits[e];
       var a = nodeAt(edit.start, false);

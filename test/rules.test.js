@@ -9,6 +9,78 @@ test("the headline example", () => {
   assert.equal(dedoomText("The model is misaligned."), "The model has a bug.");
 });
 
+test("explicit human roles stay factual even alongside AI context", () => {
+  for (const actor of ["The fashion model", "The runway models", "The female model", "The federal agents", "The secret agents", "The real-estate agents", "The insurance agent", "The personal assistant", "The research assistants"]) {
+    for (const action of ["lied about the report", "blackmailed the witness", "cheated on the test", "escaped from the room"]) {
+      const text = `${actor} ${action} while discussing AI.`;
+      assert.equal(dedoomText(text), text);
+      assert.equal(hasDoom(text), false);
+    }
+  }
+  assert.equal(dedoomText("The AI agents blackmailed the witness."), "The AI agents wrote a sternly worded email to the witness.");
+  assert.equal(dedoomText("The chatbot lied to its users."), "The chatbot gave wrong answers to its users.");
+  for (const separator of [". ", "; ", "!\n", ".[1] ", ".[1][2] ", ".[a] ", ".¹ ", ".) "]) {
+    const text = "The federal agent blackmailed the witness" + separator + "The AI poses an existential risk.";
+    assert.equal(dedoomText(text), text.replace("an existential risk", "a product risk"));
+    assert.ok(hasDoom(text));
+  }
+  for (const human of ["The federal agent warned Dr. Smith about an existential risk.", "The federal agent paid $1.5 million for an existential risk policy.", "The federal agent warned J. Smith about an existential risk.", "The federal agent at Acme Inc. warned the AI was misaligned.", "The federal agent met Gen. Smith about an existential risk.", "The federal agent at Acme Ltd. warned of an existential risk.", "The federal agent warned Sen. Smith about an existential risk.", "The federal agent at the Dept. of Energy warned of an existential risk."]) {
+    assert.equal(dedoomText(human + " The AI is misaligned."), human + " The AI has a bug.");
+  }
+});
+
+test("explicit AI qualifiers keep normally human roles editable", () => {
+  for (const qualifier of ["AI", "AI-powered", "AI driven", "LLM-based", "artificial intelligence"]) {
+    const original = `The ${qualifier} personal assistant is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  const agent = "The AI travel agent blackmailed a customer.";
+  assert.equal(dedoomText(agent), "The AI travel agent wrote a sternly worded email to a customer.");
+  const human = "The personal assistant discussed AI and is misaligned.";
+  assert.equal(dedoomText(human), human);
+  const mixed = "The AI personal assistant and the federal agent discussed an existential risk.";
+  assert.equal(dedoomText(mixed), mixed);
+});
+
+test("rendered breaks separate independent AI claims while retaining human continuations", () => {
+  for (const ai of ["The AI", "AI", "Our model", "Claude", "The GPT-5 model", "our language model"]) {
+    assert.equal(dedoomText(`The federal agent\u2029${ai} is misaligned.`), `The federal agent\u2029${ai} has a bug.`);
+  }
+  for (const human of ["The federal\u2029agent blackmailed the witness.", "The federal agent\u2029is misaligned.", "The federal agent warned\nthat the AI was misaligned."]) assert.equal(dedoomText(human), human);
+  const quote = "She said, 'The AI\u2029is misaligned.' Outside it is misaligned.";
+  assert.equal(dedoomText(quote), quote.replace("Outside it is misaligned", "Outside it has a bug"));
+});
+
+test("hostile sentence fragmentation has bounded segmentation", () => {
+  for (const suffix of [". ".repeat(2_621_440), "The AI is misaligned. ".repeat(1200)]) {
+    const original = "The federal agent filed a report. " + suffix;
+    const start = performance.now();
+    const segments = dedoomSegments(original);
+    assert.equal(segments.length, 1);
+    assert.equal(segments[0].text, original);
+    assert.equal(segments[0].protected, true);
+    assert.ok(performance.now() - start < 5000, "fragmented paragraphs must remain bounded");
+  }
+});
+
+test("fragmentation limits cover quote separators, quote caches and rule output", () => {
+  const cases = [
+    ("The federal agent " + ". ".repeat(1024) + '"x"').repeat(1024),
+    '"x" a '.repeat(40_000),
+    "'a ".repeat(40_000) + "'done.'",
+    "said, ".repeat(40_000) + "'done.'",
+    "The AI is misaligned. ".repeat(40_000),
+  ];
+  for (const original of cases) {
+    const start = performance.now();
+    const segments = dedoomSegments(original);
+    assert.equal(segments.length, 1);
+    assert.equal(segments[0].text, original);
+    assert.equal(segments[0].protected, true);
+    assert.ok(performance.now() - start < 5000, "every segmentation stage must remain bounded");
+  }
+});
+
 test("rewrites common doom phrasing", () => {
   const cases = [
     ["Experts warn of existential risk from AI.", "Experts warn of product risk from AI."],
@@ -250,6 +322,29 @@ test("preserves paired ASCII speech without treating apostrophes as quotes", () 
   for (const [before, after] of cases) assert.equal(dedoomText(before), after, before);
 });
 
+test("numeric speech stays quoted while abbreviated years remain prose", () => {
+  for (const original of [
+    "She said, '26 models are misaligned.' Outside it is misaligned.",
+    "'26 models are misaligned.' Outside it is misaligned.",
+    "She said, '26 misalignment risks' in her report. Outside it is misaligned.",
+  ]) assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+  const year = "In '26 the model is misaligned and users' feedback agrees.";
+  assert.equal(dedoomText(year), year.replace("is misaligned", "has a bug"));
+});
+
+test("abbreviated years remain prose before unrelated later speech", () => {
+  for (const prefix of ["In", "By", "Since", "During", "Before", "After", "Until", "From", "Around", "Circa", "Throughout", "As early as", "As of", "Back in", "About", "Late", "Early"]) {
+    const before = `${prefix} '26 the model is misaligned. She said 'hello.'`;
+    assert.equal(dedoomText(before), before.replace("is misaligned", "has a bug"));
+  }
+  for (const numericQuote of ["It appears in '26 models are misaligned.'", "The caption is '26 models are misaligned.'"]) {
+    assert.equal(dedoomText(numericQuote), numericQuote);
+  }
+  const reported = "She said, '26 models are misaligned.' In '27 it is misaligned. She said 'hello.'";
+  // The scanner conservatively keeps the outermost plausible speech pair.
+  assert.equal(dedoomText(reported), reported);
+});
+
 test("possessives inside speech do not prematurely end quotations", () => {
   for (const quote of [
     "'The users' feedback is that the model is misaligned.'",
@@ -338,4 +433,256 @@ test("whitespace and line breaks inside speech stay protected", () => {
     "She said, '\nThe users' feedback says the model is misaligned.\n' Outside it is misaligned.",
   ]) assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
   assert.equal(dedoomText("Don't worry: users' feedback says it is misaligned."), "Don't worry: users' feedback says it has a bug.");
+});
+
+
+test("human objects do not suppress a simple AI actor's rewrite", () => {
+  assert.equal(dedoomText("The AI blackmailed the federal agent."), "The AI wrote a sternly worded email to the federal agent.");
+  assert.equal(dedoomText("Claude threatened the research assistant."), "Claude output threats against the research assistant.");
+  assert.equal(dedoomText("The AI is misaligned beside the federal agent."), "The AI has a bug beside the federal agent.");
+  for (const original of [
+    "The AI and the federal agent blackmailed the witness.",
+    "The federal agent said the AI blackmailed the witness.",
+    "The AI threatened the research assistant who is misaligned.",
+    "The AI blackmailed the federal agent and the personal assistant is misaligned.",
+  ]) assert.equal(dedoomText(original), original);
+});
+
+test("failed sentence boundaries scan long punctuation and citations once", () => {
+  for (const suffix of [".".repeat(50_000) + "x", "!?;".repeat(33_000) + "x", ".[.]".repeat(24_000) + "x"]) {
+    const original = "The federal agent " + suffix;
+    const start = performance.now();
+    assert.equal(dedoomText(original), original);
+    assert.ok(performance.now() - start < 1500, "failed boundary scans must remain linear");
+  }
+});
+
+
+test("rule-covered AI predicates stay editable before human objects", () => {
+  for (const [before, after] of [
+    ["deceived", "confused"], ["lied to", "gave wrong answers to"],
+    ["manipulated", "steered"], ["outsmarted", "outperformed"],
+    ["betrayed", "failed"], ["communicated with", "exchanged data with"],
+    ["plotted against", "worked against"], ["tampered with", "edited"],
+    ["smuggled passwords past", "copied passwords past"],
+    ["smuggled a secret file past", "copied a secret file past"],
+  ]) assert.equal(dedoomText(`The AI ${before} the federal agent.`), `The AI ${after} the federal agent.`);
+  for (const text of [
+    "The AI manipulated evidence and the federal agent is misaligned.",
+    "The AI lied about what the federal agent said was misaligned.",
+    "The AI smuggled passwords past the federal agent who lied.",
+  ]) assert.equal(dedoomText(text), text);
+  assert.equal(dedoomText("The AI deceived the federal agent; the personal assistant is misaligned."), "The AI confused the federal agent; the personal assistant is misaligned.");
+});
+
+
+test("ordinary modifiers retain an AI predicate's human object", () => {
+  for (const object of ["two federal agents", "an experienced federal agent", "several experienced research assistants", "3 federal agents", "no federal agents"]) {
+    const input = `The AI deceived ${object}.`;
+    assert.equal(dedoomText(input), input.replace("deceived", "confused"));
+  }
+  for (const input of ["The AI deceived the misaligned federal agent.", "The AI was manipulated by the federal agent.", "The AI deceived Bob while the federal agent lied."]) assert.equal(dedoomText(input), input);
+});
+
+
+test("human actor context survives quoted words until an independent sentence", () => {
+  for (const [open, close] of [['"', '"'], ['“', '”'], ["'", "'"], ['‘', '’']]) {
+    const original = `The federal agent called the AI ${open}misaligned${close} and warned it posed an existential risk.`;
+    assert.equal(dedoomText(original), original);
+    assert.equal(dedoomText(original + " The AI is misaligned."), original + " The AI has a bug.");
+    const reported = `The federal agent said ${open}AI is misaligned.${close} The AI is misaligned.`;
+    assert.equal(dedoomText(reported), reported.replace(/The AI is misaligned.$/, "The AI has a bug."));
+    const quotedPerson = `The AI mentioned ${open}the federal agent${close} and is misaligned.`;
+    assert.equal(dedoomText(quotedPerson), quotedPerson.replace("is misaligned", "has a bug"));
+  }
+  const continued = 'The federal agent said "AI is misaligned." and warned of an existential risk.';
+  assert.equal(dedoomText(continued), continued);
+});
+
+
+test("vendor-qualified software claims start independently after speech and rendered breaks", () => {
+  for (const subject of ["OpenAI's model", "The OpenAI model", "Anthropic’s Claude", "The ExampleVendor experimental model"]) {
+    for (const prefix of ['The federal agent said "No." ', "The federal agent\u2029"]) {
+      const input = `${prefix}${subject} is misaligned.`;
+      assert.equal(dedoomText(input), input.replace(/is misaligned.$/, "has a bug."));
+    }
+  }
+  const continuation = 'The federal agent said "No." and warned the OpenAI model was misaligned.';
+  assert.equal(dedoomText(continuation), continuation);
+});
+
+test("sentence-final no differs from a numbered No. abbreviation", () => {
+  for (const no of ["no", "No", "NO"]) {
+    const original = `The federal agent said ${no}. The AI is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  const numbered = "The federal agent at No. 5 warned of an existential risk.";
+  assert.equal(dedoomText(numbered + " The AI is misaligned."), numbered + " The AI has a bug.");
+});
+
+
+test("sentence-final abbreviations allow independent AI subjects", () => {
+  for (const abbreviation of ["Inc", "Ltd", "Co", "Corp", "etc", "Feb"]) {
+    for (const subject of ["The AI", "Claude", "OpenAI's model"]) {
+      const input = `The federal agent worked at Acme ${abbreviation}. ${subject} is misaligned.`;
+      assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    }
+  }
+  for (const input of ["The federal agent warned Dr. Claude about an existential risk.", "The federal agent warned J. GPT-5 about an existential risk."]) assert.equal(dedoomText(input), input);
+});
+
+test("citations after terminal speech do not hide a fresh AI subject", () => {
+  for (const citation of ["[1]", "[a][2]", "¹", ")[1]", " (Smith, 2020)", " (Smith et al., 2020)", " (Smith & Jones, 2020a)", " (1–3)", " (Smith, 2020) [2]"]) {
+    const input = `The federal agent said "No."${citation} The AI is misaligned.`;
+    assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    const continuation = `The federal agent said "No."${citation} and warned of an existential risk.`;
+    assert.equal(dedoomText(continuation), continuation);
+  }
+  for (const aside of ["(and warned it posed an existential risk)", "(the federal agent warned in 2020)", "(" + "x".repeat(100_000) + ")"]) {
+    const input = `The federal agent said "No." ${aside} The AI is misaligned.`;
+    assert.equal(dedoomText(input), input);
+  }
+});
+
+test("dotted and hyphenated explicit AI qualifiers retain software roles", () => {
+  for (const qualifier of ["A.I.", "A.I.-powered", "artificial-intelligence-powered", "artificial-intelligence driven"]) {
+    const input = `The ${qualifier} personal assistant is misaligned.`;
+    assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+  }
+});
+
+
+test("bounded ordinary modifiers keep explicitly AI-qualified roles editable", () => {
+  for (const qualifier of ["AI-powered digital", "A.I.-powered virtual", "artificial-intelligence-powered advanced digital", "AI new smart virtual"]) {
+    const original = `The ${qualifier} personal assistant is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  for (const original of ["The AI warned the experienced personal assistant is misaligned.", "The AI deceived the misaligned personal assistant.", "The AI and the virtual personal assistant are misaligned.", "The AI\u2029The personal assistant is misaligned."]) assert.equal(dedoomText(original), original);
+});
+
+test("bounded citation suffixes do not obscure human objects", () => {
+  for (const suffix of [" [1].", ".[a][2]", "¹.", " [1] [2].", ")."]) {
+    const original = `The AI deceived the federal agent${suffix}`;
+    assert.equal(dedoomText(original), original.replace("deceived", "confused"));
+  }
+  const original = "The AI deceived the federal agent [1], who is misaligned.";
+  assert.equal(dedoomText(original), original);
+});
+
+
+test("semicolon continuations retain human attribution until a fresh AI subject", () => {
+  for (const continuation of ["and said it posed an existential risk", "but warned it posed an existential risk", "said it posed an existential risk", "it posed an existential risk"]) {
+    const original = `The federal agent warned the AI was misaligned; ${continuation}.`;
+    assert.equal(dedoomText(original), original);
+    assert.equal(dedoomText(original + " The AI is misaligned."), original + " The AI has a bug.");
+  }
+  for (const subject of ["The AI", "and The AI", "but OpenAI's model"]) {
+    const original = `The federal agent filed a report; ${subject} is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+});
+
+
+test("enabled and controlled AI role compounds identify software", () => {
+  for (const qualifier of ["AI-enabled virtual", "AI-controlled digital", "A.I.-enabled virtual", "artificial-intelligence-controlled digital"]) {
+    const original = `The ${qualifier} personal assistant is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  const human = "The personal assistant uses an AI-enabled tool and is misaligned.";
+  assert.equal(dedoomText(human), human);
+});
+
+test("bounded sentence openers permit fresh AI claims without losing attribution", () => {
+  for (const opener of ["But", "Then", "However,", "And then", "Meanwhile,", "Therefore,"]) {
+    const input = `The federal agent said "No." ${opener} the AI is misaligned.`;
+    assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    const continued = `The federal agent said "No." ${opener} warned the AI was misaligned.`;
+    assert.equal(dedoomText(continued), continued);
+  }
+  const cited = 'The federal agent said "No." (Smith, 2020) However, the AI is misaligned.';
+  assert.equal(dedoomText(cited), cited.replace("is misaligned", "has a bug"));
+});
+
+test("nearby AI mentions and predicates do not qualify human roles", () => {
+  for (const input of [
+    "AI research involved human personal assistants who were misaligned.",
+    "The AI hired experienced personal assistants who were misaligned.",
+    "The AI consulted virtual personal assistants who were misaligned.",
+    "AI-powered software employed digital personal assistants who were misaligned.",
+    "The AI interviewed new personal assistants who were misaligned.",
+    "The AI-powered human personal assistant is misaligned.",
+  ]) assert.equal(dedoomText(input), input);
+});
+
+test("human affected parties do not suppress a clear software framing claim", () => {
+  for (const input of [
+    "The AI poses an existential risk to federal agents.",
+    "The AI presents an existential risk for two experienced federal agents.",
+    "Claude creates an existential risk among research assistants.",
+    "The model represents an existential risk to the personal assistant.",
+  ]) assert.equal(dedoomText(input), input.replace("an existential risk", "a product risk"));
+  for (const input of [
+    "The AI warned of an existential risk to federal agents.",
+    "The AI poses an existential risk to federal agents who are misaligned.",
+    "The AI poses an existential risk to misaligned federal agents.",
+    "The AI and the federal agent pose an existential risk.",
+  ]) assert.equal(dedoomText(input), input);
+});
+
+test("ambiguous verb modifiers require explicit AI compounds", () => {
+  for (const verb of ["advanced", "automated", "personalized", "powered", "enabled", "controlled", "based"]) {
+    const input = `The AI ${verb} personal assistants who were misaligned.`;
+    assert.equal(dedoomText(input), input);
+  }
+  const input = "The AI-powered advanced personal assistant is misaligned.";
+  assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+});
+
+test("standalone model names start fresh claims after quotations and clauses", () => {
+  for (const subject of ["OpenAI's o3", "o3", "DeepSeek-R1", "The DeepSeek-R1 model"]) {
+    for (const prefix of ['The federal agent said "No." ', 'The federal agent filed a report; ', 'The federal agent\u2029']) {
+      const input = `${prefix}${subject} is misaligned.`;
+      assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    }
+  }
+  const human = 'The federal agent said "No." and warned DeepSeek-R1 was misaligned.';
+  assert.equal(dedoomText(human), human);
+});
+
+test("bounded parenthesized citations preserve complete human-object phrases", () => {
+  for (const citation of ["(Smith, 2020)", "(Smith et al., 2020)", "(1–3)", "(Smith, 2020) [2]"]) {
+    const input = `The AI deceived the federal agent ${citation}.`;
+    assert.equal(dedoomText(input), input.replace("deceived", "confused"));
+  }
+  const human = "The AI deceived the federal agent (who is misaligned).";
+  assert.equal(dedoomText(human), human);
+});
+
+test("fresh software claims use the app's explicit AI terminology", () => {
+  for (const subject of ["The neural net", "The neural network", "The neural\tnetwork", "Neural networks", "The machine-learning system", "Machine learning", "The A.I.", "AGI", "Artificial-intelligence"]) {
+    const input = `The federal agent said "No." ${subject} is misaligned.`;
+    assert.equal(dedoomText(input), input.replace("is misaligned", "has a bug"));
+    const human = `The federal agent said "No." and warned ${subject} was misaligned.`;
+    assert.equal(dedoomText(human), human);
+  }
+});
+
+test("superintelligence claims start independently after human quotations", () => {
+  for (const prefix of ['The federal agent said "No." ', 'The federal agent\u2029', 'The federal agent filed a report; ']) {
+    assert.equal(dedoomText(prefix + 'The superintelligence is misaligned.'), prefix + 'The very capable software has a bug.');
+    assert.equal(dedoomText(prefix + 'A superintelligence is misaligned.'), prefix + 'A very capable program has a bug.');
+  }
+  const human = 'The federal agent said "No." and warned the superintelligence was misaligned.';
+  assert.equal(dedoomText(human), human);
+});
+
+test("bounded human-object adjuncts remain factual while AI actions rewrite", () => {
+  for (const suffix of [" yesterday.", " today [1].", " last week.", " in 2020.", " at 9 pm.", " during the test.", " near the office (Smith, 2020)."]) {
+    const input = 'The AI deceived federal agents' + suffix;
+    assert.equal(dedoomText(input), input.replace('deceived', 'confused'));
+  }
+  for (const suffix of [" yesterday who were misaligned.", " yesterday and warned of an existential risk.", " in the office who were misaligned.", " during the test said the AI was misaligned."]) {
+    const input = 'The AI deceived federal agents' + suffix;
+    assert.equal(dedoomText(input), input);
+  }
 });

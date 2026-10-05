@@ -34,11 +34,20 @@ function selectTab(which) {
   activeTab = which;
   tabUrl.setAttribute("aria-selected", String(which === "url"));
   tabText.setAttribute("aria-selected", String(which === "text"));
+  tabUrl.tabIndex = which === "url" ? 0 : -1;
+  tabText.tabIndex = which === "text" ? 0 : -1;
   panelUrl.hidden = which !== "url";
   panelText.hidden = which !== "text";
 }
 tabUrl.addEventListener("click", () => selectTab("url"));
 tabText.addEventListener("click", () => selectTab("text"));
+for (const tab of [tabUrl, tabText]) tab.addEventListener("keydown", (event) => {
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const next = event.key === "Home" ? "url" : event.key === "End" ? "text" : activeTab === "url" ? "text" : "url";
+  selectTab(next);
+  (next === "url" ? tabUrl : tabText).focus();
+});
 
 function showError(message) {
   errorEl.textContent = message;

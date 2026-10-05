@@ -41,6 +41,33 @@ test("refuses redirects to private addresses", async () => {
   await assert.rejects(fetchHtml("http://93.184.216.34/", fakeFetch), /publicly reachable/);
 });
 
+test("rejected upstream bodies are cancelled before any redirect fetch", async () => {
+  for (const [status, headers, expectedStatus] of [
+    [302, { location: "http://127.0.0.1/private" }, 400],
+    [503, { "content-type": "text/html" }, 502],
+    [200, { "content-type": "application/pdf" }, 415],
+    [302, {}, 502],
+  ]) {
+    let cancelled = false;
+    const fetch = async () => new Response(new ReadableStream({ cancel() { cancelled = true; } }), { status, headers });
+    await assert.rejects(fetchHtml("http://93.184.216.34/a", fetch), (err) => err.status === expectedStatus);
+    assert.equal(cancelled, true, `status ${status}`);
+  }
+  const order = [];
+  await fetchHtml("http://93.184.216.34/a", async (url) => {
+    order.push(url.pathname);
+    if (url.pathname === "/a") return new Response(new ReadableStream({ cancel() { order.push("cancelled"); } }), { status: 302, headers: { location: "/b" } });
+    return new Response("<p>Article</p>", { headers: { "content-type": "text/html" } });
+  });
+  assert.deepEqual(order, ["/a", "cancelled", "/b"]);
+});
+
+test("body timeouts and broken streams produce actionable upstream errors", async () => {
+  for (const [error, status] of [[new DOMException("timeout", "AbortError"), 504], [new Error("broken connection"), 502]]) {
+    await assert.rejects(fetchHtml("http://93.184.216.34/a", async () => new Response(new ReadableStream({ start(controller) { controller.error(error); } }), { headers: { "content-type": "text/html" } })), (err) => err instanceof Error && err.status === status);
+  }
+});
+
 test("accepts big news pages but refuses huge ones", async () => {
   const page = (mb) => async () =>
     new Response("<p>" + "x".repeat(mb * 1024 * 1024) + "</p>", { headers: { "content-type": "text/html" } });
@@ -129,6 +156,29 @@ test("POST /api/dedoom rewrites pasted text", async () => {
   const body = JSON.parse(res.body);
   assert.equal(res.statusCode, 200);
   assert.deepEqual(body.blocks.map((b) => b.text), ["It has a bug.", "All good."]);
+});
+
+test("streamed JSON preserves multibyte text across network chunk boundaries", async () => {
+  const text = "The model is misaligned. Café, Perú, 中文 and 😀 stay intact.";
+  const bytes = Buffer.from(JSON.stringify({ text, mode: "rules" }));
+  const req = { method: "POST", url: "/api/dedoom", async *[Symbol.asyncIterator]() { for (const byte of bytes) yield Buffer.from([byte]); } };
+  const res = fakeRes();
+  await handler(req, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(JSON.parse(res.body).blocks[0].original, text);
+  assert.match(JSON.parse(res.body).blocks[0].text, /Café, Perú, 中文 and 😀 stay intact/);
+});
+
+test("escaped JSON respects the text limit and rejects malformed UTF-8", async () => {
+  for (const [size, status] of [[100_000, 200], [100_001, 413]]) {
+    const bytes = Buffer.from('{"text":"' + "\\u0061".repeat(size) + '","mode":"rules"}');
+    const res = fakeRes();
+    await handler({ method: "POST", url: "/api/dedoom", async *[Symbol.asyncIterator]() { yield bytes; } }, res);
+    assert.equal(res.statusCode, status);
+  }
+  const res = fakeRes();
+  await handler({ method: "POST", url: "/api/dedoom", async *[Symbol.asyncIterator]() { yield Buffer.from([0xff]); } }, res);
+  assert.equal(res.statusCode, 400);
 });
 
 test("API reports bad input clearly", async () => {

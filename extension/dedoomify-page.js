@@ -7,8 +7,8 @@
   // phrase rules change it? The rules skip any phrase whose key word isn't in
   // the text, so a page is judged in a few milliseconds at most. The short
   // forms of "AI" must be capitalised, since "ai" turns up inside ordinary words.
-  var AI_SHORT = /\b(?:AI|A\.I\.|AGI|LLMs?)\b/;
-  var AI_LONG = /artificial intelligence|chatbot|language model|superintelligen|machine learning|neural net|\bGPT|OpenAI|Anthropic|DeepMind/i;
+  var AI_SHORT = /\b(?:AI|AGI|LLMs?)\b|\bA\.I\.(?=\s|$|[,:;]|-(?:powered|driven|based|enabled|controlled)\b)/;
+  var AI_LONG = /artificial[ -]+intelligence|chatbot|language model|superintelligen|machine learning|neural net|\bGPT|OpenAI|Anthropic|DeepMind/i;
 
   function looksDoomy(text) {
     if (!text || (!AI_SHORT.test(text) && !AI_LONG.test(text))) return false;
@@ -27,16 +27,75 @@
   // Rewrites text nodes in place and marks each change. Returns
   // { added, total }: phrases changed this time and on the page so far.
   function run() {
-    var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1, SVG: 1, MATH: 1, Q: 1, BLOCKQUOTE: 1 };
+    var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, INPUT: 1, CODE: 1, PRE: 1, KBD: 1, SAMP: 1, TEMPLATE: 1, SVG: 1, MATH: 1, Q: 1, BLOCKQUOTE: 1, IFRAME: 1 };
+    var NON_RENDERED = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEMPLATE: 1, IFRAME: 1 };
+    var blockSelector = "address, article, aside, blockquote, button, caption, dd, details, dialog, div, dl, dt, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, hgroup, hr, label, legend, li, main, menu, nav, ol, p, pre, section, summary, table, tbody, td, tfoot, th, thead, tr, ul";
+    function protectedElement(node) {
+      return node.nodeType === 1 && (SKIP[node.tagName.toUpperCase()] || node.matches("[contenteditable=''], [contenteditable='true'], mark.dedoomify, .dedoomify-tip"));
+    }
     var body = document.body;
     if (!body || !root.Dedoom) return { added: 0, total: 0 };
     var added = 0;
+    // Read computed styles once, before any DOM writes. Display-hidden
+    // ancestors suppress their whole subtree; visibility can be overridden by
+    // a visible descendant, so check it on each text node's own parent.
+    var styles = new WeakMap(), displayStates = new WeakMap();
+    function styleOf(el) {
+      if (!styles.has(el)) styles.set(el, window.getComputedStyle ? window.getComputedStyle(el) : el.style);
+      return styles.get(el);
+    }
+    function displayHidden(el) {
+      var path = [], current = el;
+      while (current && !displayStates.has(current)) { path.push(current); current = current.parentElement; }
+      var hidden = current ? displayStates.get(current) : false;
+      for (var i = path.length - 1; i >= 0; i--) {
+        var node = path[i], style = styleOf(node);
+        hidden = hidden || node.hasAttribute("hidden") || style.display === "none" || style.contentVisibility === "hidden";
+        displayStates.set(node, hidden);
+      }
+      return !!displayStates.get(el);
+    }
+    function visibilityHidden(el) { return /^(hidden|collapse)$/.test(styleOf(el).visibility); }
+    function cssBlock(el) { return /^(?:block(?:\s|$)|flow-root$|list-item$|flex$|grid$|table(?:$|-))/.test(styleOf(el).display); }
+    function flowOwner(el) {
+      while (el && el !== body) {
+        if (el.matches(blockSelector) || cssBlock(el)) return el;
+        el = el.parentElement;
+      }
+      return body;
+    }
+    function renderedText(el) {
+      var stack = [el], text = [];
+      while (stack.length) {
+        var node = stack.pop();
+        if (node.renderedBreak) { text.push("\u2029"); continue; }
+        if (node.renderedQuoteEnd) { text.push("”"); continue; }
+        if (node.nodeType === 3) {
+          if (!displayHidden(node.parentElement) && !visibilityHidden(node.parentElement)) text.push(node.nodeValue);
+        } else if (node.nodeType === 1 && !displayHidden(node) && !NON_RENDERED[node.tagName.toUpperCase()]) {
+          if (node.tagName.toUpperCase() === "BR") { text.push("\u2029"); continue; }
+          var block = node !== el && (node.matches(blockSelector) || cssBlock(node));
+          if (block) { text.push("\u2029"); stack.push({ renderedBreak: true }); }
+          if (node.tagName.toUpperCase() === "Q") {
+            text.push("“");
+            stack.push({ renderedQuoteEnd: true });
+          }
+          for (var child = node.lastChild; child; child = child.previousSibling) stack.push(child);
+        }
+      }
+      return text.join("");
+    }
 
-    var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+    var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
       acceptNode: function (node) {
+        var element = node.nodeType === 1 ? node : node.parentElement;
+        if (displayHidden(element) || (node.nodeType === 3 && visibilityHidden(element))) return NodeFilter.FILTER_REJECT;
+        if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !node.matches(blockSelector) && !cssBlock(node) && !protectedElement(node)) return NodeFilter.FILTER_SKIP;
         var parent = node.parentElement;
-        if (!parent || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-        if (parent.closest("[contenteditable=''], [contenteditable='true'], mark.dedoomify, .dedoomify-tip")) return NodeFilter.FILTER_REJECT;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        // Whitespace-only nodes separate inline words and count toward quote
+        // offsets, even though they never produce a rewrite themselves.
+        if (parent.closest("[hidden], [contenteditable=''], [contenteditable='true'], mark.dedoomify, .dedoomify-tip")) return NodeFilter.FILTER_REJECT;
         for (var el = parent; el; el = el.parentElement) {
           if (SKIP[el.tagName.toUpperCase()]) return NodeFilter.FILTER_REJECT;
         }
@@ -44,11 +103,79 @@
       },
     });
 
-    var nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
+    var nodes = [], groups = [], previousOwner = null, previousFlowOwner = null, breakPending = false, currentGroup;
+    while (walker.nextNode()) {
+      var node = walker.currentNode;
+      // Entering a rendered block ends the preceding text run, including
+      // empty blocks. Do not merge runs that revisit the same parent later.
+      var protectedNode = protectedElement(node);
+      // Invisible script/style/template contents supply no rendered context.
+      if (protectedNode && NON_RENDERED[node.tagName.toUpperCase()]) continue;
+      if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !protectedNode) {
+        if (node.matches(blockSelector)) { previousOwner = null; previousFlowOwner = null; }
+        else if (cssBlock(node)) breakPending = true;
+        continue;
+      }
+      var owner = protectedNode && node.matches(blockSelector) ? node : node.parentElement.closest(blockSelector) || body;
+      var flow = protectedNode && cssBlock(node) ? node : flowOwner(node.parentElement);
+      if (owner !== previousOwner) {
+        currentGroup = [];
+        groups.push(currentGroup);
+        previousOwner = owner;
+      } else if (breakPending || flow !== previousFlowOwner) {
+        // Keep CSS-induced breaks within the logical paragraph so quotations
+        // spanning a styled block retain their opening and closing delimiters.
+        currentGroup.push({ node: null, text: "\u2029" });
+      }
+      breakPending = false;
+      previousFlowOwner = flow;
+      // A br is a rendered separator without a text node. Keep a virtual
+      // paragraph separator, with its own offset but no DOM rewrite target.
+      var textNode = node.nodeType === 3;
+      if (textNode) nodes.push(node);
+      // Keep skipped rendered content as virtual, immutable context. Its
+      // punctuation and quotes must still delimit the neighboring prose.
+      var contextText = textNode ? node.nodeValue : protectedNode ? renderedText(node) : "\u2029";
+      currentGroup.push({ node: textNode ? node : null, text: contextText });
+    }
+
+    // Quote marks and explicit human actors can sit in adjacent inline nodes.
+    // Compute protected spans over the whole paragraph before rewriting any
+    // node; otherwise <em>is misaligned</em> inside speech lost its quotes.
+    var protectedParts = new WeakMap();
+    groups.forEach(function (group) {
+      var raw = group.map(function (part) { return part.text; }).join("");
+      var ranges = [], offset = 0;
+      root.Dedoom.dedoomSegments(raw).forEach(function (seg) {
+        var length = seg.original === undefined ? seg.text.length : seg.original.length;
+        if (seg.protected) ranges.push({ start: offset, end: offset + length });
+        offset += length;
+      });
+      var start = 0, rangeIndex = 0;
+      group.forEach(function (part) {
+        var end = start + part.text.length, parts = [], at = 0;
+        if (!part.node) { start = end; return; }
+        var node = part.node;
+        while (rangeIndex < ranges.length && ranges[rangeIndex].end <= start) rangeIndex++;
+        for (var i = rangeIndex; i < ranges.length && ranges[i].start < end; i++) {
+          var lo = Math.max(start, ranges[i].start) - start;
+          var hi = Math.min(end, ranges[i].end) - start;
+          if (lo > at) parts.push({ text: node.nodeValue.slice(at, lo) });
+          parts.push({ text: node.nodeValue.slice(lo, hi), protected: true });
+          at = hi;
+        }
+        if (at < node.nodeValue.length) parts.push({ text: node.nodeValue.slice(at) });
+        protectedParts.set(node, parts);
+        start = end;
+      });
+    });
 
     nodes.forEach(function (node) {
-      var segments = root.Dedoom.dedoomSegments(node.nodeValue);
+      var segments = [];
+      protectedParts.get(node).forEach(function (part) {
+        if (part.protected) segments.push(part);
+        else root.Dedoom.dedoomSegments(part.text).forEach(function (seg) { segments.push(seg); });
+      });
       if (!segments.some(function (s) { return s.original !== undefined; })) return;
       var frag = document.createDocumentFragment();
       segments.forEach(function (seg) {

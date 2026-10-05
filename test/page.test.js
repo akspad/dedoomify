@@ -11,6 +11,34 @@ import handler from "../api/page.js";
 const { collectGroups, groupStrings, rewriteGroup, dedoomElement } = globalThis.DedoomPage;
 const { diffEdits } = globalThis.DedoomDiff;
 
+test("edit filtering scales with nodes plus edits rather than their product", () => {
+  const { document } = parseHTML('<p>' + 'xx'.repeat(500) + '</p>');
+  const first = document.querySelector('p').firstChild;
+  const nodes = [first, ...Array.from({ length: 500_000 }, () => ({ nodeValue: 'x' }))];
+  const edits = Array.from({ length: 500 }, (_, i) => ({ start: i * 2, end: i * 2 + 1, text: 'y', original: 'x' }));
+  const start = performance.now();
+  assert.equal(globalThis.DedoomPage.applyEdits(nodes, edits, document), 500);
+  assert.ok(performance.now() - start < 1500, '500k nodes and 500 edits must avoid repeated full-group scans');
+  assert.equal(document.querySelector('p').textContent, 'yx'.repeat(500));
+});
+
+test("protected range searches preserve overlap and insertion boundaries", () => {
+  const { document } = parseHTML('<p>ab<code>cd</code>ef<kbd>gh</kbd>ij</p>');
+  const [nodes] = collectGroups(document.querySelector('p'));
+  const edits = [
+    { start: 0, end: 1, text: 'A', original: 'a' },
+    { start: 1, end: 3, text: 'X', original: 'bc' },
+    { start: 2, end: 2, text: 'X', original: '' },
+    { start: 4, end: 4, text: 'Y', original: '' },
+    { start: 5, end: 7, text: 'Z', original: 'fg' },
+    { start: 8, end: 10, text: 'IJ', original: 'ij' },
+  ];
+  assert.equal(globalThis.DedoomPage.applyEdits(nodes, edits, document), 3);
+  assert.equal(document.querySelector('p').textContent, 'AbcdYefghIJ');
+  assert.equal(document.querySelector('code').textContent, 'cd');
+  assert.equal(document.querySelector('kbd').textContent, 'gh');
+});
+
 const PAGE = `<!doctype html><html><head>
 <title>Is AI misaligned?</title>
 <base href="/news/">
@@ -76,6 +104,33 @@ test("strips scripts and anything that could run code or navigate", () => {
   assert.match(html, /^<!DOCTYPE html>/);
 });
 
+test("malformed active markup stays inert after serialization and reparsing", () => {
+  const attacks = [
+    '<svg><style><img src=x onerror=alert(1)></style></svg>',
+    '<math><mtext><table><mglyph><style><!--</style><img src=x onerror=alert(1)>',
+    '<form><input name=innerHTML><button formaction="http://127.0.0.1/">Send</button></form>',
+    '<iframe srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"></iframe>',
+    '<p><a href="java&#x73;cript:alert(1)" ping="http://127.0.0.1/">click</a></p>',
+    '<img src="data:image/svg+xml,&lt;svg onload=alert(1)&gt;" onerror=alert(1)>',
+    '<x-a><template shadowrootmode=open><script>alert(1)</script></template></x-a>',
+    '<table background="http://127.0.0.1/" style="background:url(http://127.0.0.1/)"><tr><td>Story</td></tr></table>',
+  ];
+  for (const attack of attacks) {
+    const page = renderPage(`<html><body>${attack}<p>The model is misaligned.</p></body></html>`, "https://example.com/story");
+    const { document } = parseHTML(page.html);
+    assert.equal(document.querySelectorAll("script").length, 1, attack);
+    assert.equal(document.querySelector("script").textContent, PAGE_SCRIPT, attack);
+    assert.equal(document.querySelectorAll("svg, math, iframe, input, form, template").length, 0, attack);
+    for (const el of document.querySelectorAll("*")) {
+      for (const attr of el.attributes) {
+        assert.doesNotMatch(attr.name, /^on|^(?:srcdoc|ping|formaction|background)$/i, attack);
+        if (attr.name === "href") assert.match(attr.value, /^https?:\/\//, attack);
+        if (attr.name === "src") assert.match(attr.value, /^\/api\/image\?|^data:image\/(?:png|jpeg|gif|webp|avif);base64,/, attack);
+      }
+    }
+  }
+});
+
 test("the frame's policy allows only the hover card's script", () => {
   assert.match(PAGE_CSP, /default-src 'none'/);
   const scriptSrc = PAGE_CSP.split("; ").find((d) => d.startsWith("script-src"));
@@ -105,6 +160,18 @@ test("groups break at block elements but not inline ones", () => {
   const document = apply("<div>AI is <b>very</b> smart<p>and is</p> misaligned</div>", () => {});
   const groups = collectGroups(document.querySelector("div")).map((g) => g.map((n) => n.nodeValue).join(""));
   assert.deepEqual(groups, ["AI is very smart", "and is", " misaligned"]);
+});
+
+test("deeply nested hostile markup cannot exhaust the rewrite call stack", () => {
+  const depth = 15_000;
+  const html = `<html><body><p>${"<em>".repeat(depth)}The model is misaligned.${"</em>".repeat(depth)}</p><blockquote>The model is misaligned.</blockquote><p>Outside it is misaligned.</p></body></html>`;
+  const started = performance.now();
+  const rendered = renderPage(html, "https://example.com/deep");
+  const { document } = parseHTML(rendered.html);
+  assert.equal(document.querySelectorAll("mark.dd").length, 2);
+  assert.equal(document.querySelector("blockquote").textContent, "The model is misaligned.");
+  assert.match(document.body.textContent, /The model has a bug/);
+  assert.ok(performance.now() - started < 5000, "deep traversal stays within the processing budget");
 });
 
 test("rewrites from the model replace only the words that changed, across tags", () => {
@@ -344,4 +411,78 @@ test("large malformed pictures do not repeatedly rescan source siblings", () => 
   assert.equal(images[0].getAttribute("src"), expected);
   assert.equal(images[images.length - 1].getAttribute("src"), expected);
   assert.ok(performance.now() - start < 5000, "picture processing must have a bounded linear work cost");
+});
+
+
+test("page skipped inline text retains immutable sentence and quotation context", () => {
+  for (const tag of ["code", "kbd", "samp", "q", "span contenteditable='true'"]) {
+    const close = tag.split(" ")[0];
+    const { document } = parseHTML(`<html><body><p id="mixed">The federal agent <${tag}>filed a report.</${close}> The AI is misaligned.</p><p id="speech">She said, 'The model <${tag}>is</${close}> misaligned.' Outside it is misaligned.</p><p id="code">The model <${tag}>is misaligned</${close}>.</p></body></html>`);
+    assert.equal(dedoomElement(document.body, document), 2, tag);
+    assert.equal(document.querySelector("#mixed").textContent, "The federal agent filed a report. The AI has a bug.");
+    assert.equal(document.querySelector("#mixed " + close).textContent, "filed a report.");
+    assert.equal(document.querySelector("#speech").textContent, "She said, 'The model is misaligned.' Outside it has a bug.");
+    assert.equal(document.querySelector("#code").textContent, "The model is misaligned.");
+    assert.equal(document.querySelector("#code mark"), null);
+  }
+  const { document } = parseHTML('<html><body><p>The federal agent <script>filed a report.</script>is misaligned.</p></body></html>');
+  assert.equal(dedoomElement(document.body, document), 0);
+});
+
+test("model page edits cannot modify skipped inline text or span across it", () => {
+  const { document } = parseHTML('<p>The model <code>is misaligned</code>. Outside it is misaligned.</p>');
+  const [nodes] = collectGroups(document.querySelector("p"));
+  rewriteGroup(nodes, document, "The model has a bug. Outside it has a bug.", diffEdits);
+  assert.equal(document.querySelector("code").textContent, "is misaligned");
+  assert.equal(document.querySelector("p").textContent, "The model is misaligned. Outside it has a bug.");
+  const { html } = renderPage('<html><body><p>The federal agent <code>filed a report.</code> The AI is misaligned.</p></body></html>', "https://example.com/article");
+  const rendered = parseHTML(html).document;
+  assert.equal(rendered.querySelector("p").textContent, "The federal agent filed a report. The AI has a bug.");
+  assert.equal(rendered.querySelector("code mark"), null);
+});
+
+
+test("page view preserves human attribution around quoted words across tags", () => {
+  const { html } = renderPage('<html><body><p>The federal agent called the AI "<em>misaligned</em>" and warned it posed an existential risk. The AI is misaligned.</p></body></html>', "https://example.com/article");
+  const { document } = parseHTML(html);
+  assert.equal(document.querySelector("p").textContent, 'The federal agent called the AI "misaligned" and warned it posed an existential risk. The AI has a bug.');
+  assert.equal(document.querySelectorAll("p mark").length, 1);
+});
+
+
+test("page Q elements supply implicit quotes without becoming edit targets", () => {
+  const { html } = renderPage(`<html><body><p id="quote"><q>The federal agent</q> The AI is misaligned.</p><p id="outer">She said, 'The model <q>is misaligned</q>.' Outside it is misaligned.</p></body></html>`, "https://example.com/article");
+  const { document } = parseHTML(html);
+  assert.equal(document.querySelector("#quote").textContent, "The federal agent The AI has a bug.");
+  assert.equal(document.querySelectorAll("q mark").length, 0);
+  assert.equal(document.querySelector("#outer").textContent, "She said, 'The model is misaligned.' Outside it has a bug.");
+  const [nodes] = collectGroups(document.querySelector("#quote"));
+  assert.equal(groupStrings(nodes).original, "“The federal agent” The AI is misaligned.");
+  rewriteGroup(nodes, document, "“The federal agent” The AI has a bug.", diffEdits);
+  assert.equal(document.querySelector("q").textContent, "The federal agent");
+  assert.equal(document.querySelector("#quote").textContent, "The federal agent The AI has a bug.");
+});
+
+
+test("page protected inline breaks preserve sentence and quote context", () => {
+  const { html } = renderPage(`<html><body><p id="mixed">The federal agent <code>filed a report.<br></code>The AI is misaligned.</p><p id="speech">She said, 'The model <kbd>is<br>misaligned.</kbd>' Outside it is misaligned.</p></body></html>`, "https://example.com/article");
+  const { document } = parseHTML(html);
+  assert.match(document.querySelector("#mixed").textContent, /The AI has a bug/);
+  assert.equal(document.querySelector("code mark"), null);
+  assert.equal(document.querySelector("kbd mark"), null);
+  assert.match(document.querySelector("#speech").textContent, /Outside it has a bug/);
+  assert.equal(document.querySelectorAll("mark").length, 2);
+});
+
+
+test("hidden page content retains visibility state and supplies no rewrite context", () => {
+  const { html } = renderPage(`<html><body><p id="mixed"><span hidden>The federal agent </span>The AI is misaligned.</p><p id="speech">She said, 'The model <code hidden>' Outside it is misaligned.</code>is misaligned.' Outside it is misaligned.</p><div hidden><p>The AI is misaligned.</p></div></body></html>`, "https://example.com/article");
+  const { document } = parseHTML(html);
+  assert.equal(document.querySelector("#mixed span").hasAttribute("hidden"), true);
+  assert.equal(document.querySelector("#mixed span").textContent, "The federal agent ");
+  assert.equal(document.querySelector("#mixed mark").textContent, "has a bug");
+  assert.equal(document.querySelectorAll("[hidden] mark").length, 0);
+  assert.equal(document.querySelector("#speech").querySelectorAll("mark").length, 1);
+  assert.deepEqual(collectGroups(document.querySelector("div[hidden]")), []);
+  assert.equal(document.querySelectorAll("mark").length, 2);
 });

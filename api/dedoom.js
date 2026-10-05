@@ -16,11 +16,17 @@ async function readJsonBody(req) {
   if (req.body !== undefined) {
     return typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body;
   }
-  let raw = "";
+  const chunks = [];
+  let bytes = 0;
   for await (const chunk of req) {
-    raw += chunk;
-    if (raw.length > MAX_TEXT_CHARS * 2) throw new FetchError("That text is too long.", 413);
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    bytes += buffer.length;
+    // JSON can encode each UTF-16 code unit as six ASCII bytes (\uXXXX).
+    if (bytes > MAX_TEXT_CHARS * 6 + 1024) throw new FetchError("That text is too long.", 413);
+    chunks.push(buffer);
   }
+  // Decode after joining bytes: a UTF-8 character may cross network chunks.
+  const raw = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks));
   return JSON.parse(raw || "{}");
 }
 

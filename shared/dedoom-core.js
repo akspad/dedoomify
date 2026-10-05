@@ -9,12 +9,66 @@
 (function (root) {
   "use strict";
 
+  // A model/agent/assistant can be a person. When an explicit human role
+  // acts in an unquoted sentence, preserve it conservatively, even if AI
+  // is mentioned elsewhere in the same sentence. A paragraph-level AI keyword
+  // must not turn reporting about federal agents into a software euphemism.
+  var HUMAN_ROLE = /\b(?:(?:fashion|runway|catwalk|male|female|human|role)\s+models?|(?:federal|government|police|fbi|cia|secret|undercover|double|human|talent|literary|travel|insurance|sports|real[ -]estate)\s+agents?|(?:personal|administrative|executive|medical|human|teaching|research|legal)\s+assistants?)\b/gi;
+  function claimCitationLength(text) {
+    var citation = /^(?:\[[^\]\r\n]{1,64}\]|\(([^()\r\n]{1,64})\))/.exec(text);
+    if (!citation) return 0;
+    if (citation[1] === undefined) return citation[0].length;
+    // Recognize numeric and author-year references, rather than arbitrary
+    // parenthetical prose. The caller supplies at most 66 characters.
+    var contents = citation[1];
+    if (/^\d{1,4}(?:\s*[-–,;]\s*\d{1,4})*$/.test(contents) ||
+        /^(?:[\p{Lu}][\p{L}’'.-]*(?:\s*(?:&|and|,)\s*[\p{Lu}][\p{L}’'.-]*)*(?:\s+et\s+al\.)?),?\s+(?:1[5-9]\d{2}|20\d{2})[a-z]?(?:,\s*pp?\.\s*\d+(?:[-–]\d+)?)?$/u.test(contents)) return citation[0].length;
+    return 0;
+  }
+  function hasHumanRole(text) {
+    HUMAN_ROLE.lastIndex = 0;
+    var match;
+    while ((match = HUMAN_ROLE.exec(text))) {
+      var at = match.index;
+      while (at > 0 && /\s/.test(text[at - 1])) at--;
+      // An explicit AI qualifier describes software, even for a role that
+      // is usually held by a person. Other human roles still protect the span.
+      if (qualifiedAI(text.slice(Math.max(0, at - 256), at))) continue;
+      // A simple software subject can act on a person. Only exempt a complete,
+      // unambiguous object phrase; coordinated actors, reporting and relative
+      // clauses retain the conservative human guard.
+      var suffix = text.slice(HUMAN_ROLE.lastIndex);
+      if (isHumanObject(text.slice(0, match.index)) && humanObjectSuffix(suffix)) continue;
+      return true;
+    }
+    return false;
+  }
+
+  function humanObjectSuffix(text) {
+    if (text.length > 256) return false;
+    var at = 0;
+    while (at < text.length) {
+      if (/[\s.!?;¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]/.test(text[at])) { at++; continue; }
+      var length = claimCitationLength(text.slice(at, at + 66));
+      if (!length) {
+        // Bounded temporal/location adjuncts do not introduce a new actor.
+        // Unknown prose and relative/reporting clauses retain the human guard.
+        var adjunct = /^(?:(?:yesterday|today|tonight|tomorrow|recently|earlier|later|again|once|twice|repeatedly|briefly)|(?:last|this|next)\s+(?:week|month|year|night)|(?:in|during)\s+\d{4}|at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)|during\s+(?:the|a)\s+(?:test|trial|experiment|demo|meeting)|(?:in|at|near)\s+the\s+(?:office|lab|laboratory|meeting|conference))\b/i.exec(text.slice(at));
+        if (!adjunct) return false;
+        length = adjunct[0].length;
+      }
+      at += length;
+    }
+    return true;
+  }
+
   // Verbs like "cheated" or "asked" are everyday words, so these rules only
   // fire when an AI is the one doing them ("the model cheated", "Claude
   // secretly smuggled"). A few filler words may sit in between.
-  var AI_SUBJECT =
-    "\\b(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?|" +
-    "Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\\w.]+)";
+  var SOFTWARE_SUBJECT =
+    "\\b(?:AIs?(?:\\s+(?:models?|systems?|agents?|assistants?|bots?))?|A\\.I\\.?|AGI|LLMs?|superintelligences?|artificial[\\s-]+intelligence|language[\\s-]+models?|machine[\\s-]+learning|neural[\\s-]+(?:nets?|networks?)|chatbots?|" +
+    "Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\\w.]+)?|o\\d+(?:[-.][\\w.]+)?|GPT-[\\w.]+)";
+  var AI_SUBJECT = "(?:" + SOFTWARE_SUBJECT + "|\\b(?:models?|bots?|agents?|assistants?|systems?))";
   var FILLER =
     "(?:\\s+(?:\\w+ly|\\w+n['\u2019]t|also|then|even|still|just|not|never|can|could|will|would|" +
     "may|might|must|did|does|do|to|tried|tries|try|trying|learned|learns|began|begins|" +
@@ -22,9 +76,56 @@
     "caught|appears|appeared|seemed|seems|went|goes|on|wanted|wants|want|managed|manages|" +
     "chose|chooses|planned|plans|planning|plotting|scheming|refused|refuses|kept|keeps|keep|acted|acts|act|willing|continued|continues|got|gets)){0,4}";
 
+  var AI_ACTIONS = [];
+  function qualifiedAI(prefix) {
+    var match = /\b(?:A\.?I\.?|AGI|LLMs?|artificial[ -]+intelligence)([- ](?:powered|driven|based|enabled|controlled))?((?:\s+[\p{L}\p{N}-]{1,32}){0,4})$/iu.exec(prefix);
+    if (!match) return false;
+    // "AI powered assistants" can be a past-tense human-object sentence.
+    // A hyphen makes the relationship explicit; "driven" is not a finite verb.
+    if (match[1] && match[1][0] !== "-" && !/^ driven$/i.test(match[1])) return false;
+    // Ordinary predicates cannot qualify a later human role: "AI hired
+    // experienced personal assistants" still describes people. Permit only
+    // familiar software modifiers; ambiguous or unfamiliar prose stays human.
+    var modifiers = match[2].trim();
+    return !modifiers || modifiers.split(/\s+/).every(function (word) {
+      if (!match[1] && /^(?:advanced|automated|personalized|prototype)$/i.test(word)) return false;
+      return /^(?:new|latest|frontier|experimental|prototype|advanced|digital|virtual|smart|autonomous|automated|intelligent|personalized|custom|general|large|small|interactive|conversational|online|robotic)$/i.test(word);
+    });
+  }
+  function isHumanObject(prefix) {
+    var predicate = AI_HUMAN_OBJECT.exec(prefix);
+    var bridge;
+    if (predicate) bridge = prefix.slice(predicate[0].length);
+    else {
+      // A framing claim can name people as affected parties without using an
+      // action-rule verb: "AI poses an existential risk to federal agents".
+      // Require a single explicit software clause and a prepositional object;
+      // reporting, coordination and passive human actors remain ambiguous.
+      var subject = new RegExp("^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + "\\b", "i").exec(prefix);
+      if (!subject) return false;
+      var clause = prefix.slice(subject[0].length);
+      if (clause.length > 256 || /[.!?;\u2029]|\b(?:and|or|but|that|who|which|said|says|warned|warns|told|called|calls|by|while|when|after|before|as|if|because|since|although|however)\b/i.test(clause)) return false;
+      var affected = /\b(?:to|for|against|among|beside|near|around)\s+((?:[\p{L}\p{N}'’-]+\s+){0,8})$/iu.exec(clause);
+      if (!affected) return false;
+      var framing = clause.slice(0, affected.index);
+      if (!COMPILED.some(function (rule) { rule.re.lastIndex = 0; return rule.re.test(framing); })) return false;
+      bridge = " " + affected[1];
+    }
+    // Bound ordinary object modifiers and noun/preposition phrases. Clause
+    // openers, coordination and passive "by" cannot introduce a human actor.
+    if (bridge.length > 256 || !/^\s+(?:(?!(?:and|or|but|that|who|which|said|says|is|was|are|were|has|have|had|by|while|when|after|before|as|if|because|since|although|however)\b)[\p{L}\p{N}'’-]+\s+){0,8}$/iu.test(bridge)) return false;
+    // A framing word in the object describes the person, not the AI. Preserve
+    // such ambiguous sentences rather than changing "misaligned federal agent".
+    return !COMPILED.some(function (rule) {
+      rule.re.lastIndex = 0;
+      return rule.re.test(bridge);
+    });
+  }
+
   // [verb, replacement] rewritten only after an AI subject. `unless` is an
   // optional regex of what must not follow the verb.
   function byAI(verb, replacement, unless) {
+    AI_ACTIONS.push(verb);
     var source = "(?:" + verb + ")";
     if (unless) source += "(?!\\s+(?:" + unless + ")\\b)";
     // The lookbehind sits after the verb so it only runs where the verb matched.
@@ -632,6 +733,13 @@
     ["scheming", "unexpected behavior"],
   ];
 
+  // Share the rule predicates rather than maintaining a second verb list.
+  // Longest first prevents "lied" consuming the start of "lied to".
+  var AI_HUMAN_OBJECT = new RegExp(
+    "^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + FILLER +
+    "\\s+(?:" + AI_ACTIONS.slice().sort(function (a, b) { return b.length - a.length; }).map(function (verb) { return verb.replace(/ /g, "\\s+"); }).join("|") +
+    "|(?:is|was|are|were)\\s+misaligned)\\b", "i");
+
   function escapeForRegex(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
@@ -729,18 +837,25 @@
   // A single quote opens speech only at a word boundary and with a plausible
   // closing quote. Internal apostrophes, possessives and abbreviated years
   // are ordinary prose. Curly apostrophes use the same closing-boundary check.
+  var MAX_SEGMENTS = 1024;
+  function preserveText(text) { return [{ text: String(text), protected: true }]; }
   function wordChar(ch) { return !!ch && /[\p{L}\p{N}_]/u.test(ch); }
   function singleQuoteEnds(text) {
     var endings = new Map();
+    if (!/['‘]/.test(text)) return endings;
     // Record speech introductions once, including arbitrary whitespace, rather
     // than repeatedly scanning the prefix at each possible opening apostrophe.
     var reported = new Set();
     var introductions = /(?:[,:]|\b(?:said|says|wrote|writes|told|tells|asked|asks|replied|replies|stated|states|quoted|quotes|report(?:ed|s)?|remark(?:ed|s)?|claim(?:ed|s)?|explain(?:ed|s)?|whisper(?:ed|s)?|shout(?:ed|s)?|note(?:d|s)?|add(?:ed|s)?|respond(?:ed|s)?|declare(?:d|s)?|announce(?:d|s)?|recount(?:ed|s)?))\s*/gi;
     var match;
-    while ((match = introductions.exec(text))) reported.add(introductions.lastIndex);
+    while ((match = introductions.exec(text))) {
+      if (reported.size >= MAX_SEGMENTS) return null;
+      reported.add(introductions.lastIndex);
+    }
     var clear = { "'": -1, "\u2019": -1 };
     var last = { "'": -1, "\u2019": -1 };
-    var nextNonSpace = -1;
+    var nextOpening = { "'": -1, "\u2019": -1 };
+    var nextNonSpace = -1, firstNonSpace = text.search(/\S/);
     // A reverse pass caches the outermost ending and elision evidence
     // for each quote kind. Every character is visited once, even when there
     // are thousands of unmatched openers or long runs of whitespace.
@@ -754,10 +869,20 @@
         // delimiters and nested fragments cannot expose quoted wording. This
         // can leave intervening unquoted prose unchanged; preservation wins.
         var end = last[close];
-        // An elision followed only by a possessive is ordinary prose. Clear
-        // non-possessive endings and reporting context still permit speech.
-        if (elision && !reported.has(j) && clear[close] < 0) end = -1;
-        if (!year && end >= 0) endings.set(j, end);
+        // An elision or abbreviated year followed only by a possessive is
+        // ordinary prose. Clear non-possessive endings and reporting context
+        // still permit numeric direct speech.
+        if ((elision || year) && !reported.has(j) && clear[close] < 0) end = -1;
+        // An unintroduced two-digit fragment after prose is an abbreviated
+        // year when another opening arrives before any clear ending. Numeric
+        // speech has a reporting introduction, starts the text, or closes
+        // before the next opening. This works without a preposition dictionary.
+        if (year && !reported.has(j) && j > firstNonSpace && nextOpening[close] >= 0 && nextOpening[close] < clear[close]) end = -1;
+        if (end >= 0) {
+          if (endings.size >= MAX_SEGMENTS) return null;
+          endings.set(j, end);
+        }
+        nextOpening[close] = j;
       }
       if ((ch === "'" || ch === "\u2019") && !wordChar(text[j + 1])) {
         if (last[ch] < 0) last[ch] = j;
@@ -777,6 +902,7 @@
     var text = String(input);
     var segments = [];
     var singleEnds = singleQuoteEnds(text);
+    if (singleEnds === null) return preserveText(text);
     var start = 0;
     var quoted = false;
     var close = "";
@@ -785,50 +911,162 @@
       var ch = text.charAt(i);
       if (!quoted && (ch === "'" || ch === "\u2018")) singleEnd = singleEnds.get(i) ?? -1;
       if (!quoted && ((ch === "'" && singleEnd >= 0) || ch === '"' || ch === "\u201c" || ch === "\u2018" || ch === "\u00ab" || ch === "\u201e")) {
+        if (segments.length >= MAX_SEGMENTS - 1) return preserveText(text);
         if (i > start) segments.push({ text: text.slice(start, i) });
         quoted = true;
         close = ch === "'" ? "'" : ch === '"' ? '"' : ch === "\u2018" ? "\u2019" : ch === "\u00ab" ? "\u00bb" : "\u201d";
         start = i;
       } else if (quoted && ch === close && ((close !== "'" && close !== "\u2019") || i === singleEnd)) {
+        if (segments.length >= MAX_SEGMENTS) return preserveText(text);
         segments.push({ text: text.slice(start, i + 1), protected: true });
         start = i + 1;
         quoted = false;
         close = "";
       }
     }
-    if (start < text.length) segments.push({ text: text.slice(start), protected: quoted });
+    if (start < text.length) {
+      if (segments.length >= MAX_SEGMENTS) return preserveText(text);
+      segments.push({ text: text.slice(start), protected: quoted });
+    }
     return segments.length ? segments : [{ text: text }];
   }
 
   function dedoomSegments(input) {
     var segments = quoteProtectedSegments(input);
+    var contextual = [], overflow = false, humanContext = false, quotedSentenceEnd = false;
+    function startsAIClaim(text) {
+      var lead = text.slice(0, 256);
+      // A terminal quote can be followed by citations before the next subject.
+      // Consume only this bounded prefix; citation contents remain unchanged.
+      var start = 0;
+      while (start < lead.length) {
+        if (/[\s¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]/.test(lead[start])) { start++; continue; }
+        var length = claimCitationLength(lead.slice(start, start + 66));
+        if (!length) break;
+        start += length;
+      }
+      lead = lead.slice(start);
+      // A sentence can open with a conjunction or discourse marker. Consume
+      // at most two before requiring an explicit software subject; reporting
+      // continuations such as "but warned the AI" still retain human context.
+      lead = lead.replace(/^(?:(?:and|or|but|yet|then|however|nevertheless|nonetheless|instead|meanwhile|still|also|therefore|thus|consequently|finally|next|now)\b[,\s]+){1,2}/i, "");
+      if (/^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|A\.I\.?|AGI|LLMs?|superintelligences?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\w.]+)?|o\d+(?:[-.][\w.]+)?|GPT-[\w.]+|artificial[\s-]+intelligence|language[\s-]+models?|machine[\s-]+learning|neural[\s-]+(?:nets?|networks?))\b/i.test(lead)) return true;
+      // Vendor/name qualifiers are ordinary subject words, not a fixed vendor
+      // dictionary. Bare "agent" after "federal [break]" is still a continuation.
+      return /^\s*(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){0,4}|(?:(?!(?:and|or|but|then|that|said|says|warned|warns|called|calls|to|of|about)\b)[\p{L}\p{N}_'’.-]+\s+){1,4})(?:AIs?|LLMs?|superintelligences?|models?|chatbots?|bots?|agents?|assistants?|systems?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\w.]+)?|o\d+(?:[-.][\w.]+)?|GPT-[\w.]+)\b/iu.test(lead);
+    }
+    segments.forEach(function (seg) {
+      if (overflow) return;
+      if (contextual.length >= MAX_SEGMENTS) { overflow = true; return; }
+      if (seg.protected) {
+        // Quoted punctuation does not reset the actor of a continuing sentence.
+        // A terminal quote followed by a fresh AI subject can start a new one.
+        quotedSentenceEnd = humanContext && /[.!?][”"’'][\s)\]}]*$/.test(seg.text);
+        contextual.push(seg);
+        return;
+      }
+      if (humanContext && quotedSentenceEnd && startsAIClaim(seg.text)) humanContext = false;
+      quotedSentenceEnd = false;
+      if (!humanContext && !hasHumanRole(seg.text)) {
+        contextual.push(seg);
+      } else {
+        // Keep independent AI claims editable. Sentence/clause boundaries
+        // narrow the conservative human guard without rewriting their action.
+        var sentences = [], boundary = /[.!?;]+|\u2029+/g, previous = 0, stop;
+        while ((stop = boundary.exec(seg.text)) !== null) {
+          var terminal = stop[0], end = boundary.lastIndex;
+          if (terminal[0] !== "\u2029") {
+            // Consume each punctuation run and citation suffix once, even if
+            // no boundary follows. A lookahead on a greedy run retries every
+            // suffix of a failed match and can become quadratic.
+            while (end < seg.text.length) {
+              if (/[¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]/.test(seg.text[end])) { end++; continue; }
+              var length = claimCitationLength(seg.text.slice(end, end + 66));
+              if (!length) break;
+              end += length;
+            }
+            boundary.lastIndex = end;
+            if (end < seg.text.length && !/\s/.test(seg.text[end])) continue;
+          }
+          var prefix = seg.text.slice(Math.max(previous, stop.index - 20), stop.index);
+          // Decimal points, initials and common abbreviations do not end a
+          // sentence. Ellipses are ambiguous, so keep the human context.
+          // Rendered breaks carry a paragraph separator, distinct from source
+          // whitespace. A fresh software subject starts an independent claim;
+          // continuations such as "federal [break] agent" or "[break] is
+          // misaligned" keep their human actor's context. Quotes stay intact.
+          if (/\u2029/.test(stop[0])) {
+            var following = seg.text.slice(end, end + 256);
+            if (!startsAIClaim(following)) continue;
+          }
+          var numberedNo = /\bNo$/i.test(prefix) && /^\s*\d/.test(seg.text.slice(end, end + 64));
+          var abbreviation = /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|approx|etc|Inc|Ltd|Co|Corp|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|Dept|Univ|Assn|Est|Ave|Blvd|Rd|Bldg|Mt|Ft|Fig|Figs|Vol|Ed|Eds|Ch|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|[A-Z](?:\.[A-Z])*)$/i.test(prefix);
+          var afterStop = seg.text.slice(end, end + 256);
+          var titleOrInitial = /\b(?:Mr|Mrs|Ms|Dr|Prof|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|[A-Z](?:\.[A-Z])*)$/i.test(prefix);
+          // Company/month abbreviations can end a sentence. Titles and initials
+          // before a name retain attribution ("Dr. Claude" is not a new claim).
+          var freshAfterAbbreviation = startsAIClaim(afterStop) && (!titleOrInitial || /^\s*(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+/i.test(afterStop));
+          if (/^\.+$/.test(terminal) && (terminal.length > 1 || numberedNo || (abbreviation && !freshAfterAbbreviation))) continue;
+          // Untrusted pages may contain millions of tiny sentence breaks.
+          // Bound allocations and rule passes; unusually fragmented prose is
+          // safer to preserve as one span than to partially change its meaning.
+          if (contextual.length + sentences.length >= MAX_SEGMENTS) {
+            overflow = true;
+            return;
+          }
+          // A semicolon may continue the same human report. Reset attribution
+          // only for a clear independent software subject, including one after
+          // a coordinating conjunction; ambiguous continuations stay protected.
+          var independentClause = startsAIClaim(afterStop.replace(/^\s*(?:and|or|but|yet)\s+(?:(?:also|then)\s+)?/i, ""));
+          sentences.push({ text: seg.text.slice(previous, end), complete: !(/^;+$/.test(terminal) && !independentClause) });
+          previous = end;
+        }
+        if (previous < seg.text.length) {
+          if (contextual.length + sentences.length >= MAX_SEGMENTS) { overflow = true; return; }
+          sentences.push({ text: seg.text.slice(previous), complete: false });
+        }
+        sentences.forEach(function (sentence) {
+          var protect = humanContext || hasHumanRole(sentence.text);
+          contextual.push({ text: sentence.text, protected: protect });
+          humanContext = !sentence.complete && protect;
+        });
+      }
+    });
+    if (overflow) return preserveText(input);
+    segments = contextual;
     // Rules only rewrite untouched, unquoted parts of the input, so the input
     // decides which rules can match.
     var lower = String(input).toLowerCase();
     COMPILED.forEach(function (rule) {
-      if (!mayMatch(rule, lower)) return;
+      if (overflow || !mayMatch(rule, lower)) return;
       var next = [];
+      function append(seg) {
+        if (next.length >= MAX_SEGMENTS) { overflow = true; return; }
+        next.push(seg);
+      }
       segments.forEach(function (seg) {
+        if (overflow) return;
         if (seg.original !== undefined || seg.protected) {
-          next.push(seg);
+          append(seg);
           return;
         }
         var text = seg.text;
         var last = 0;
         rule.re.lastIndex = 0;
         var m;
-        while ((m = rule.re.exec(text)) !== null) {
+        while (!overflow && (m = rule.re.exec(text)) !== null) {
           var start = m.index + m[1].length;
-          if (start > last) next.push({ text: text.slice(last, start) });
+          if (start > last) append({ text: text.slice(last, start) });
           var replacement = rule.single ? m[2].replace(rule.single, rule.replacement) : rule.replacement;
-          next.push({ text: matchCase(m[2], replacement), original: m[2] });
+          append({ text: matchCase(m[2], replacement), original: m[2] });
           last = start + m[2].length;
           rule.re.lastIndex = last;
         }
-        if (last < text.length) next.push({ text: text.slice(last) });
+        if (!overflow && last < text.length) append({ text: text.slice(last) });
       });
       segments = next;
     });
+    if (overflow) return preserveText(input);
     return segments.filter(function (s) {
       return s.text.length > 0 || s.original !== undefined;
     });
@@ -851,6 +1089,7 @@
 
   root.Dedoom = {
     RULES: RULES,
+    softwareSubjectSource: SOFTWARE_SUBJECT,
     quoteProtectedSegments: quoteProtectedSegments,
     dedoomSegments: dedoomSegments,
     dedoomText: dedoomText,
