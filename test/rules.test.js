@@ -29,6 +29,19 @@ test("explicit human roles stay factual even alongside AI context", () => {
   }
 });
 
+test("explicit AI qualifiers keep normally human roles editable", () => {
+  for (const qualifier of ["AI", "AI-powered", "AI driven", "LLM-based", "artificial intelligence"]) {
+    const original = `The ${qualifier} personal assistant is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+  const agent = "The AI travel agent blackmailed a customer.";
+  assert.equal(dedoomText(agent), "The AI travel agent wrote a sternly worded email to a customer.");
+  const human = "The personal assistant discussed AI and is misaligned.";
+  assert.equal(dedoomText(human), human);
+  const mixed = "The AI personal assistant and the federal agent discussed an existential risk.";
+  assert.equal(dedoomText(mixed), mixed);
+});
+
 test("hostile sentence fragmentation has bounded segmentation", () => {
   for (const suffix of [". ".repeat(2_621_440), "The AI is misaligned. ".repeat(1200)]) {
     const original = "The federal agent filed a report. " + suffix;

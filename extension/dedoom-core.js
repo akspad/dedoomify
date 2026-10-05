@@ -13,7 +13,19 @@
   // appears in an unquoted sentence, preserve it conservatively, even if AI
   // is mentioned elsewhere in the same sentence. A paragraph-level AI keyword
   // must not turn reporting about federal agents into a software euphemism.
-  var HUMAN_ROLE = /\b(?:(?:fashion|runway|catwalk|male|female|human|role)\s+models?|(?:federal|government|police|fbi|cia|secret|undercover|double|human|talent|literary|travel|insurance|sports|real[ -]estate)\s+agents?|(?:personal|administrative|executive|medical|human|teaching|research|legal)\s+assistants?)\b/i;
+  var HUMAN_ROLE = /\b(?:(?:fashion|runway|catwalk|male|female|human|role)\s+models?|(?:federal|government|police|fbi|cia|secret|undercover|double|human|talent|literary|travel|insurance|sports|real[ -]estate)\s+agents?|(?:personal|administrative|executive|medical|human|teaching|research|legal)\s+assistants?)\b/gi;
+  function hasHumanRole(text) {
+    HUMAN_ROLE.lastIndex = 0;
+    var match;
+    while ((match = HUMAN_ROLE.exec(text))) {
+      var at = match.index;
+      while (at > 0 && /\s/.test(text[at - 1])) at--;
+      // An explicit AI qualifier describes software, even for a role that
+      // is usually held by a person. Other human roles still protect the span.
+      if (!/\b(?:AI|AGI|LLMs?|artificial intelligence)(?:[- ](?:powered|driven|based))?$/i.test(text.slice(Math.max(0, at - 48), at))) return true;
+    }
+    return false;
+  }
 
   // Verbs like "cheated" or "asked" are everyday words, so these rules only
   // fire when an AI is the one doing them ("the model cheated", "Claude
@@ -835,7 +847,7 @@
     segments.forEach(function (seg) {
       if (overflow) return;
       if (contextual.length >= MAX_SEGMENTS) { overflow = true; return; }
-      if (seg.protected || !HUMAN_ROLE.test(seg.text)) {
+      if (seg.protected || !hasHumanRole(seg.text)) {
         contextual.push(seg);
       } else {
         // Keep independent AI claims editable. Sentence/clause boundaries
@@ -863,7 +875,7 @@
           sentences.push(seg.text.slice(previous));
         }
         sentences.forEach(function (text) {
-          contextual.push({ text: text, protected: HUMAN_ROLE.test(text) });
+          contextual.push({ text: text, protected: hasHumanRole(text) });
         });
       }
     });

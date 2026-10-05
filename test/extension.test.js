@@ -46,8 +46,13 @@ test("the extension loads no remote code", () => {
 
 const { looksDoomy } = globalThis.DedoomifyPage;
 
-function extensionPage(html) {
+function extensionPage(html, computedStyle) {
   const { document, window } = parseHTML(`<html><body>${html}</body></html>`);
+  window.getComputedStyle = computedStyle || ((node) => {
+    let visibility = "";
+    for (let ancestor = node; ancestor && !visibility; ancestor = ancestor.parentElement) visibility = ancestor.style.visibility;
+    return { display: node.style.display, visibility, contentVisibility: node.style.contentVisibility };
+  });
   // Linkedom omits TreeWalker's filter argument; supply its browser behavior.
   const walk = document.createTreeWalker.bind(document);
   document.createTreeWalker = (root, mask, filter) => {
@@ -139,6 +144,19 @@ test("extension excludes hidden subtrees from visible protection and rewriting",
   assert.equal(document.querySelector("#code code").textContent, "The federal agent is misaligned.");
   assert.equal(document.querySelector("#quote em").textContent, "is misaligned.");
   for (const element of document.querySelectorAll("[hidden]")) assert.equal(element.querySelector("mark"), null);
+  assert.equal(run().added, 0);
+});
+
+test("extension excludes CSS-hidden context and respects visible overrides", () => {
+  const { document, run } = extensionPage(`<style>.concealed{display:none}</style><p id="inline"><span style="display:none">The federal agent </span>The AI is misaligned.</p><p id="class"><span class="concealed">The federal agent </span>The AI is misaligned.</p><p id="visibility"><span style="visibility:hidden">The federal agent </span>The AI is misaligned.</p><p id="override" style="visibility:hidden"><span style="visibility:visible">The AI is misaligned.</span></p><p id="code">She said, 'The model <code><span class="concealed">'</span>is</code> misaligned.' Outside it is misaligned.</p>`, (node) => {
+    let visibility = "";
+    for (let ancestor = node; ancestor && !visibility; ancestor = ancestor.parentElement) visibility = ancestor.style.visibility;
+    return { display: node.classList.contains("concealed") ? "none" : node.style.display, visibility, contentVisibility: node.style.contentVisibility };
+  });
+  assert.equal(run().added, 5);
+  for (const selector of ["#inline span", "#class span", "#visibility span", "#code code"]) assert.equal(document.querySelector(selector).querySelector("mark"), null);
+  assert.equal(document.querySelector("#override span").textContent, "The AI has a bug.");
+  assert.match(document.querySelector("#code").textContent, /misaligned.' Outside it has a bug/);
   assert.equal(run().added, 0);
 });
 

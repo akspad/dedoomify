@@ -35,10 +35,43 @@
     var body = document.body;
     if (!body || !root.Dedoom) return { added: 0, total: 0 };
     var added = 0;
+    // Read computed styles once, before any DOM writes. Display-hidden
+    // ancestors suppress their whole subtree; visibility can be overridden by
+    // a visible descendant, so check it on each text node's own parent.
+    var styles = new WeakMap(), displayStates = new WeakMap();
+    function styleOf(el) {
+      if (!styles.has(el)) styles.set(el, window.getComputedStyle ? window.getComputedStyle(el) : el.style);
+      return styles.get(el);
+    }
+    function displayHidden(el) {
+      var path = [], current = el;
+      while (current && !displayStates.has(current)) { path.push(current); current = current.parentElement; }
+      var hidden = current ? displayStates.get(current) : false;
+      for (var i = path.length - 1; i >= 0; i--) {
+        var node = path[i], style = styleOf(node);
+        hidden = hidden || node.hasAttribute("hidden") || style.display === "none" || style.contentVisibility === "hidden";
+        displayStates.set(node, hidden);
+      }
+      return !!displayStates.get(el);
+    }
+    function visibilityHidden(el) { return /^(hidden|collapse)$/.test(styleOf(el).visibility); }
+    function renderedText(el) {
+      var stack = [el], text = [];
+      while (stack.length) {
+        var node = stack.pop();
+        if (node.nodeType === 3) {
+          if (!displayHidden(node.parentElement) && !visibilityHidden(node.parentElement)) text.push(node.nodeValue);
+        } else if (node.nodeType === 1 && !displayHidden(node)) {
+          for (var child = node.lastChild; child; child = child.previousSibling) stack.push(child);
+        }
+      }
+      return text.join("");
+    }
 
     var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
       acceptNode: function (node) {
-        if (node.nodeType === 1 && node.hasAttribute("hidden")) return NodeFilter.FILTER_REJECT;
+        var element = node.nodeType === 1 ? node : node.parentElement;
+        if (displayHidden(element) || (node.nodeType === 3 && visibilityHidden(element))) return NodeFilter.FILTER_REJECT;
         if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !node.matches(blockSelector) && !protectedElement(node)) return NodeFilter.FILTER_SKIP;
         var parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
@@ -73,7 +106,7 @@
       if (textNode) nodes.push(node);
       // Keep skipped rendered content as virtual, immutable context. Its
       // punctuation and quotes must still delimit the neighboring prose.
-      currentGroup.push({ node: textNode ? node : null, text: textNode ? node.nodeValue : protectedNode ? node.textContent : "\n" });
+      currentGroup.push({ node: textNode ? node : null, text: textNode ? node.nodeValue : protectedNode ? renderedText(node) : "\n" });
     }
 
     // Quote marks and explicit human actors can sit in adjacent inline nodes.

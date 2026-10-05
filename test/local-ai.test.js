@@ -249,6 +249,13 @@ test("model validation shares broad year and abbreviation context", () => {
   }
 });
 
+test("model validation distinguishes AI-qualified roles from human roles", () => {
+  assert.ok(acceptRewrite("The AI personal assistant is misaligned.", "The AI personal assistant has a bug."));
+  assert.ok(acceptRewrite("The AI travel agent is misaligned.", "The AI travel agent has a bug."));
+  assert.ok(!acceptRewrite("The personal assistant discussed AI and is misaligned.", "The personal assistant discussed AI and has a bug."));
+  assert.ok(!acceptRewrite("The AI personal assistant and the federal agent discussed an existential risk.", "The AI personal assistant and the federal agent discussed a product risk."));
+});
+
 test("keeps plural/name possessives and human deception inside model output", () => {
   for (const quote of ["'The users' feedback is that the model is misaligned.'", "'James' report says the model is misaligned.'"]) {
     const original = `She said, ${quote} Outside it is misaligned.`;
