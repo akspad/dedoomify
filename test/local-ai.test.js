@@ -491,3 +491,25 @@ test("model recognizes independent superintelligence framing after speech", () =
   const human = 'The federal agent said "No." and warned the superintelligence was misaligned.';
   assert.ok(!acceptRewrite(human, human.replace('was misaligned', 'had a bug')));
 });
+
+test("model preserves human-object adjunct facts while allowing framing", () => {
+  for (const suffix of [' yesterday.', ' in 2020.', ' at 9 pm.', ' during the test.']) {
+    const input = 'The AI deceived federal agents' + suffix;
+    const safe = input.replace('deceived', 'confused');
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace(suffix, '.')));
+  }
+});
+
+test("model selection and deception exceptions share explicit software subjects", () => {
+  for (const subject of ['DeepSeek-R1', 'o3', 'The neural network', 'The superintelligence', 'The A.I.', 'AGI', 'Artificial intelligence']) {
+    const hint = `${subject} wanted access.`;
+    assert.ok(needsModel(hint, hint), subject);
+    const input = `${subject} decided to deceive its users.`;
+    assert.ok(acceptRewrite(input, `${subject} produced misleading output for its users.`), subject);
+  }
+  for (const subject of ['The federal agent', 'The fashion model', 'The personal assistant']) {
+    const input = `${subject} decided to deceive its users.`;
+    assert.ok(!acceptRewrite(input, `${subject} produced misleading output for its users.`), subject);
+  }
+});

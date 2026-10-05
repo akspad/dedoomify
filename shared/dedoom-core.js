@@ -50,7 +50,13 @@
     while (at < text.length) {
       if (/[\s.!?;¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]/.test(text[at])) { at++; continue; }
       var length = claimCitationLength(text.slice(at, at + 66));
-      if (!length) return false;
+      if (!length) {
+        // Bounded temporal/location adjuncts do not introduce a new actor.
+        // Unknown prose and relative/reporting clauses retain the human guard.
+        var adjunct = /^(?:(?:yesterday|today|tonight|tomorrow|recently|earlier|later|again|once|twice|repeatedly|briefly)|(?:last|this|next)\s+(?:week|month|year|night)|(?:in|during)\s+\d{4}|at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)|during\s+(?:the|a)\s+(?:test|trial|experiment|demo|meeting)|(?:in|at|near)\s+the\s+(?:office|lab|laboratory|meeting|conference))\b/i.exec(text.slice(at));
+        if (!adjunct) return false;
+        length = adjunct[0].length;
+      }
       at += length;
     }
     return true;
@@ -59,9 +65,10 @@
   // Verbs like "cheated" or "asked" are everyday words, so these rules only
   // fire when an AI is the one doing them ("the model cheated", "Claude
   // secretly smuggled"). A few filler words may sit in between.
-  var AI_SUBJECT =
-    "\\b(?:AIs?|A\\.I\\.?|AGI|LLMs?|superintelligences?|artificial[\\s-]+intelligence|language[\\s-]+models?|machine[\\s-]+learning|neural[\\s-]+(?:nets?|networks?)|models?|chatbots?|bots?|agents?|assistants?|systems?|" +
+  var SOFTWARE_SUBJECT =
+    "\\b(?:AIs?(?:\\s+(?:models?|systems?|agents?|assistants?|bots?))?|A\\.I\\.?|AGI|LLMs?|superintelligences?|artificial[\\s-]+intelligence|language[\\s-]+models?|machine[\\s-]+learning|neural[\\s-]+(?:nets?|networks?)|chatbots?|" +
     "Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\\w.]+)?|o\\d+(?:[-.][\\w.]+)?|GPT-[\\w.]+)";
+  var AI_SUBJECT = "(?:" + SOFTWARE_SUBJECT + "|\\b(?:models?|bots?|agents?|assistants?|systems?))";
   var FILLER =
     "(?:\\s+(?:\\w+ly|\\w+n['\u2019]t|also|then|even|still|just|not|never|can|could|will|would|" +
     "may|might|must|did|does|do|to|tried|tries|try|trying|learned|learns|began|begins|" +
@@ -1082,6 +1089,7 @@
 
   root.Dedoom = {
     RULES: RULES,
+    softwareSubjectSource: SOFTWARE_SUBJECT,
     quoteProtectedSegments: quoteProtectedSegments,
     dedoomSegments: dedoomSegments,
     dedoomText: dedoomText,

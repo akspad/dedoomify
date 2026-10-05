@@ -675,3 +675,14 @@ test("superintelligence claims start independently after human quotations", () =
   const human = 'The federal agent said "No." and warned the superintelligence was misaligned.';
   assert.equal(dedoomText(human), human);
 });
+
+test("bounded human-object adjuncts remain factual while AI actions rewrite", () => {
+  for (const suffix of [" yesterday.", " today [1].", " last week.", " in 2020.", " at 9 pm.", " during the test.", " near the office (Smith, 2020)."]) {
+    const input = 'The AI deceived federal agents' + suffix;
+    assert.equal(dedoomText(input), input.replace('deceived', 'confused'));
+  }
+  for (const suffix of [" yesterday who were misaligned.", " yesterday and warned of an existential risk.", " in the office who were misaligned.", " during the test said the AI was misaligned."]) {
+    const input = 'The AI deceived federal agents' + suffix;
+    assert.equal(dedoomText(input), input);
+  }
+});

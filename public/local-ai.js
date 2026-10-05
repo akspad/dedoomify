@@ -25,8 +25,7 @@ const modelId = (key) => modelFor(key).ids[precision];
 // or the text uses a word that often carries doom framing.
 const DOOM_HINTS =
   /\b(misalign\w*|alignment|extinct\w*|doom\w*|apocalyp\w*|superintellig\w*|rogue|sentien\w*|conscious\w*|deceiv\w*|decept\w*|lie[sd]?|lying|schem\w*|plott\w*|takeover|take over|catastroph\w*|existential|kill\w*|destroy\w*|threat\w*|escap\w*|cheat\w*|smuggl\w*|blackmail\w*|manipulat\w*|self-preservation|preserv\w*|own kind|shut ?down|wants?|wanted|decided|believes?|believed|realiz\w*|desires?|evil|skynet|terminator|god-?like|AGI)\b/i;
-const AI_CONTEXT =
-  /\b(?:AI|A\.I\.|AGI|LLMs?|models?|chatbots?|bots?|agents?|assistants?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial intelligence|language models?|machine learning|neural nets?|OpenAI|Anthropic|DeepMind)\b/i;
+const AI_CONTEXT = new RegExp(globalThis.Dedoom.softwareSubjectSource + "\\b|\\b(?:models?|bots?|agents?|assistants?|systems?|OpenAI|Anthropic|DeepMind)\\b", "i");
 
 export function needsModel(original, rulesVersion) {
   return rulesVersion !== original || (AI_CONTEXT.test(original) && DOOM_HINTS.test(original));
@@ -105,7 +104,7 @@ export function acceptRewrite(original, rewritten) {
   // grant permission to erase factual words in unrelated occurrences.
   // Generic agents/models/assistants can be people, so require an explicit
   // AI qualifier or an unambiguous software/model name for this exception.
-  const deception = /\b(AIs?(?:\s+(?:models?|systems?|agents?|assistants?|bots?))?|LLMs?|language models?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+)\s+decided to deceive\b/gi;
+  const deception = new RegExp("(" + globalThis.Dedoom.softwareSubjectSource + ")\\s+decided to deceive\\b", "gi");
   const reference = globalThis.Dedoom.quoteProtectedSegments(original).map((seg) =>
     seg.protected ? seg.text : seg.text.replace(deception, "$1 produced misleading output for"),
   ).join("");
