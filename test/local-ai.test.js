@@ -331,3 +331,13 @@ test("model validation preserves quote-adjacent padding and multiline speech", (
     assert.ok(acceptRewrite(original, original.replace("Outside it is misaligned", "Outside it has a bug")));
   }
 });
+
+
+test("model validation permits AI actions with human objects, preserving their roles", () => {
+  // The model guard retains threat invariants; the rules fallback can rewrite.
+  assert.ok(!acceptRewrite("Claude threatened the research assistant.", "Claude output threats against the research assistant."));
+  const original = "The AI is misaligned beside the federal agent.";
+  assert.ok(acceptRewrite(original, "The AI has a bug beside the federal agent."));
+  assert.ok(!acceptRewrite(original, "The federal agent has a bug beside the AI."));
+  assert.ok(!acceptRewrite("The federal agent said the AI is misaligned.", "The federal agent said the AI has a bug."));
+});

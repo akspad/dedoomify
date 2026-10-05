@@ -10,7 +10,7 @@
   "use strict";
 
   // A model/agent/assistant can be a person. When an explicit human role
-  // appears in an unquoted sentence, preserve it conservatively, even if AI
+  // acts in an unquoted sentence, preserve it conservatively, even if AI
   // is mentioned elsewhere in the same sentence. A paragraph-level AI keyword
   // must not turn reporting about federal agents into a software euphemism.
   var HUMAN_ROLE = /\b(?:(?:fashion|runway|catwalk|male|female|human|role)\s+models?|(?:federal|government|police|fbi|cia|secret|undercover|double|human|talent|literary|travel|insurance|sports|real[ -]estate)\s+agents?|(?:personal|administrative|executive|medical|human|teaching|research|legal)\s+assistants?)\b/gi;
@@ -22,7 +22,12 @@
       while (at > 0 && /\s/.test(text[at - 1])) at--;
       // An explicit AI qualifier describes software, even for a role that
       // is usually held by a person. Other human roles still protect the span.
-      if (!/\b(?:AI|AGI|LLMs?|artificial intelligence)(?:[- ](?:powered|driven|based))?$/i.test(text.slice(Math.max(0, at - 48), at))) return true;
+      if (/\b(?:AI|AGI|LLMs?|artificial intelligence)(?:[- ](?:powered|driven|based))?$/i.test(text.slice(Math.max(0, at - 48), at))) continue;
+      // A simple software subject can act on a person. Only exempt a complete,
+      // unambiguous object phrase; coordinated actors, reporting and relative
+      // clauses retain the conservative human guard.
+      if (AI_HUMAN_OBJECT.test(text.slice(0, match.index)) && /^[\s.!?;]*$/.test(text.slice(HUMAN_ROLE.lastIndex))) continue;
+      return true;
     }
     return false;
   }
@@ -39,6 +44,10 @@
     "started|starts|attempted|attempts|was|were|is|are|be|been|being|has|have|had|" +
     "caught|appears|appeared|seemed|seems|went|goes|on|wanted|wants|want|managed|manages|" +
     "chose|chooses|planned|plans|planning|plotting|scheming|refused|refuses|kept|keeps|keep|acted|acts|act|willing|continued|continues|got|gets)){0,4}";
+
+  var AI_HUMAN_OBJECT = new RegExp(
+    "^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + FILLER +
+    "\\s+(?:(?:blackmail(?:ed|s|ing)?|threaten(?:ed|s|ing)?)|(?:is|was|are|were)\\s+misaligned\\s+(?:beside|near|alongside))\\s+(?:(?:the|a|an|its|their|our|your)\\s+)?$", "i");
 
   // [verb, replacement] rewritten only after an AI subject. `unless` is an
   // optional regex of what must not follow the verb.
@@ -852,8 +861,23 @@
       } else {
         // Keep independent AI claims editable. Sentence/clause boundaries
         // narrow the conservative human guard without rewriting their action.
-        var sentences = [], boundary = /[.!?;]+(?:\[[^\]\r\n]{1,64}\]|[¹²³⁰⁴⁵⁶⁷⁸⁹)\]}])*(?=\s|$)|\u2029+/g, previous = 0, stop;
+        var sentences = [], boundary = /[.!?;]+|\u2029+/g, previous = 0, stop;
         while ((stop = boundary.exec(seg.text)) !== null) {
+          var terminal = stop[0], end = boundary.lastIndex;
+          if (terminal[0] !== "\u2029") {
+            // Consume each punctuation run and citation suffix once, even if
+            // no boundary follows. A lookahead on a greedy run retries every
+            // suffix of a failed match and can become quadratic.
+            while (end < seg.text.length) {
+              if (/[¹²³⁰⁴⁵⁶⁷⁸⁹)\]}]/.test(seg.text[end])) { end++; continue; }
+              if (seg.text[end] !== "[") break;
+              var citation = /^\[[^\]\r\n]{1,64}\]/.exec(seg.text.slice(end, end + 66));
+              if (!citation) break;
+              end += citation[0].length;
+            }
+            boundary.lastIndex = end;
+            if (end < seg.text.length && !/\s/.test(seg.text[end])) continue;
+          }
           var prefix = seg.text.slice(Math.max(previous, stop.index - 20), stop.index);
           // Decimal points, initials and common abbreviations do not end a
           // sentence. Ellipses are ambiguous, so keep the human context.
@@ -862,11 +886,9 @@
           // continuations such as "federal [break] agent" or "[break] is
           // misaligned" keep their human actor's context. Quotes stay intact.
           if (/\u2029/.test(stop[0])) {
-            var following = seg.text.slice(stop.index + stop[0].length, stop.index + stop[0].length + 256);
+            var following = seg.text.slice(end, end + 256);
             if (!/^\s*(?:(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b|(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?)\b)/i.test(following)) continue;
           }
-          var terminalMatch = /^[.!?;]+/.exec(stop[0]);
-          var terminal = terminalMatch ? terminalMatch[0] : "";
           if (/^\.+$/.test(terminal) && (terminal.length > 1 || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|No|approx|etc|Inc|Ltd|Co|Corp|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|Dept|Univ|Assn|Est|Ave|Blvd|Rd|Bldg|Mt|Ft|Fig|Figs|Vol|Ed|Eds|Ch|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
           // Untrusted pages may contain millions of tiny sentence breaks.
           // Bound allocations and rule passes; unusually fragmented prose is
@@ -875,7 +897,6 @@
             overflow = true;
             return;
           }
-          var end = stop.index + stop[0].length;
           sentences.push(seg.text.slice(previous, end));
           previous = end;
         }

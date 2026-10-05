@@ -434,3 +434,25 @@ test("whitespace and line breaks inside speech stay protected", () => {
   ]) assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
   assert.equal(dedoomText("Don't worry: users' feedback says it is misaligned."), "Don't worry: users' feedback says it has a bug.");
 });
+
+
+test("human objects do not suppress a simple AI actor's rewrite", () => {
+  assert.equal(dedoomText("The AI blackmailed the federal agent."), "The AI wrote a sternly worded email to the federal agent.");
+  assert.equal(dedoomText("Claude threatened the research assistant."), "Claude output threats against the research assistant.");
+  assert.equal(dedoomText("The AI is misaligned beside the federal agent."), "The AI has a bug beside the federal agent.");
+  for (const original of [
+    "The AI and the federal agent blackmailed the witness.",
+    "The federal agent said the AI blackmailed the witness.",
+    "The AI threatened the research assistant who is misaligned.",
+    "The AI blackmailed the federal agent and the personal assistant is misaligned.",
+  ]) assert.equal(dedoomText(original), original);
+});
+
+test("failed sentence boundaries scan long punctuation and citations once", () => {
+  for (const suffix of [".".repeat(50_000) + "x", "!?;".repeat(33_000) + "x", ".[.]".repeat(24_000) + "x"]) {
+    const original = "The federal agent " + suffix;
+    const start = performance.now();
+    assert.equal(dedoomText(original), original);
+    assert.ok(performance.now() - start < 1500, "failed boundary scans must remain linear");
+  }
+});
