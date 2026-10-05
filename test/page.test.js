@@ -8,35 +8,30 @@ import { createHash } from "node:crypto";
 import { renderPage, PAGE_CSP, PAGE_SCRIPT } from "../lib/page.js";
 import handler from "../api/page.js";
 
-test("keeps uninitialized account overlays cloaked without enabling publisher code", () => {
-  // Tom's Hardware ships this account dashboard hidden by x-cloak. Stripping
-  // the marker exposes its fullscreen blur layer when Alpine cannot run.
+test("Tom's Hardware account backdrop cannot blur or block the static article", () => {
+  // This account dashboard starts cloaked. Without Alpine, its fullscreen
+  // backdrop has no working dismissal control and must not cover the story.
   const source = `<!doctype html><html><head><title>AI news</title>
     <style>.backdrop-blur-sm{backdrop-filter:blur(4px)}
       .fixed{position:fixed;inset:0}.story{max-width:800px}</style>
     <script>Alpine.start()</script></head><body>
     <article class="story"><h1>The model went rogue.</h1><p>Public article text.</p>
       <img class="illustration" style="filter:blur(2px)" src="image.jpg"></article>
-    <div class="fixed" x-data="custom_widgets_1774442034_userDashboard"
-      x-show="isUserAuthenticated" x-cloak>
-      <div id="slide_out-page_cover" class="fixed backdrop-blur-sm"
+    <div class="fixed inset-0 z-[12000] pointer-events-none"
+      x-data="custom_widgets_1774442034_userDashboard" x-show="isUserAuthenticated" x-cloak>
+      <div id="slide_out-page_cover" class="fixed inset-0 bg-black/60 w-full h-full cursor-pointer z-10 backdrop-blur-sm pointer-events-auto"
         x-show="isExpanded" x-on:click="isExpanded = false"></div>
       <p>The model went rogue.</p>
     </div></body></html>`;
   const { document } = parseHTML(renderPage(source, "https://www.tomshardware.com/news/story").html);
-  const cover = document.querySelector("#slide_out-page_cover");
-  assert.ok(cover.parentElement.hasAttribute("x-cloak"));
-  assert.ok(cover.parentElement.hasAttribute("hidden"));
-  assert.equal(cover.parentElement.querySelector("mark.dd"), null);
-  assert.match(document.querySelector("#dedoomify-style").textContent,
-    /\[x-cloak\]\s*\{\s*display:\s*none\s*!important;/);
-  assert.equal(document.querySelector("[x-data], [x-show], [x-on\\:click]"), null);
+  assert.equal(document.querySelector("#slide_out-page_cover"), null);
+  assert.equal(document.querySelector(".fixed"), null);
   assert.equal(document.querySelectorAll("script").length, 1);
   assert.equal(document.querySelector("script").textContent, PAGE_SCRIPT);
   assert.equal(document.querySelector("article").className, "story");
   assert.equal(document.querySelector("article p").textContent, "Public article text.");
-  assert.ok(document.querySelector("h1 mark.dd"));
-  // The fix honors a hidden widget; it doesn't remove blur effects everywhere.
+  assert.equal(document.querySelectorAll("mark.dd").length, 1);
+  // Honor the hidden widget without stripping the article's legitimate effects.
   assert.equal(document.querySelector(".illustration").getAttribute("style"), "filter:blur(2px)");
 });
 
@@ -539,4 +534,47 @@ test("publisher layout, scoped attributes, fonts, SVG icons and mobile viewport 
   assert.equal(document.querySelector('meta[name="viewport"]').getAttribute("content"), "width=device-width, initial-scale=1");
   assert.doesNotMatch(document.querySelector("#dedoomify-style").textContent, /body\s*\{|max-width:960px/);
   assert.equal(document.querySelector("h1 mark.dd").textContent, "has a bug");
+});
+
+test("pop-ups that wait for a script to open them are dropped, not shown over the article", () => {
+  const source = `<html><body>
+<dialog id="d"><p>Get Started. The AI is misaligned.</p></dialog>
+<div popover id="p">Start typing to search</div>
+<div role="dialog" id="r"><p>Create Account</p></div>
+<div role="AlertDialog" id="a">Cookies</div>
+<div role=" dialog  window" id="w">Search</div>
+<div aria-modal="true" id="m">Sign up with LinkedIn</div>
+<div x-cloak id="x"><p>Subscribe to our newsletter</p></div>
+<div v-cloak id="v"><main><h1>Title</h1><p>The model is misaligned.</p></main></div>
+<div role="dialog" id="kept"><article><p>Body</p></article></div>
+<div x-cloak id="kept2"><div role="main document"><p>Body</p></div></div>
+<dialog open id="shown"><p>Already visible</p></dialog>
+<article><p>The model is misaligned.</p></article>
+</body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://example.com/").html);
+  for (const id of ["d", "p", "r", "a", "w", "m", "x"]) assert.equal(document.getElementById(id), null, id);
+  assert.doesNotMatch(document.body.textContent, /Get Started|Start typing|Create Account|Cookies|LinkedIn|newsletter/);
+  assert.ok(document.getElementById("v"));
+  assert.ok(document.getElementById("kept"));
+  assert.ok(document.getElementById("kept2"));
+  // An open dialog is already visible on the publisher's page, so its words stay.
+  assert.match(document.body.textContent, /Already visible/);
+  // An app root cloaked until its framework starts is the page, not a pop-up.
+  for (const root of [`<body ng-cloak><div><h1>Title</h1><p>The model is misaligned.</p></div></body>`, `<body><div id="app" v-cloak><h1>Title</h1><p>The model is misaligned.</p></div><div x-cloak>Menu</div></body>`]) {
+    const page = parseHTML(renderPage(`<html>${root}</html>`, "https://example.com/").html).document;
+    assert.equal(page.querySelectorAll("h1").length, 1);
+    assert.equal(page.querySelectorAll("mark.dd").length, 1);
+    assert.doesNotMatch(page.body.textContent, /Menu/);
+  }
+  assert.equal(document.querySelectorAll("body > article mark.dd").length, 1);
+});
+
+test("nested pop-up candidates are sized in one pass", () => {
+  const depth = 5_000;
+  const html = `<html><body>${'<div x-cloak>'.repeat(depth)}<h1>Title</h1><p>The model is misaligned.</p>${'</div>'.repeat(depth)}<div role="dialog">Sign up</div></body></html>`;
+  const started = performance.now();
+  const { document } = parseHTML(renderPage(html, "https://example.com/deep").html);
+  assert.equal(document.querySelectorAll("mark.dd").length, 1);
+  assert.doesNotMatch(document.body.textContent, /Sign up/);
+  assert.ok(performance.now() - started < 5000, "nested candidates stay within the processing budget");
 });
