@@ -168,13 +168,16 @@
   // engineers" but not "blackmail if threatened", "once" or "repeatedly".
   var OBJECT = "(?=\\s+(?!\\w+ly\\b)(?!(?:if|when|whenever|unless|under|during|in|on|at|to|for|as|because|while|after|before|or|and|but|than|with|without|again|too|instead|once|twice|often|sometimes|always|never|ever|yesterday|today|tonight|tomorrow|then|now|later|first|still|even|anyway|here|there|more|less|again|back|so|until|whether|rather|since|though|although|is|was|were|are)\\b)\\w)";
   function inAIClause(verb, replacement, pronoun) {
+    // Like byAI, a clear AI action may take a person as its object.
+    AI_ACTIONS.push(/^[a-z]+/.exec(verb)[0]);
     var subject = "(?:" +
       CLAUSE_SUBJECT + CLAUSE_FILLER + "|" +
       CLAUSE_SUBJECT + CLAUSE_FILLER + "\\s+" + DOOM_VERB + CLAUSE_WORD + "{0,3},?\\s+(?:and|or)" + FILLER + "|" +
       CLAUSE_SUBJECT + CLAUSE_WORD + "{0,12}\\s+(?:before|after|by|while|without|instead\\s+of|rather\\s+than)";
-    // "it" right after a finding about the AI: "Claude Opus 4 that found it
-    // would blackmail". Any other words between could hold the antecedent.
-    if (pronoun) subject += "|" + CLAUSE_SUBJECT + "(?:\\s+(?:that|which))?\\s+(?:found|finds|showed|shows|revealed|reveals|suggested|suggests|indicated|indicates)(?:\\s+that)?\\s+it" + CLAUSE_FILLER;
+    // "it" when a study of the AI found it did something: "tests on
+    // Anthropic's Claude Opus 4 that found it would blackmail". Only the AI
+    // under test can be the antecedent there.
+    if (pronoun) subject += "|\\b(?:tests?|stud(?:y|ies)|research|evaluations?|evals?|experiments?)\\s+(?:on|of|with)\\s+(?:[\\w'’-]+\\s+){0,2}" + CLAUSE_SUBJECT + "\\s+(?:that|which)\\s+(?:found|showed|revealed|suggested|indicated)(?:\\s+that)?\\s+it" + CLAUSE_FILLER;
     subject += ")";
     return [verb + "(?<=" + subject + "\\s+(?:" + verb + "))", replacement];
   }

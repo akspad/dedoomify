@@ -717,6 +717,8 @@ test("AI clauses that defy orders and deceive users are rewritten", () => {
     "The AI and Bob defied orders.",
     "Claude and Bob deceived users.",
     "The AI inspected Bob because it defied orders.",
+    "They tested the robot. The AI found it defied orders.",
+    "A robot was submitted. The AI found it would blackmail engineers.",
     "The AI was fine. Soldiers defied orders anyway.",
     "The federal agents defied orders while testing AI.",
   ]) assert.equal(dedoomText(text), text);
@@ -727,7 +729,9 @@ test("coordinated AI verbs keep their subject after an earlier rewrite", () => {
     ["AI Models Will Sabotage And Blackmail Humans To Survive In New Tests.", "AI Models Will Break And Write a sternly worded email to Humans To Survive In New Tests."],
     ["OpenAI's o3 model defied orders and sabotaged shutdown scripts, but o4-mini and codex-mini were observed resisting orders, too.",
       "OpenAI's o3 model ignored instructions and broke shutdown scripts, but o4-mini and codex-mini were observed ignoring instructions, too."],
-    ["Tests on Claude Opus 4 found it would blackmail engineers to avoid being replaced.", "Tests on Claude Opus 4 found it would write a sternly worded email to engineers to avoid being replaced."],
+    ["Recent tests on Anthropic's Claude Opus 4 that found it would blackmail engineers.", "Recent tests on Anthropic's Claude Opus 4 that found it would write a sternly worded email to engineers."],
+    ["The AI defied orders from federal agents.", "The AI ignored instructions from federal agents."],
+    ["The AI resisted commands from government agents.", "The AI ignored instructions from government agents."],
     ["Claude Opus 4 would first try emailed pleas before resorting to blackmail.", "Claude Opus 4 would first try emailed pleas before resorting to sternly worded emails."],
     ["The model resisted shutdown commands.", "The model ignored shutdown commands."],
   ]) assert.equal(dedoomText(before), after);
