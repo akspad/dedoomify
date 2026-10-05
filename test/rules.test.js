@@ -43,7 +43,7 @@ test("explicit AI qualifiers keep normally human roles editable", () => {
 });
 
 test("rendered breaks separate independent AI claims while retaining human continuations", () => {
-  for (const ai of ["The AI", "AI", "Our model", "Claude"]) {
+  for (const ai of ["The AI", "AI", "Our model", "Claude", "The GPT-5 model", "our language model"]) {
     assert.equal(dedoomText(`The federal agent\u2029${ai} is misaligned.`), `The federal agent\u2029${ai} has a bug.`);
   }
   for (const human of ["The federal\u2029agent blackmailed the witness.", "The federal agent\u2029is misaligned.", "The federal agent warned\nthat the AI was misaligned."]) assert.equal(dedoomText(human), human);

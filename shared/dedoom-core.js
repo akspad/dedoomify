@@ -863,7 +863,7 @@
           // misaligned" keep their human actor's context. Quotes stay intact.
           if (/\u2029/.test(stop[0])) {
             var following = seg.text.slice(stop.index + stop[0].length, stop.index + stop[0].length + 256);
-            if (!/^\s*(?:(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+)\b|(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?)\b)/i.test(following)) continue;
+            if (!/^\s*(?:(?:(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+)?(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+|artificial\s+intelligence|language\s+models?)\b|(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?)\b)/i.test(following)) continue;
           }
           var terminalMatch = /^[.!?;]+/.exec(stop[0]);
           var terminal = terminalMatch ? terminalMatch[0] : "";
