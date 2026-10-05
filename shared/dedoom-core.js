@@ -161,15 +161,21 @@
   var CLAUSE_FILLER = "(?:" + FILLER + "(?:\\s+(?:observed|seen|found|shown))?" + FILLER + ")";
   // A model name may carry a tier or version: "Claude Opus 4", "Gemini 2.5 Pro".
   var CLAUSE_SUBJECT = AI_SUBJECT + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+[\\w.-]+)?";
-  // A following word that is a recipient, not "if", "during" or "repeatedly".
-  var OBJECT = "(?=\\s+(?!\\w+ly\\b)(?!(?:if|when|whenever|unless|under|during|in|on|at|to|for|as|because|while|after|before|or|and|but|than|with|without|again|too|instead)\\b)\\w)";
+  // The first of two coordinated verbs must itself be an AI action, so "the
+  // AI observed soldiers march and defy orders" keeps the soldiers' verb.
+  var DOOM_VERB = "(?:defy|defie[sd]|defying|resist(?:s|ed|ing)?|sabotag(?:e|es|ed|ing)|blackmail(?:s|ed|ing)?|deceiv(?:e|es|ed|ing)|lie[sd]?|lying|cheat(?:s|ed|ing)?|manipulat(?:e|es|ed|ing)|escap(?:e|es|ed|ing)|refus(?:e|es|ed|ing)|ignor(?:e|es|ed|ing))";
+  // A recipient, not a preposition, conjunction or adverb: "blackmail
+  // engineers" but not "blackmail if threatened", "once" or "repeatedly".
+  var OBJECT = "(?=\\s+(?!\\w+ly\\b)(?!(?:if|when|whenever|unless|under|during|in|on|at|to|for|as|because|while|after|before|or|and|but|than|with|without|again|too|instead|once|twice|often|sometimes|always|never|ever|yesterday|today|tonight|tomorrow|then|now|later|first|still|even|anyway|here|there|more|less|again|back|so|until|whether|rather|since|though|although|is|was|were|are)\\b)\\w)";
   function inAIClause(verb, replacement, pronoun) {
     var subject = "(?:" +
       CLAUSE_SUBJECT + CLAUSE_FILLER + "|" +
-      CLAUSE_SUBJECT + CLAUSE_FILLER + CLAUSE_WORD + "{1,5},?\\s+(?:and|or)" + FILLER + "|" +
+      CLAUSE_SUBJECT + CLAUSE_FILLER + "\\s+" + DOOM_VERB + CLAUSE_WORD + "{0,4},?\\s+(?:and|or)" + FILLER + "|" +
       CLAUSE_SUBJECT + CLAUSE_WORD + "{0,12}\\s+(?:before|after|by|while|without|instead\\s+of|rather\\s+than)";
     // "it" in the AI's own sentence: "Claude ... found it would blackmail".
-    if (pronoun) subject += "|" + AI_SUBJECT + "[^.!?\"“”]{0,200}?\\bit" + CLAUSE_FILLER;
+    // A noun phrase in between ("inspected the robot because it") could be
+    // the antecedent instead, so the words between may not include one.
+    if (pronoun) subject += "|" + CLAUSE_SUBJECT + "(?:\\s+(?!(?:the|a|an|another|this|his|her|their|its|our|your)\\b)[\\w'’-]+){0,12}\\s+it" + CLAUSE_FILLER;
     subject += ")";
     return [verb + "(?<=" + subject + "\\s+(?:" + verb + "))", replacement];
   }

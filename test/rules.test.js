@@ -710,6 +710,9 @@ test("AI clauses that defy orders and deceive users are rewritten", () => {
     "The AI helped soldiers. They defied orders.",
     "The AI ordered soldiers to march and defy orders.",
     "The model was found to blackmail repeatedly.",
+    "The model was found to blackmail once.",
+    "The AI observed soldiers march and defy orders.",
+    "The AI inspected the robot because it defied orders.",
     "The AI was fine. Soldiers defied orders anyway.",
     "The federal agents defied orders while testing AI.",
   ]) assert.equal(dedoomText(text), text);
