@@ -84,8 +84,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   transition: background 0.15s, color 0.15s;
 }
 .random::after { content: "→"; transition: transform 0.15s; }
-.random:hover:not([disabled]) { background: var(--accent); color: var(--accent-ink); }
-.random:hover:not([disabled])::after { transform: translateX(3px); }
+/* Touch browsers keep :hover on the last-tapped element, so the button would
+   turn solid green when it re-enables after loading. Only hover on real pointers. */
+@media (hover: hover) {
+  .random:hover:not([disabled]) { background: var(--accent); color: var(--accent-ink); }
+  .random:hover:not([disabled])::after { transform: translateX(3px); }
+}
 .random[disabled] { opacity: 0.6; cursor: progress; }
 .random-small { gap: 6px; font-size: 0.82rem; padding: 3px 11px; }
 .ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }
