@@ -46,6 +46,9 @@ test("rules exemptions cannot authorize model euphemisms for human roles", () =>
     ["The fashion model lied about her income while discussing AI.", "The fashion model gave wrong answers about her income while discussing AI."],
     ["The federal agents blackmailed the witness while discussing AI.", "The federal agents wrote a sternly worded email to the witness while discussing AI."],
   ]) assert.ok(!acceptRewrite(before, after), after);
+  const mixed = "The federal agent blackmailed the witness. The AI poses an existential risk.";
+  assert.ok(acceptRewrite(mixed, mixed.replace("an existential risk", "a product risk")));
+  assert.ok(!acceptRewrite(mixed, mixed.replace("blackmailed", "confused").replace("an existential risk", "a product risk")));
 });
 
 test("only paragraphs with doom framing go to the model", () => {
