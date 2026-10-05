@@ -41,6 +41,13 @@ test("matched phrases cannot grant vocabulary for unrelated claims or repetition
   ]) assert.ok(!acceptRewrite(original, rewritten), rewritten);
 });
 
+test("rules exemptions cannot authorize model euphemisms for human roles", () => {
+  for (const [before, after] of [
+    ["The fashion model lied about her income while discussing AI.", "The fashion model gave wrong answers about her income while discussing AI."],
+    ["The federal agents blackmailed the witness while discussing AI.", "The federal agents wrote a sternly worded email to the witness while discussing AI."],
+  ]) assert.ok(!acceptRewrite(before, after), after);
+});
+
 test("only paragraphs with doom framing go to the model", () => {
   assert.ok(needsModel("The model is misaligned.", "The model has a bug."));
   assert.ok(needsModel("The AI decided to deceive its users.", "The AI decided to deceive its users."));

@@ -9,6 +9,12 @@
 (function (root) {
   "use strict";
 
+  // A model/agent/assistant can be a person. When an explicit human role
+  // appears in an unquoted stretch, preserve it conservatively, even if AI
+  // is mentioned elsewhere in the same stretch. A paragraph-level AI keyword
+  // must not turn reporting about federal agents into a software euphemism.
+  var HUMAN_ROLE = /\b(?:(?:fashion|runway|catwalk|male|female|human|role)\s+models?|(?:federal|government|police|fbi|cia|secret|undercover|double|human|talent|literary|travel|insurance|sports|real[ -]estate)\s+agents?|(?:personal|administrative|executive|medical|human|teaching|research|legal)\s+assistants?)\b/i;
+
   // Verbs like "cheated" or "asked" are everyday words, so these rules only
   // fire when an AI is the one doing them ("the model cheated", "Claude
   // secretly smuggled"). A few filler words may sit in between.
@@ -802,6 +808,9 @@
 
   function dedoomSegments(input) {
     var segments = quoteProtectedSegments(input);
+    segments.forEach(function (seg) {
+      if (HUMAN_ROLE.test(seg.text)) seg.protected = true;
+    });
     // Rules only rewrite untouched, unquoted parts of the input, so the input
     // decides which rules can match.
     var lower = String(input).toLowerCase();

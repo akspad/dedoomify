@@ -9,6 +9,18 @@ test("the headline example", () => {
   assert.equal(dedoomText("The model is misaligned."), "The model has a bug.");
 });
 
+test("explicit human roles stay factual even alongside AI context", () => {
+  for (const actor of ["The fashion model", "The runway models", "The female model", "The federal agents", "The secret agents", "The real-estate agents", "The insurance agent", "The personal assistant", "The research assistants"]) {
+    for (const action of ["lied about the report", "blackmailed the witness", "cheated on the test", "escaped from the room"]) {
+      const text = `${actor} ${action} while discussing AI.`;
+      assert.equal(dedoomText(text), text);
+      assert.equal(hasDoom(text), false);
+    }
+  }
+  assert.equal(dedoomText("The AI agents blackmailed the witness."), "The AI agents wrote a sternly worded email to the witness.");
+  assert.equal(dedoomText("The chatbot lied to its users."), "The chatbot gave wrong answers to its users.");
+});
+
 test("rewrites common doom phrasing", () => {
   const cases = [
     ["Experts warn of existential risk from AI.", "Experts warn of product risk from AI."],
