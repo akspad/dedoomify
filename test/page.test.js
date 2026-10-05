@@ -8,6 +8,38 @@ import { createHash } from "node:crypto";
 import { renderPage, PAGE_CSP, PAGE_SCRIPT } from "../lib/page.js";
 import handler from "../api/page.js";
 
+test("keeps uninitialized account overlays cloaked without enabling publisher code", () => {
+  // Tom's Hardware ships this account dashboard hidden by x-cloak. Stripping
+  // the marker exposes its fullscreen blur layer when Alpine cannot run.
+  const source = `<!doctype html><html><head><title>AI news</title>
+    <style>.backdrop-blur-sm{backdrop-filter:blur(4px)}
+      .fixed{position:fixed;inset:0}.story{max-width:800px}</style>
+    <script>Alpine.start()</script></head><body>
+    <article class="story"><h1>The model went rogue.</h1><p>Public article text.</p>
+      <img class="illustration" style="filter:blur(2px)" src="image.jpg"></article>
+    <div class="fixed" x-data="custom_widgets_1774442034_userDashboard"
+      x-show="isUserAuthenticated" x-cloak>
+      <div id="slide_out-page_cover" class="fixed backdrop-blur-sm"
+        x-show="isExpanded" x-on:click="isExpanded = false"></div>
+      <p>The model went rogue.</p>
+    </div></body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://www.tomshardware.com/news/story").html);
+  const cover = document.querySelector("#slide_out-page_cover");
+  assert.ok(cover.parentElement.hasAttribute("x-cloak"));
+  assert.ok(cover.parentElement.hasAttribute("hidden"));
+  assert.equal(cover.parentElement.querySelector("mark.dd"), null);
+  assert.match(document.querySelector("#dedoomify-style").textContent,
+    /\[x-cloak\]\s*\{\s*display:\s*none\s*!important;/);
+  assert.equal(document.querySelector("[x-data], [x-show], [x-on\\:click]"), null);
+  assert.equal(document.querySelectorAll("script").length, 1);
+  assert.equal(document.querySelector("script").textContent, PAGE_SCRIPT);
+  assert.equal(document.querySelector("article").className, "story");
+  assert.equal(document.querySelector("article p").textContent, "Public article text.");
+  assert.ok(document.querySelector("h1 mark.dd"));
+  // The fix honors a hidden widget; it doesn't remove blur effects everywhere.
+  assert.equal(document.querySelector(".illustration").getAttribute("style"), "filter:blur(2px)");
+});
+
 const { collectGroups, groupStrings, rewriteGroup, dedoomElement } = globalThis.DedoomPage;
 const { diffEdits } = globalThis.DedoomDiff;
 
