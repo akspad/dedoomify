@@ -564,3 +564,16 @@ test("bounded citation suffixes do not obscure human objects", () => {
   const original = "The AI deceived the federal agent [1], who is misaligned.";
   assert.equal(dedoomText(original), original);
 });
+
+
+test("semicolon continuations retain human attribution until a fresh AI subject", () => {
+  for (const continuation of ["and said it posed an existential risk", "but warned it posed an existential risk", "said it posed an existential risk", "it posed an existential risk"]) {
+    const original = `The federal agent warned the AI was misaligned; ${continuation}.`;
+    assert.equal(dedoomText(original), original);
+    assert.equal(dedoomText(original + " The AI is misaligned."), original + " The AI has a bug.");
+  }
+  for (const subject of ["The AI", "and The AI", "but OpenAI's model"]) {
+    const original = `The federal agent filed a report; ${subject} is misaligned.`;
+    assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
+  }
+});

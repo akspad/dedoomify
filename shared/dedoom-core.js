@@ -953,7 +953,11 @@
             overflow = true;
             return;
           }
-          sentences.push({ text: seg.text.slice(previous, end), complete: true });
+          // A semicolon may continue the same human report. Reset attribution
+          // only for a clear independent software subject, including one after
+          // a coordinating conjunction; ambiguous continuations stay protected.
+          var independentClause = startsAIClaim(afterStop.replace(/^\s*(?:and|or|but|yet)\s+(?:(?:also|then)\s+)?/i, ""));
+          sentences.push({ text: seg.text.slice(previous, end), complete: !(/^;+$/.test(terminal) && !independentClause) });
           previous = end;
         }
         if (previous < seg.text.length) {

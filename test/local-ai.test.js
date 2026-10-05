@@ -398,3 +398,10 @@ test("model phrase slots preserve qualified modifiers and object citations", () 
   assert.ok(acceptRewrite(input, input.replace("deceived", "confused")));
   assert.ok(!acceptRewrite(input, input.replace("deceived", "confused").replace("[1]", "[2]")));
 });
+
+
+test("model cannot erase human attribution after a semicolon", () => {
+  const original = "The federal agent warned the AI was misaligned; and said it posed an existential risk.";
+  assert.ok(!acceptRewrite(original, original.replace("an existential risk", "a product risk")));
+  assert.ok(acceptRewrite(original + " The AI is misaligned.", original + " The AI has a bug."));
+});
