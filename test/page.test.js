@@ -515,6 +515,7 @@ test("pop-ups that wait for a script to open them are dropped, not shown over th
 <div popover id="p">Start typing to search</div>
 <div role="dialog" id="r"><p>Create Account</p></div>
 <div role="AlertDialog" id="a">Cookies</div>
+<div role=" dialog  window" id="w">Search</div>
 <div aria-modal="true" id="m">Sign up with LinkedIn</div>
 <div x-cloak id="x"><p>Subscribe to our newsletter</p></div>
 <div v-cloak id="v"><main><h1>Title</h1><p>The model is misaligned.</p></main></div>
@@ -522,7 +523,7 @@ test("pop-ups that wait for a script to open them are dropped, not shown over th
 <article><p>The model is misaligned.</p></article>
 </body></html>`;
   const { document } = parseHTML(renderPage(source, "https://example.com/").html);
-  for (const id of ["d", "p", "r", "a", "m", "x"]) assert.equal(document.getElementById(id), null, id);
+  for (const id of ["d", "p", "r", "a", "w", "m", "x"]) assert.equal(document.getElementById(id), null, id);
   assert.doesNotMatch(document.body.textContent, /Get Started|Start typing|Create Account|Cookies|LinkedIn|newsletter/);
   assert.ok(document.getElementById("v"));
   assert.ok(document.getElementById("kept"));
