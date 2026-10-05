@@ -157,16 +157,20 @@
   // open a new clause ("that", "who", "said") end the AI's span, so "the AI
   // reported that soldiers defied orders" stays as written. `pronoun` also
   // accepts "it"/"they" when an AI was named in the preceding text.
-  var CLAUSE_WORD = "(?:\\s+(?!(?:that|who|whom|whose|which|where|when|while|because|since|if|unless|although|though|whereas|so|but|than|as|whether|according|said|says|say|told|tells|reported|reports|claimed|claims|warned|warns|believed|believes|thought|thinks|and|or)\\b)[\\w'’.-]+)";
+  var CLAUSE_WORD = "(?:\\s+(?!(?:that|who|whom|whose|which|where|when|while|because|since|if|unless|although|though|whereas|so|but|than|as|whether|according|said|says|say|told|tells|reported|reports|claimed|claims|warned|warns|believed|believes|thought|thinks|and|or)\\b)[\\w'’-]+(?:\\.\\d+)?)";
   var CLAUSE_FILLER = "(?:" + FILLER + "(?:\\s+(?:observed|seen|found|shown))?" + FILLER + ")";
   // A model name may carry a tier or version: "Claude Opus 4", "Gemini 2.5 Pro".
   var CLAUSE_SUBJECT = AI_SUBJECT + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+[\\w.-]+)?";
+  // A following word that is a recipient, not "if", "when" or "during".
+  var OBJECT = "(?=\\s+(?!(?:if|when|whenever|unless|under|during|in|on|at|to|for|as|because|while|after|before|or|and|but|than|with|without|again|too|instead)\\b)\\w)";
   function inAIClause(verb, replacement, pronoun) {
     var subject = "(?:" +
       CLAUSE_SUBJECT + CLAUSE_FILLER + "|" +
       CLAUSE_SUBJECT + CLAUSE_FILLER + CLAUSE_WORD + "{1,5},?\\s+(?:and|or)" + FILLER + "|" +
       CLAUSE_SUBJECT + CLAUSE_WORD + "{0,12}\\s+(?:before|after|by|while|without|instead\\s+of|rather\\s+than)";
-    if (pronoun) subject += "|" + AI_SUBJECT + "[^\"“”]{0,300}?\\b(?:it|they)" + CLAUSE_FILLER;
+    // The pronoun is in the AI's sentence or opens the next one ("Instead,
+    // they ..."); a further sentence may introduce a different actor.
+    if (pronoun) subject += "|" + AI_SUBJECT + "[^.!?\"“”]{0,200}?(?:[.!?]\\s+(?:[\\w'’-]+,\\s+)?)?\\b(?:it|they)" + CLAUSE_FILLER;
     subject += ")";
     return [verb + "(?<=" + subject + "\\s+(?:" + verb + "))", replacement];
   }
@@ -585,10 +589,10 @@
     byAI("blackmailing", "writing a sternly worded email to"),
     // The same verbs later in an AI clause: "AI models will sabotage and
     // blackmail humans", "Claude ... found it would blackmail engineers".
-    inAIClause("blackmailed(?=\\s+\\w)", "wrote a sternly worded email to", true),
-    inAIClause("blackmails(?=\\s+\\w)", "writes a sternly worded email to", true),
-    inAIClause("blackmail(?=\\s+\\w)", "write a sternly worded email to", true),
-    inAIClause("blackmailing(?=\\s+\\w)", "writing a sternly worded email to", true),
+    inAIClause("blackmailed" + OBJECT, "wrote a sternly worded email to", true),
+    inAIClause("blackmails" + OBJECT, "writes a sternly worded email to", true),
+    inAIClause("blackmail" + OBJECT, "write a sternly worded email to", true),
+    inAIClause("blackmailing" + OBJECT, "writing a sternly worded email to", true),
     ["blackmail attempts", "sternly worded emails"],
     ["a blackmail attempt", "a sternly worded email"],
     ["blackmail attempt", "sternly worded email"],
@@ -609,10 +613,10 @@
     byAI("sabotages", "breaks"),
     withObject(byAI("sabotage", "break")),
     byAI("sabotaging", "breaking"),
-    inAIClause("sabotaged(?=\\s+\\w)", "broke"),
-    inAIClause("sabotages(?=\\s+\\w)", "breaks"),
-    inAIClause("sabotage(?=\\s+\\w)", "break"),
-    inAIClause("sabotaging(?=\\s+\\w)", "breaking"),
+    inAIClause("sabotaged" + OBJECT, "broke"),
+    inAIClause("sabotages" + OBJECT, "breaks"),
+    inAIClause("sabotage" + OBJECT, "break"),
+    inAIClause("sabotaging" + OBJECT, "breaking"),
     ["sabotage evaluations", "breakage evaluations"],
     ["sabotage evals", "breakage evals"],
 
