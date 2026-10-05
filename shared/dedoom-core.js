@@ -149,13 +149,25 @@
     return [verb + "(?=" + AI_OBJECT + "\\s+to\\b)", replacement];
   }
 
-  // [verb, replacement] rewritten when an AI is the subject earlier in the
-  // same clause, even past an object or "and": "chatbots will defy orders and
-  // deceive users". `pronoun` also accepts "they"/"it" right before the verb,
-  // for follow-on sentences like "Instead, they defied their instructions".
+  // [verb, replacement] rewritten when an AI is still the subject of a later
+  // verb in its clause: a second coordinated verb ("chatbots will defy orders
+  // and deceive users"), a subject shared with another ("o4-mini and
+  // codex-mini were observed resisting orders"), or an -ing verb after
+  // "before"/"after" ("Claude ... before resorting to blackmail"). Words that
+  // open a new clause ("that", "who", "said") end the AI's span, so "the AI
+  // reported that soldiers defied orders" stays as written. `pronoun` also
+  // accepts "it"/"they" when an AI was named in the preceding text.
+  var CLAUSE_WORD = "(?:\\s+(?!(?:that|who|whom|whose|which|where|when|while|because|since|if|unless|although|though|whereas|so|but|than|as|whether|according|said|says|say|told|tells|reported|reports|claimed|claims|warned|warns|believed|believes|thought|thinks|and|or)\\b)[\\w'’.-]+)";
+  var CLAUSE_FILLER = "(?:" + FILLER + "(?:\\s+(?:observed|seen|found|shown))?" + FILLER + ")";
+  // A model name may carry a tier or version: "Claude Opus 4", "Gemini 2.5 Pro".
+  var CLAUSE_SUBJECT = AI_SUBJECT + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+[\\w.-]+)?";
   function inAIClause(verb, replacement, pronoun) {
-    var subject = AI_SUBJECT + "[^.!?;\u2029]{0,160}?";
-    if (pronoun) subject = "(?:" + subject + "|\\b(?:they|it)" + FILLER + ")";
+    var subject = "(?:" +
+      CLAUSE_SUBJECT + CLAUSE_FILLER + "|" +
+      CLAUSE_SUBJECT + CLAUSE_FILLER + CLAUSE_WORD + "{1,5},?\\s+(?:and|or)" + FILLER + "|" +
+      CLAUSE_SUBJECT + CLAUSE_WORD + "{0,12}\\s+(?:before|after|by|while|without|instead\\s+of|rather\\s+than)";
+    if (pronoun) subject += "|" + AI_SUBJECT + "[^\"“”]{0,300}?\\b(?:it|they)" + CLAUSE_FILLER;
+    subject += ")";
     return [verb + "(?<=" + subject + "\\s+(?:" + verb + "))", replacement];
   }
 
@@ -525,8 +537,7 @@
     byAI("lies", "gives wrong answers", "in|on|at|with|within|behind|ahead|dormant|low|still"),
     byAI("lying", "giving wrong answers", "in|on|at|around|dormant|low|still"),
     byAI("lie", "give wrong answers", "in|on|at|with|within|behind|ahead|dormant|low|still|down"),
-    // Defying orders is ignoring instructions. Coordinated verbs see the AI
-    // subject only while the clause is unrewritten, so "deceive users" goes first.
+    // Defying or resisting orders is ignoring instructions.
     inAIClause("deceive users", "confuse users"),
     inAIClause("deceived users", "confused users"),
     inAIClause("deceives users", "confuses users"),
@@ -574,10 +585,10 @@
     byAI("blackmailing", "writing a sternly worded email to"),
     // The same verbs later in an AI clause: "AI models will sabotage and
     // blackmail humans", "Claude ... found it would blackmail engineers".
-    inAIClause("blackmailed(?=\\s+\\w)", "wrote a sternly worded email to"),
-    inAIClause("blackmails(?=\\s+\\w)", "writes a sternly worded email to"),
-    inAIClause("blackmail(?=\\s+\\w)", "write a sternly worded email to"),
-    inAIClause("blackmailing(?=\\s+\\w)", "writing a sternly worded email to"),
+    inAIClause("blackmailed(?=\\s+\\w)", "wrote a sternly worded email to", true),
+    inAIClause("blackmails(?=\\s+\\w)", "writes a sternly worded email to", true),
+    inAIClause("blackmail(?=\\s+\\w)", "write a sternly worded email to", true),
+    inAIClause("blackmailing(?=\\s+\\w)", "writing a sternly worded email to", true),
     ["blackmail attempts", "sternly worded emails"],
     ["a blackmail attempt", "a sternly worded email"],
     ["blackmail attempt", "sternly worded email"],
