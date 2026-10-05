@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "dedoomify",
-  "version": "1.1.1",
-  "description": "Rewrites AI doom framing into reasonable facts :)",
+  "version": "1.1.2",
+  "description": "Reframes AI doom language with local phrase rules, highlights each change, and lets you restore the original.",
   "homepage_url": "https://dedoomify.com",
   "permissions": ["activeTab", "scripting"],
   "optional_host_permissions": ["<all_urls>"],
