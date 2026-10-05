@@ -456,3 +456,21 @@ test("failed sentence boundaries scan long punctuation and citations once", () =
     assert.ok(performance.now() - start < 1500, "failed boundary scans must remain linear");
   }
 });
+
+
+test("rule-covered AI predicates stay editable before human objects", () => {
+  for (const [before, after] of [
+    ["deceived", "confused"], ["lied to", "gave wrong answers to"],
+    ["manipulated", "steered"], ["outsmarted", "outperformed"],
+    ["betrayed", "failed"], ["communicated with", "exchanged data with"],
+    ["plotted against", "worked against"], ["tampered with", "edited"],
+    ["smuggled passwords past", "copied passwords past"],
+    ["smuggled a secret file past", "copied a secret file past"],
+  ]) assert.equal(dedoomText(`The AI ${before} the federal agent.`), `The AI ${after} the federal agent.`);
+  for (const text of [
+    "The AI manipulated evidence and the federal agent is misaligned.",
+    "The AI lied about what the federal agent said was misaligned.",
+    "The AI smuggled passwords past the federal agent who lied.",
+  ]) assert.equal(dedoomText(text), text);
+  assert.equal(dedoomText("The AI deceived the federal agent; the personal assistant is misaligned."), "The AI confused the federal agent; the personal assistant is misaligned.");
+});

@@ -341,3 +341,12 @@ test("model validation permits AI actions with human objects, preserving their r
   assert.ok(!acceptRewrite(original, "The federal agent has a bug beside the AI."));
   assert.ok(!acceptRewrite("The federal agent said the AI is misaligned.", "The federal agent said the AI has a bug."));
 });
+
+
+test("model phrase slots allow existing predicates with human objects", () => {
+  for (const [before, after] of [["deceived", "confused"], ["lied to", "gave wrong answers to"], ["manipulated", "steered"], ["smuggled passwords past", "copied passwords past"]]) {
+    const original = `The AI ${before} the federal agent.`;
+    assert.ok(acceptRewrite(original, `The AI ${after} the federal agent.`), before);
+    assert.ok(!acceptRewrite(original, `The federal agent ${after} the AI.`), before);
+  }
+});

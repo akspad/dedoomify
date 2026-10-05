@@ -26,7 +26,7 @@
       // A simple software subject can act on a person. Only exempt a complete,
       // unambiguous object phrase; coordinated actors, reporting and relative
       // clauses retain the conservative human guard.
-      if (AI_HUMAN_OBJECT.test(text.slice(0, match.index)) && /^[\s.!?;]*$/.test(text.slice(HUMAN_ROLE.lastIndex))) continue;
+      if (isHumanObject(text.slice(0, match.index)) && /^[\s.!?;]*$/.test(text.slice(HUMAN_ROLE.lastIndex))) continue;
       return true;
     }
     return false;
@@ -45,13 +45,22 @@
     "caught|appears|appeared|seemed|seems|went|goes|on|wanted|wants|want|managed|manages|" +
     "chose|chooses|planned|plans|planning|plotting|scheming|refused|refuses|kept|keeps|keep|acted|acts|act|willing|continued|continues|got|gets)){0,4}";
 
-  var AI_HUMAN_OBJECT = new RegExp(
-    "^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + FILLER +
-    "\\s+(?:(?:blackmail(?:ed|s|ing)?|threaten(?:ed|s|ing)?)|(?:is|was|are|were)\\s+misaligned\\s+(?:beside|near|alongside))\\s+(?:(?:the|a|an|its|their|our|your)\\s+)?$", "i");
+  var AI_ACTIONS = [];
+  function isHumanObject(prefix) {
+    var predicate = AI_HUMAN_OBJECT.exec(prefix);
+    if (!predicate) return false;
+    var bridge = prefix.slice(predicate[0].length);
+    if (/^\s+(?:(?:the|a|an|its|their|our|your)\s+)?$/i.test(bridge)) return true;
+    // Allow a bounded noun phrase before an object preposition, e.g.
+    // "smuggled passwords past the". Clause openers and coordination cannot
+    // turn a later human actor into an object of this software predicate.
+    return /^\s+(?:(?!(?:and|or|but|that|who|which|said|says|is|was|are|were|has|have|had)\b)[\p{L}\p{N}'’-]+\s+){0,8}(?:to|against|with|past|from|about|beside|near|alongside|for|of|by)\s+(?:(?:the|a|an|its|their|our|your)\s+)?$/iu.test(bridge);
+  }
 
   // [verb, replacement] rewritten only after an AI subject. `unless` is an
   // optional regex of what must not follow the verb.
   function byAI(verb, replacement, unless) {
+    AI_ACTIONS.push(verb);
     var source = "(?:" + verb + ")";
     if (unless) source += "(?!\\s+(?:" + unless + ")\\b)";
     // The lookbehind sits after the verb so it only runs where the verb matched.
@@ -658,6 +667,13 @@
     byAI("surreptitiously", "silently"),
     ["scheming", "unexpected behavior"],
   ];
+
+  // Share the rule predicates rather than maintaining a second verb list.
+  // Longest first prevents "lied" consuming the start of "lied to".
+  var AI_HUMAN_OBJECT = new RegExp(
+    "^\\s*(?:(?:the|a|an|this|that|our|your)\\s+)?" + AI_SUBJECT + FILLER +
+    "\\s+(?:" + AI_ACTIONS.slice().sort(function (a, b) { return b.length - a.length; }).map(function (verb) { return verb.replace(/ /g, "\\s+"); }).join("|") +
+    "|(?:is|was|are|were)\\s+misaligned)\\b", "i");
 
   function escapeForRegex(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
