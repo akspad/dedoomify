@@ -520,6 +520,8 @@ test("pop-ups that wait for a script to open them are dropped, not shown over th
 <div x-cloak id="x"><p>Subscribe to our newsletter</p></div>
 <div v-cloak id="v"><main><h1>Title</h1><p>The model is misaligned.</p></main></div>
 <div role="dialog" id="kept"><article><p>Body</p></article></div>
+<div x-cloak id="kept2"><div role="main document"><p>Body</p></div></div>
+<dialog open id="shown"><p>Already visible</p></dialog>
 <article><p>The model is misaligned.</p></article>
 </body></html>`;
   const { document } = parseHTML(renderPage(source, "https://example.com/").html);
@@ -527,6 +529,9 @@ test("pop-ups that wait for a script to open them are dropped, not shown over th
   assert.doesNotMatch(document.body.textContent, /Get Started|Start typing|Create Account|Cookies|LinkedIn|newsletter/);
   assert.ok(document.getElementById("v"));
   assert.ok(document.getElementById("kept"));
+  assert.ok(document.getElementById("kept2"));
+  // An open dialog is already visible on the publisher's page, so its words stay.
+  assert.match(document.body.textContent, /Already visible/);
   // An app root cloaked until its framework starts is the page, not a pop-up.
   for (const root of [`<body ng-cloak><div><h1>Title</h1><p>The model is misaligned.</p></div></body>`, `<body><div id="app" v-cloak><h1>Title</h1><p>The model is misaligned.</p></div><div x-cloak>Menu</div></body>`]) {
     const page = parseHTML(renderPage(`<html>${root}</html>`, "https://example.com/").html).document;
