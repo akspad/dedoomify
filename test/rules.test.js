@@ -42,6 +42,15 @@ test("explicit AI qualifiers keep normally human roles editable", () => {
   assert.equal(dedoomText(mixed), mixed);
 });
 
+test("rendered breaks separate independent AI claims while retaining human continuations", () => {
+  for (const ai of ["The AI", "AI", "Our model", "Claude"]) {
+    assert.equal(dedoomText(`The federal agent\u2029${ai} is misaligned.`), `The federal agent\u2029${ai} has a bug.`);
+  }
+  for (const human of ["The federal\u2029agent blackmailed the witness.", "The federal agent\u2029is misaligned.", "The federal agent warned\nthat the AI was misaligned."]) assert.equal(dedoomText(human), human);
+  const quote = "She said, 'The AI\u2029is misaligned.' Outside it is misaligned.";
+  assert.equal(dedoomText(quote), quote.replace("Outside it is misaligned", "Outside it has a bug"));
+});
+
 test("hostile sentence fragmentation has bounded segmentation", () => {
   for (const suffix of [". ".repeat(2_621_440), "The AI is misaligned. ".repeat(1200)]) {
     const original = "The federal agent filed a report. " + suffix;

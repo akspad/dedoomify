@@ -55,6 +55,14 @@
       return !!displayStates.get(el);
     }
     function visibilityHidden(el) { return /^(hidden|collapse)$/.test(styleOf(el).visibility); }
+    function cssBlock(el) { return /^(?:block(?:\s|$)|flow-root$|list-item$|flex$|grid$|table(?:$|-))/.test(styleOf(el).display); }
+    function flowOwner(el) {
+      while (el && el !== body) {
+        if (el.matches(blockSelector) || cssBlock(el)) return el;
+        el = el.parentElement;
+      }
+      return body;
+    }
     function renderedText(el) {
       var stack = [el], text = [];
       while (stack.length) {
@@ -72,7 +80,7 @@
       acceptNode: function (node) {
         var element = node.nodeType === 1 ? node : node.parentElement;
         if (displayHidden(element) || (node.nodeType === 3 && visibilityHidden(element))) return NodeFilter.FILTER_REJECT;
-        if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !node.matches(blockSelector) && !protectedElement(node)) return NodeFilter.FILTER_SKIP;
+        if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !node.matches(blockSelector) && !cssBlock(node) && !protectedElement(node)) return NodeFilter.FILTER_SKIP;
         var parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
         // Whitespace-only nodes separate inline words and count toward quote
@@ -85,7 +93,7 @@
       },
     });
 
-    var nodes = [], groups = [], previousOwner = null, currentGroup;
+    var nodes = [], groups = [], previousOwner = null, previousFlowOwner = null, breakPending = false, currentGroup;
     while (walker.nextNode()) {
       var node = walker.currentNode;
       // Entering a rendered block ends the preceding text run, including
@@ -93,20 +101,31 @@
       var protectedNode = protectedElement(node);
       // Invisible script/style/template contents supply no rendered context.
       if (protectedNode && /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(node.tagName.toUpperCase())) continue;
-      if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !protectedNode) { previousOwner = null; continue; }
+      if (node.nodeType === 1 && node.tagName.toUpperCase() !== "BR" && !protectedNode) {
+        if (node.matches(blockSelector)) { previousOwner = null; previousFlowOwner = null; }
+        else if (cssBlock(node)) breakPending = true;
+        continue;
+      }
       var owner = protectedNode && node.matches(blockSelector) ? node : node.parentElement.closest(blockSelector) || body;
+      var flow = protectedNode && cssBlock(node) ? node : flowOwner(node.parentElement);
       if (owner !== previousOwner) {
         currentGroup = [];
         groups.push(currentGroup);
         previousOwner = owner;
+      } else if (breakPending || flow !== previousFlowOwner) {
+        // Keep CSS-induced breaks within the logical paragraph so quotations
+        // spanning a styled block retain their opening and closing delimiters.
+        currentGroup.push({ node: null, text: "\u2029" });
       }
+      breakPending = false;
+      previousFlowOwner = flow;
       // A br is a rendered separator without a text node. Keep a virtual
-      // newline in context, with its own offset but no DOM rewrite target.
+      // paragraph separator, with its own offset but no DOM rewrite target.
       var textNode = node.nodeType === 3;
       if (textNode) nodes.push(node);
       // Keep skipped rendered content as virtual, immutable context. Its
       // punctuation and quotes must still delimit the neighboring prose.
-      currentGroup.push({ node: textNode ? node : null, text: textNode ? node.nodeValue : protectedNode ? renderedText(node) : "\n" });
+      currentGroup.push({ node: textNode ? node : null, text: textNode ? node.nodeValue : protectedNode ? renderedText(node) : "\u2029" });
     }
 
     // Quote marks and explicit human actors can sit in adjacent inline nodes.

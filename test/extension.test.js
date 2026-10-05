@@ -160,6 +160,19 @@ test("extension excludes CSS-hidden context and respects visible overrides", () 
   assert.equal(run().added, 0);
 });
 
+test("extension preserves quotes across computed blocks and rewrites independent AI claims", () => {
+  for (const display of ["block", "flex", "grid", "flow-root", "list-item"]) {
+    const { document, run } = extensionPage(`<div id="mixed">The federal agent<span style="display:${display}">filed a report</span>The AI is misaligned.</div><p id="bare">The federal agent<br>The AI is misaligned.</p><p id="continuation">The federal agent<br>is misaligned.</p><p id="quote">She said, 'The model <span style="display:${display}">is misaligned</span>.' Outside it is misaligned.</p>`);
+    assert.equal(run().added, 3, display);
+    assert.match(document.querySelector("#mixed").textContent, /The AI has a bug/);
+    assert.match(document.querySelector("#bare").textContent, /The AI has a bug/);
+    assert.equal(document.querySelector("#continuation mark"), null);
+    assert.equal(document.querySelector("#quote span").textContent, "is misaligned");
+    assert.match(document.querySelector("#quote").textContent, /Outside it has a bug/);
+    assert.equal(run().added, 0);
+  }
+});
+
 test("automatic mode picks out articles with AI doom", () => {
   assert.ok(looksDoomy("Experts warn a rogue AI could wipe out humanity."));
   assert.ok(looksDoomy("The chatbot is misaligned, researchers say."));

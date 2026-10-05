@@ -852,12 +852,21 @@
       } else {
         // Keep independent AI claims editable. Sentence/clause boundaries
         // narrow the conservative human guard without rewriting their action.
-        var sentences = [], boundary = /[.!?;]+(?:\[[^\]\r\n]{1,64}\]|[¹²³⁰⁴⁵⁶⁷⁸⁹)\]}])*(?=\s|$)/g, previous = 0, stop;
+        var sentences = [], boundary = /[.!?;]+(?:\[[^\]\r\n]{1,64}\]|[¹²³⁰⁴⁵⁶⁷⁸⁹)\]}])*(?=\s|$)|\u2029+/g, previous = 0, stop;
         while ((stop = boundary.exec(seg.text)) !== null) {
           var prefix = seg.text.slice(Math.max(previous, stop.index - 20), stop.index);
           // Decimal points, initials and common abbreviations do not end a
           // sentence. Ellipses are ambiguous, so keep the human context.
-          var terminal = /^[.!?;]+/.exec(stop[0])[0];
+          // Rendered breaks carry a paragraph separator, distinct from source
+          // whitespace. A fresh software subject starts an independent claim;
+          // continuations such as "federal [break] agent" or "[break] is
+          // misaligned" keep their human actor's context. Quotes stay intact.
+          if (/\u2029/.test(stop[0])) {
+            var following = seg.text.slice(stop.index + stop[0].length, stop.index + stop[0].length + 256);
+            if (!/^\s*(?:(?:AIs?|LLMs?|chatbots?|Claude|ChatGPT|Gemini|Grok|Copilot|Llama|GPT-[\w.]+)\b|(?:The|A|An|This|That|These|Those|Its|Their|Our|Your)\s+(?:AIs?|LLMs?|models?|chatbots?|bots?|agents?|assistants?|systems?)\b)/i.test(following)) continue;
+          }
+          var terminalMatch = /^[.!?;]+/.exec(stop[0]);
+          var terminal = terminalMatch ? terminalMatch[0] : "";
           if (/^\.+$/.test(terminal) && (terminal.length > 1 || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|No|approx|etc|Inc|Ltd|Co|Corp|Gov|Sen|Rep|Gen|Lt|Col|Maj|Capt|Cmdr|Cpl|Sgt|Adm|Rev|Hon|Pres|Supt|Insp|Det|Messrs|Mmes|Msgr|Fr|Br|Dept|Univ|Assn|Est|Ave|Blvd|Rd|Bldg|Mt|Ft|Fig|Figs|Vol|Ed|Eds|Ch|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
           // Untrusted pages may contain millions of tiny sentence breaks.
           // Bound allocations and rule passes; unusually fragmented prose is
