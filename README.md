@@ -27,6 +27,8 @@ of its rogue AI activity](https://techcrunch.com/2026/09/28/openai-still-doesnt-
 (Sept 28, 2026), with the quick phrase rules. The same clip plays on the
 homepage; click it for the [MP4](public/demo.mp4).*
 
+Built by [@akspad](https://x.com/akspad)
+
 ## How it works
 
 ```
