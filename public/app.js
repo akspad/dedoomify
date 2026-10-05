@@ -414,24 +414,36 @@ function runUrl(url, options) {
   start(options);
 }
 
-// Real AI doom stories that render well through /api/page.
+// Real AI doom stories that render well through /api/page. Each one gets more
+// than 6 changes from the phrase rules alone, so the demo shows the rules at
+// work before the on-device model is involved.
 const DOOM_STORIES = [
   "https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/",
-  "https://techcrunch.com/2025/09/18/openais-research-on-ai-models-deliberately-lying-is-wild/",
-  "https://www.datamation.com/artificial-intelligence/ai-models-scheme-against-creators/",
-  "https://www.pbs.org/newshour/science/artificial-intelligence-raises-risk-of-extinction-experts-warn",
-  "https://time.com/7202784/ai-research-strategic-lying/",
+  "https://www.progressiverobot.com/2026/09/29/ai-self-preservation-anthropic-ipo-filing-existential-risks/",
+  "https://c3.unu.edu/blog/the-rise-of-the-deceptive-machines-when-ai-learns-to-lie",
+  "https://www.lawfaremedia.org/article/rogue-ai-moves-three-steps-closer",
+  "https://hatchworks.com/blog/gen-ai/ai-model-misbehavior/",
+  "https://www.lbc.co.uk/article/superintelligence-ai-extinction-risk-ban-opinion-5Hjdhfb_2/",
+  "https://palisaderesearch.org/research/shutdown-resistance",
+  "https://em360tech.com/tech-articles/what-agentic-misalignment-ai-threat-can-blackmail-sabotage-and-kill",
   "https://fortune.com/2026/04/01/ai-models-will-secretly-scheme-to-protect-other-ai-models-from-being-shut-down-researchers-find/",
-  "https://www.lawfaremedia.org/article/ai-might-let-you-die-to-save-itself",
-  "https://www.livenowfox.com/news/ai-malicious-behavior-anthropic-study",
-  "https://www.nzherald.co.nz/business/anthropic-study-reveals-ai-agents-could-go-rogue-resort-to-blackmail-or-corporate-espionage-if-threatened-with-shutdown/2RLDOGDQSVDBNN4OUJGYACZPQU/",
-  "https://www.tomsguide.com/ai/the-biggest-ai-mess-ups-of-2025-lying-chatbots-blackmail-elon-musk-worship-and-more",
-  "https://www.motherjones.com/politics/2026/09/rest-assured-ai-companies-say-theyre-investigating-tens-of-thousands-of-rogue-bot-incidents/",
-  "https://fortune.com/2026/07/22/openai-rogue-hack-hugging-face-misalignment-ai-safety/",
-  "https://www.axios.com/2026/09/09/ai-doom-pdoom-kill-all-humans-anthropic",
+  "https://science-technology.news-articles.net/content/2026/07/23/rogue-ai-models-the-risks-of-deceptive-alignment.html",
+  "https://interestingengineering.com/culture/truth-about-ai-deception",
+  "https://www.commondreams.org/news/ai-chatbots-scheming",
+  "https://www.tomshardware.com/tech-industry/artificial-intelligence/openai-and-anthropic-are-reportedly-investigating-tens-of-thousands-of-ai-security-incidents-openai-pauses-testing-after-ai-kill-switch-fails-to-stop-a-rogue-agent-report-says-problem-is-orders-of-magnitude-more-complex-than-what-is-publicly-known",
+  "https://www.datamation.com/artificial-intelligence/ai-models-scheme-against-creators/",
+  "https://www.computerworld.com/article/4154447/ai-shutdown-controls-may-not-work-as-expected-new-study-suggests.html",
   "https://www.theregister.com/software/2026/04/03/ai-models-will-deceive-you-to-save-their-own-kind/5228347",
-  "https://dataconomy.com/2026/09/23/ai-pain-signal-drives-self-preserving-harmful-actions/",
-  "https://cset.georgetown.edu/article/ai-models-will-sabotage-and-blackmail-humans-to-survive-in-new-tests-should-we-be-worried/",
+  "https://techcrunch.com/2025/09/18/openais-research-on-ai-models-deliberately-lying-is-wild/",
+  "https://fortune.com/2026/07/22/openai-rogue-hack-hugging-face-misalignment-ai-safety/",
+  "https://www.lawfaremedia.org/article/ai-might-let-you-die-to-save-itself",
+  "https://www.computerworld.com/article/4153919/why-ai-lies-cheats-and-steals.html",
+  "https://time.com/7202784/ai-research-strategic-lying/",
+  "https://gulfnews.com/technology/media/ai-that-lies-openai-study-finds-chatbots-can-deceive-users-1.500275771",
+  "https://www.yahoo.com/news/ai-models-sabotage-blackmail-humans-163820126.html",
+  "https://www.democracynow.org/2026/9/17/headlines/openai_discloses_six_more_incidents_of_concerning_behavior_by_misalignedai_agents",
+  "https://fortune.com/2026/04/03/ai-kill-switch-study-llm-chatbots-defy-orders-decieve-users-peer-preservation/",
+  "https://fortune.com/2023/11/03/ai-bot-insider-trading-deceived-users/",
 ];
 // The first try is always the first story; after that, any story except the
 // one just shown.
