@@ -508,3 +508,46 @@ test("publisher layout, scoped attributes, fonts, SVG icons and mobile viewport 
   assert.doesNotMatch(document.querySelector("#dedoomify-style").textContent, /body\s*\{|max-width:960px/);
   assert.equal(document.querySelector("h1 mark.dd").textContent, "has a bug");
 });
+
+test("pop-ups that wait for a script to open them are dropped, not shown over the article", () => {
+  const source = `<html><body>
+<dialog id="d"><p>Get Started. The AI is misaligned.</p></dialog>
+<div popover id="p">Start typing to search</div>
+<div role="dialog" id="r"><p>Create Account</p></div>
+<div role="AlertDialog" id="a">Cookies</div>
+<div role=" dialog  window" id="w">Search</div>
+<div aria-modal="true" id="m">Sign up with LinkedIn</div>
+<div x-cloak id="x"><p>Subscribe to our newsletter</p></div>
+<div v-cloak id="v"><main><h1>Title</h1><p>The model is misaligned.</p></main></div>
+<div role="dialog" id="kept"><article><p>Body</p></article></div>
+<div x-cloak id="kept2"><div role="main document"><p>Body</p></div></div>
+<dialog open id="shown"><p>Already visible</p></dialog>
+<article><p>The model is misaligned.</p></article>
+</body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://example.com/").html);
+  for (const id of ["d", "p", "r", "a", "w", "m", "x"]) assert.equal(document.getElementById(id), null, id);
+  assert.doesNotMatch(document.body.textContent, /Get Started|Start typing|Create Account|Cookies|LinkedIn|newsletter/);
+  assert.ok(document.getElementById("v"));
+  assert.ok(document.getElementById("kept"));
+  assert.ok(document.getElementById("kept2"));
+  // An open dialog is already visible on the publisher's page, so its words stay.
+  assert.match(document.body.textContent, /Already visible/);
+  // An app root cloaked until its framework starts is the page, not a pop-up.
+  for (const root of [`<body ng-cloak><div><h1>Title</h1><p>The model is misaligned.</p></div></body>`, `<body><div id="app" v-cloak><h1>Title</h1><p>The model is misaligned.</p></div><div x-cloak>Menu</div></body>`]) {
+    const page = parseHTML(renderPage(`<html>${root}</html>`, "https://example.com/").html).document;
+    assert.equal(page.querySelectorAll("h1").length, 1);
+    assert.equal(page.querySelectorAll("mark.dd").length, 1);
+    assert.doesNotMatch(page.body.textContent, /Menu/);
+  }
+  assert.equal(document.querySelectorAll("body > article mark.dd").length, 1);
+});
+
+test("nested pop-up candidates are sized in one pass", () => {
+  const depth = 5_000;
+  const html = `<html><body>${'<div x-cloak>'.repeat(depth)}<h1>Title</h1><p>The model is misaligned.</p>${'</div>'.repeat(depth)}<div role="dialog">Sign up</div></body></html>`;
+  const started = performance.now();
+  const { document } = parseHTML(renderPage(html, "https://example.com/deep").html);
+  assert.equal(document.querySelectorAll("mark.dd").length, 1);
+  assert.doesNotMatch(document.body.textContent, /Sign up/);
+  assert.ok(performance.now() - started < 5000, "nested candidates stay within the processing budget");
+});
