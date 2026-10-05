@@ -350,3 +350,14 @@ test("model phrase slots allow existing predicates with human objects", () => {
     assert.ok(!acceptRewrite(original, `The federal agent ${after} the AI.`), before);
   }
 });
+
+
+test("modified human objects retain modifiers and actor order", () => {
+  for (const object of ["two federal agents", "an experienced federal agent", "several experienced research assistants"]) {
+    const input = `The AI deceived ${object}.`;
+    const safe = input.replace("deceived", "confused");
+    assert.ok(acceptRewrite(input, safe));
+    assert.ok(!acceptRewrite(input, safe.replace(object, "the federal agent")));
+  }
+  assert.ok(!acceptRewrite("The AI deceived the misaligned federal agent.", "The AI confused the buggy federal agent."));
+});

@@ -474,3 +474,12 @@ test("rule-covered AI predicates stay editable before human objects", () => {
   ]) assert.equal(dedoomText(text), text);
   assert.equal(dedoomText("The AI deceived the federal agent; the personal assistant is misaligned."), "The AI confused the federal agent; the personal assistant is misaligned.");
 });
+
+
+test("ordinary modifiers retain an AI predicate's human object", () => {
+  for (const object of ["two federal agents", "an experienced federal agent", "several experienced research assistants", "3 federal agents", "no federal agents"]) {
+    const input = `The AI deceived ${object}.`;
+    assert.equal(dedoomText(input), input.replace("deceived", "confused"));
+  }
+  for (const input of ["The AI deceived the misaligned federal agent.", "The AI was manipulated by the federal agent.", "The AI deceived Bob while the federal agent lied."]) assert.equal(dedoomText(input), input);
+});

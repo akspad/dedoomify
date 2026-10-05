@@ -50,11 +50,15 @@
     var predicate = AI_HUMAN_OBJECT.exec(prefix);
     if (!predicate) return false;
     var bridge = prefix.slice(predicate[0].length);
-    if (/^\s+(?:(?:the|a|an|its|their|our|your)\s+)?$/i.test(bridge)) return true;
-    // Allow a bounded noun phrase before an object preposition, e.g.
-    // "smuggled passwords past the". Clause openers and coordination cannot
-    // turn a later human actor into an object of this software predicate.
-    return /^\s+(?:(?!(?:and|or|but|that|who|which|said|says|is|was|are|were|has|have|had)\b)[\p{L}\p{N}'’-]+\s+){0,8}(?:to|against|with|past|from|about|beside|near|alongside|for|of|by)\s+(?:(?:the|a|an|its|their|our|your)\s+)?$/iu.test(bridge);
+    // Bound ordinary object modifiers and noun/preposition phrases. Clause
+    // openers, coordination and passive "by" cannot introduce a human actor.
+    if (bridge.length > 256 || !/^\s+(?:(?!(?:and|or|but|that|who|which|said|says|is|was|are|were|has|have|had|by|while|when|after|before|as|if|because|since|although|however)\b)[\p{L}\p{N}'’-]+\s+){0,8}$/iu.test(bridge)) return false;
+    // A framing word in the object describes the person, not the AI. Preserve
+    // such ambiguous sentences rather than changing "misaligned federal agent".
+    return !COMPILED.some(function (rule) {
+      rule.re.lastIndex = 0;
+      return rule.re.test(bridge);
+    });
   }
 
   // [verb, replacement] rewritten only after an AI subject. `unless` is an

@@ -384,3 +384,31 @@ test("large malformed pictures do not repeatedly rescan source siblings", () => 
   assert.equal(images[images.length - 1].getAttribute("src"), expected);
   assert.ok(performance.now() - start < 5000, "picture processing must have a bounded linear work cost");
 });
+
+
+test("page skipped inline text retains immutable sentence and quotation context", () => {
+  for (const tag of ["code", "kbd", "samp", "q", "span contenteditable='true'"]) {
+    const close = tag.split(" ")[0];
+    const { document } = parseHTML(`<html><body><p id="mixed">The federal agent <${tag}>filed a report.</${close}> The AI is misaligned.</p><p id="speech">She said, 'The model <${tag}>is</${close}> misaligned.' Outside it is misaligned.</p><p id="code">The model <${tag}>is misaligned</${close}>.</p></body></html>`);
+    assert.equal(dedoomElement(document.body, document), 2, tag);
+    assert.equal(document.querySelector("#mixed").textContent, "The federal agent filed a report. The AI has a bug.");
+    assert.equal(document.querySelector("#mixed " + close).textContent, "filed a report.");
+    assert.equal(document.querySelector("#speech").textContent, "She said, 'The model is misaligned.' Outside it has a bug.");
+    assert.equal(document.querySelector("#code").textContent, "The model is misaligned.");
+    assert.equal(document.querySelector("#code mark"), null);
+  }
+  const { document } = parseHTML('<html><body><p>The federal agent <script>filed a report.</script>is misaligned.</p></body></html>');
+  assert.equal(dedoomElement(document.body, document), 0);
+});
+
+test("model page edits cannot modify skipped inline text or span across it", () => {
+  const { document } = parseHTML('<p>The model <code>is misaligned</code>. Outside it is misaligned.</p>');
+  const [nodes] = collectGroups(document.querySelector("p"));
+  rewriteGroup(nodes, document, "The model has a bug. Outside it has a bug.", diffEdits);
+  assert.equal(document.querySelector("code").textContent, "is misaligned");
+  assert.equal(document.querySelector("p").textContent, "The model is misaligned. Outside it has a bug.");
+  const { html } = renderPage('<html><body><p>The federal agent <code>filed a report.</code> The AI is misaligned.</p></body></html>', "https://example.com/article");
+  const rendered = parseHTML(html).document;
+  assert.equal(rendered.querySelector("p").textContent, "The federal agent filed a report. The AI has a bug.");
+  assert.equal(rendered.querySelector("code mark"), null);
+});

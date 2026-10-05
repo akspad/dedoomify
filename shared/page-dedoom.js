@@ -24,7 +24,7 @@
   // Entering or leaving one of these starts a new group.
   var BLOCK = {};
   ("ADDRESS ARTICLE ASIDE BLOCKQUOTE BODY BR BUTTON CAPTION DD DETAILS DIALOG DIV DL DT FIELDSET " +
-    "FIGCAPTION FIGURE FOOTER FORM H1 H2 H3 H4 H5 H6 HEADER HGROUP HR IMG LABEL LEGEND LI MAIN MENU Q " +
+    "FIGCAPTION FIGURE FOOTER FORM H1 H2 H3 H4 H5 H6 HEADER HGROUP HR IMG LABEL LEGEND LI MAIN MENU " +
     "NAV OL P PRE SECTION SUMMARY TABLE TBODY TD TFOOT TH THEAD TR UL")
     .split(" ")
     .forEach(function (tag) {
@@ -35,6 +35,8 @@
     return el && el.nodeType === 1 && /^(MARK|DEL)$/i.test(el.tagName) && el.hasAttribute("data-was");
   }
 
+  var immutable = new WeakSet();
+
   // Returns an array of groups; each group is an array of text nodes.
   function collectGroups(rootEl) {
     var groups = [];
@@ -42,7 +44,7 @@
     // Untrusted HTML can have thousands of nested inline elements. An explicit
     // stack keeps traversal bounded by the document size instead of the JS
     // call-stack limit, while preserving block boundaries on entry and exit.
-    var stack = rootEl ? [{ next: rootEl.firstChild, block: false }] : [];
+    var stack = rootEl ? [{ next: rootEl.firstChild, block: false, immutable: false }] : [];
     while (stack.length) {
       var frame = stack[stack.length - 1];
       var child = frame.next;
@@ -57,18 +59,22 @@
             groups.push(current);
           }
           current.push(child);
+          if (frame.immutable) immutable.add(child);
         } else if (child.nodeType === 1) {
           var tag = String(child.tagName).toUpperCase();
           var block = BLOCK[tag];
           if (block) current = null;
-          if (!SKIP[tag] && child.getAttribute("contenteditable") == null) {
-            stack.push({ next: child.firstChild, block: block });
+          var protectedChild = SKIP[tag] || child.getAttribute("contenteditable") != null;
+          if (!protectedChild || (!block && !/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|TEXTAREA|SELECT|OPTION|SVG|MATH|TITLE|IFRAME)$/.test(tag))) {
+            // Rendered skipped inline text supplies immutable punctuation and
+            // quotation context. Invisible/non-prose subtrees supply none.
+            stack.push({ next: child.firstChild, block: block, immutable: frame.immutable || !!protectedChild });
           } else if (block) current = null;
         }
       }
     }
     return groups.filter(function (nodes) {
-      return /\S/.test(groupText(nodes));
+      return nodes.some(function (node) { return !immutable.has(node) && /\S/.test(node.nodeValue); });
     });
   }
 
@@ -87,7 +93,7 @@
     var seen = [];
     nodes.forEach(function (n) {
       var parent = n.parentNode;
-      if (isChange(parent)) {
+      if (!immutable.has(n) && isChange(parent)) {
         if (seen.indexOf(parent) >= 0) return;
         seen.push(parent);
         original += parent.getAttribute("data-was");
@@ -105,7 +111,7 @@
     var out = [];
     nodes.forEach(function (n) {
       var parent = n.parentNode;
-      if (isChange(parent)) {
+      if (!immutable.has(n) && isChange(parent)) {
         var text = doc.createTextNode(parent.getAttribute("data-was"));
         parent.parentNode.replaceChild(text, parent);
         out.push(text);
@@ -146,6 +152,14 @@
       }
       return nodes.length - 1;
     }
+    // Model and rule edits may read protected text for context but cannot
+    // change it, including an edit spanning editable and immutable nodes.
+    edits = edits.filter(function (edit) {
+      if (immutable.has(nodes[nodeAt(edit.start, false)])) return false;
+      return !nodes.some(function (node, index) {
+        return immutable.has(node) && edit.start < starts[index] + node.nodeValue.length && edit.end > starts[index];
+      });
+    });
     for (var e = edits.length - 1; e >= 0; e--) {
       var edit = edits[e];
       var a = nodeAt(edit.start, false);
