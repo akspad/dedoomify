@@ -67,6 +67,13 @@
           if (frame.immutable) immutable.add(child);
         } else if (child.nodeType === 1) {
           var tag = String(child.tagName).toUpperCase();
+          if (frame.immutable && tag === "BR") {
+            if (!current) { current = []; groups.push(current); }
+            var renderedBreak = { nodeValue: "\u2029", parentNode: null };
+            immutable.add(renderedBreak);
+            current.push(renderedBreak);
+            continue;
+          }
           var block = BLOCK[tag];
           if (block) current = null;
           var protectedChild = SKIP[tag] || child.getAttribute("contenteditable") != null;

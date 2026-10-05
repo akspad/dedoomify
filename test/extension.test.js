@@ -220,3 +220,15 @@ test("extension detection recognizes dotted and hyphenated AI qualifiers", () =>
   assert.equal(run().added, 2);
   assert.equal(document.querySelectorAll("mark").length, 2);
 });
+
+
+test("protected inline subtrees retain rendered breaks as immutable context", () => {
+  for (const content of ["filed a report.<br>", '<span style="display:block">filed a report.</span>']) {
+    const { document, run } = extensionPage(`<p id="mixed">The federal agent <code>${content}</code>The AI is misaligned.</p><p id="speech">She said, 'The model <kbd>is<br>misaligned.</kbd>' Outside it is misaligned.</p>`);
+    assert.equal(run().added, 2);
+    assert.match(document.querySelector("#mixed").textContent, /The AI has a bug/);
+    assert.equal(document.querySelector("code mark"), null);
+    assert.equal(document.querySelector("kbd mark"), null);
+    assert.match(document.querySelector("#speech").textContent, /Outside it has a bug/);
+  }
+});

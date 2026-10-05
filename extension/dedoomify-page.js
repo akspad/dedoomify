@@ -67,9 +67,13 @@
       var stack = [el], text = [];
       while (stack.length) {
         var node = stack.pop();
+        if (node.renderedBreak) { text.push("\u2029"); continue; }
         if (node.nodeType === 3) {
           if (!displayHidden(node.parentElement) && !visibilityHidden(node.parentElement)) text.push(node.nodeValue);
         } else if (node.nodeType === 1 && !displayHidden(node)) {
+          if (node.tagName.toUpperCase() === "BR") { text.push("\u2029"); continue; }
+          var block = node !== el && (node.matches(blockSelector) || cssBlock(node));
+          if (block) { text.push("\u2029"); stack.push({ renderedBreak: true }); }
           for (var child = node.lastChild; child; child = child.previousSibling) stack.push(child);
         }
       }

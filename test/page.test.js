@@ -434,3 +434,14 @@ test("page Q elements supply implicit quotes without becoming edit targets", () 
   assert.equal(document.querySelector("q").textContent, "The federal agent");
   assert.equal(document.querySelector("#quote").textContent, "The federal agent The AI has a bug.");
 });
+
+
+test("page protected inline breaks preserve sentence and quote context", () => {
+  const { html } = renderPage(`<html><body><p id="mixed">The federal agent <code>filed a report.<br></code>The AI is misaligned.</p><p id="speech">She said, 'The model <kbd>is<br>misaligned.</kbd>' Outside it is misaligned.</p></body></html>`, "https://example.com/article");
+  const { document } = parseHTML(html);
+  assert.match(document.querySelector("#mixed").textContent, /The AI has a bug/);
+  assert.equal(document.querySelector("code mark"), null);
+  assert.equal(document.querySelector("kbd mark"), null);
+  assert.match(document.querySelector("#speech").textContent, /Outside it has a bug/);
+  assert.equal(document.querySelectorAll("mark").length, 2);
+});
