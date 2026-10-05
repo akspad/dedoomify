@@ -222,6 +222,15 @@ test("model and rules share ASCII speech boundaries including contractions", () 
   assert.ok(acceptRewrite("The model's output is misaligned.", "The model's output has a bug."));
 });
 
+test("numeric ASCII speech cannot be rewritten by the model", () => {
+  for (const prefix of ["She said, ", ""]) {
+    const before = `${prefix}'26 models are misaligned.' Outside it is misaligned.`;
+    assert.ok(!acceptRewrite(before, before.replace("are misaligned", "have bugs")));
+    assert.ok(acceptRewrite(before, before.replace("Outside it is misaligned", "Outside it has a bug")));
+  }
+  assert.ok(acceptRewrite("In '26 the model is misaligned and users' feedback agrees.", "In '26 the model has a bug and users' feedback agrees."));
+});
+
 test("keeps plural/name possessives and human deception inside model output", () => {
   for (const quote of ["'The users' feedback is that the model is misaligned.'", "'James' report says the model is misaligned.'"]) {
     const original = `She said, ${quote} Outside it is misaligned.`;

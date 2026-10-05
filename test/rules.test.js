@@ -29,6 +29,18 @@ test("explicit human roles stay factual even alongside AI context", () => {
   }
 });
 
+test("hostile sentence fragmentation has bounded segmentation", () => {
+  for (const suffix of [". ".repeat(2_621_440), "The AI is misaligned. ".repeat(1200)]) {
+    const original = "The federal agent filed a report. " + suffix;
+    const start = performance.now();
+    const segments = dedoomSegments(original);
+    assert.equal(segments.length, 1);
+    assert.equal(segments[0].text, original);
+    assert.equal(segments[0].protected, true);
+    assert.ok(performance.now() - start < 5000, "fragmented paragraphs must remain bounded");
+  }
+});
+
 test("rewrites common doom phrasing", () => {
   const cases = [
     ["Experts warn of existential risk from AI.", "Experts warn of product risk from AI."],
@@ -268,6 +280,16 @@ test("preserves paired ASCII speech without treating apostrophes as quotes", () 
     ["She said, 'The model is misaligned.' Then 'It is misaligned.'", "She said, 'The model is misaligned.' Then 'It is misaligned.'"],
   ];
   for (const [before, after] of cases) assert.equal(dedoomText(before), after, before);
+});
+
+test("numeric speech stays quoted while abbreviated years remain prose", () => {
+  for (const original of [
+    "She said, '26 models are misaligned.' Outside it is misaligned.",
+    "'26 models are misaligned.' Outside it is misaligned.",
+    "She said, '26 misalignment risks' in her report. Outside it is misaligned.",
+  ]) assert.equal(dedoomText(original), original.replace("Outside it is misaligned", "Outside it has a bug"));
+  const year = "In '26 the model is misaligned and users' feedback agrees.";
+  assert.equal(dedoomText(year), year.replace("is misaligned", "has a bug"));
 });
 
 test("possessives inside speech do not prematurely end quotations", () => {

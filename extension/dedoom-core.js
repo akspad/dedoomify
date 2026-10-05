@@ -760,10 +760,12 @@
         // delimiters and nested fragments cannot expose quoted wording. This
         // can leave intervening unquoted prose unchanged; preservation wins.
         var end = last[close];
-        // An elision followed only by a possessive is ordinary prose. Clear
+        // An elision or abbreviated year followed only by a possessive is
+        // ordinary prose. Numeric speech still has clear endings or reporting
+        // context. Clear
         // non-possessive endings and reporting context still permit speech.
-        if (elision && !reported.has(j) && clear[close] < 0) end = -1;
-        if (!year && end >= 0) endings.set(j, end);
+        if ((elision || year) && !reported.has(j) && clear[close] < 0) end = -1;
+        if (end >= 0) endings.set(j, end);
       }
       if ((ch === "'" || ch === "\u2019") && !wordChar(text[j + 1])) {
         if (last[ch] < 0) last[ch] = j;
@@ -822,6 +824,13 @@
           // sentence. Ellipses are ambiguous, so keep the human context.
           var terminal = /^[.!?;]+/.exec(stop[0])[0];
           if (/^\.+$/.test(terminal) && (terminal.length > 1 || /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|No|approx|etc|[A-Z](?:\.[A-Z])*)$/i.test(prefix))) continue;
+          // Untrusted pages may contain millions of tiny sentence breaks.
+          // Bound allocations and rule passes; unusually fragmented prose is
+          // safer to preserve as one span than to partially change its meaning.
+          if (sentences.length >= 1024) {
+            contextual.push({ text: seg.text, protected: true });
+            return;
+          }
           var end = stop.index + stop[0].length;
           sentences.push(seg.text.slice(previous, end));
           previous = end;
