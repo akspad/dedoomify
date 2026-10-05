@@ -508,3 +508,23 @@ test("publisher layout, scoped attributes, fonts, SVG icons and mobile viewport 
   assert.doesNotMatch(document.querySelector("#dedoomify-style").textContent, /body\s*\{|max-width:960px/);
   assert.equal(document.querySelector("h1 mark.dd").textContent, "has a bug");
 });
+
+test("pop-ups that wait for a script to open them are dropped, not shown over the article", () => {
+  const source = `<html><body>
+<dialog id="d"><p>Get Started. The AI is misaligned.</p></dialog>
+<div popover id="p">Start typing to search</div>
+<div role="dialog" id="r"><p>Create Account</p></div>
+<div role="AlertDialog" id="a">Cookies</div>
+<div aria-modal="true" id="m">Sign up with LinkedIn</div>
+<div x-cloak id="x"><p>Subscribe to our newsletter</p></div>
+<div v-cloak id="v"><main><h1>Title</h1><p>The model is misaligned.</p></main></div>
+<div role="dialog" id="kept"><article><p>Body</p></article></div>
+<article><p>The model is misaligned.</p></article>
+</body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://example.com/").html);
+  for (const id of ["d", "p", "r", "a", "m", "x"]) assert.equal(document.getElementById(id), null, id);
+  assert.doesNotMatch(document.body.textContent, /Get Started|Start typing|Create Account|Cookies|LinkedIn|newsletter/);
+  assert.ok(document.getElementById("v"));
+  assert.ok(document.getElementById("kept"));
+  assert.equal(document.querySelectorAll("body > article mark.dd").length, 1);
+});
