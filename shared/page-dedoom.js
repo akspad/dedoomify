@@ -159,26 +159,38 @@
   // Apply non-overlapping edits (sorted by start) to a group's text nodes.
   // Working from the last edit back keeps earlier offsets valid.
   function applyEdits(nodes, edits, doc) {
-    var starts = [];
+    var starts = [], ends = [], protectedRanges = [];
     var total = 0;
     nodes.forEach(function (n) {
       starts.push(total);
       total += n.nodeValue.length;
+      ends.push(total);
+      if (immutable.has(n) && n.nodeValue.length) {
+        var last = protectedRanges[protectedRanges.length - 1];
+        if (last && last.end === starts[starts.length - 1]) last.end = total;
+        else protectedRanges.push({ start: starts[starts.length - 1], end: total });
+      }
     });
     function nodeAt(pos, preferEarlier) {
-      for (var k = 0; k < nodes.length; k++) {
-        var end = starts[k] + nodes[k].nodeValue.length;
-        if (pos < end || (preferEarlier && pos === end)) return k;
+      var lo = 0, hi = ends.length;
+      while (lo < hi) {
+        var mid = Math.floor((lo + hi) / 2);
+        if (ends[mid] < pos || (!preferEarlier && ends[mid] === pos)) lo = mid + 1;
+        else hi = mid;
       }
-      return nodes.length - 1;
+      return Math.min(lo, nodes.length - 1);
     }
     // Model and rule edits may read protected text for context but cannot
     // change it, including an edit spanning editable and immutable nodes.
     edits = edits.filter(function (edit) {
       if (immutable.has(nodes[nodeAt(edit.start, false)])) return false;
-      return !nodes.some(function (node, index) {
-        return immutable.has(node) && edit.start < starts[index] + node.nodeValue.length && edit.end > starts[index];
-      });
+      var lo = 0, hi = protectedRanges.length;
+      while (lo < hi) {
+        var mid = Math.floor((lo + hi) / 2);
+        if (protectedRanges[mid].end <= edit.start) lo = mid + 1;
+        else hi = mid;
+      }
+      return lo === protectedRanges.length || edit.end <= protectedRanges[lo].start;
     });
     for (var e = edits.length - 1; e >= 0; e--) {
       var edit = edits[e];

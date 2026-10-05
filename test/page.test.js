@@ -11,6 +11,34 @@ import handler from "../api/page.js";
 const { collectGroups, groupStrings, rewriteGroup, dedoomElement } = globalThis.DedoomPage;
 const { diffEdits } = globalThis.DedoomDiff;
 
+test("edit filtering scales with nodes plus edits rather than their product", () => {
+  const { document } = parseHTML('<p>' + 'xx'.repeat(500) + '</p>');
+  const first = document.querySelector('p').firstChild;
+  const nodes = [first, ...Array.from({ length: 500_000 }, () => ({ nodeValue: 'x' }))];
+  const edits = Array.from({ length: 500 }, (_, i) => ({ start: i * 2, end: i * 2 + 1, text: 'y', original: 'x' }));
+  const start = performance.now();
+  assert.equal(globalThis.DedoomPage.applyEdits(nodes, edits, document), 500);
+  assert.ok(performance.now() - start < 1500, '500k nodes and 500 edits must avoid repeated full-group scans');
+  assert.equal(document.querySelector('p').textContent, 'yx'.repeat(500));
+});
+
+test("protected range searches preserve overlap and insertion boundaries", () => {
+  const { document } = parseHTML('<p>ab<code>cd</code>ef<kbd>gh</kbd>ij</p>');
+  const [nodes] = collectGroups(document.querySelector('p'));
+  const edits = [
+    { start: 0, end: 1, text: 'A', original: 'a' },
+    { start: 1, end: 3, text: 'X', original: 'bc' },
+    { start: 2, end: 2, text: 'X', original: '' },
+    { start: 4, end: 4, text: 'Y', original: '' },
+    { start: 5, end: 7, text: 'Z', original: 'fg' },
+    { start: 8, end: 10, text: 'IJ', original: 'ij' },
+  ];
+  assert.equal(globalThis.DedoomPage.applyEdits(nodes, edits, document), 3);
+  assert.equal(document.querySelector('p').textContent, 'AbcdYefghIJ');
+  assert.equal(document.querySelector('code').textContent, 'cd');
+  assert.equal(document.querySelector('kbd').textContent, 'gh');
+});
+
 const PAGE = `<!doctype html><html><head>
 <title>Is AI misaligned?</title>
 <base href="/news/">
