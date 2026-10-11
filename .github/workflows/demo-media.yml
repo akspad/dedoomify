@@ -1,0 +1,58 @@
+name: Regenerate demo media
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save --package-lock=false playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: npm test && npm run build && npm run build:extension
+      - run: npm run site-demo
+      - run: npm run extension-demo
+      - name: Verify media and extract review frames
+        run: |
+          mkdir -p dist/demo-review
+          ffprobe -v error -show_entries stream=codec_name,width,height,avg_frame_rate -show_entries format=duration,size -of json public/demo.mp4
+          ffprobe -v error -show_entries stream=codec_name,width,height,avg_frame_rate -show_entries format=duration,size -of json docs/extension-demo.mp4
+          for media in public/demo.mp4 public/demo.webm docs/demo.gif docs/extension-demo.mp4 docs/extension-demo.gif; do
+            ffmpeg -v error -i "$media" -f null -
+            ls -lh "$media"
+          done
+          ffmpeg -v error -i public/demo.mp4 -vf "fps=1/3,scale=660:-2,tile=2x2" -frames:v 1 dist/demo-review/site.jpg
+          ffmpeg -v error -i docs/extension-demo.mp4 -vf "fps=1/4,scale=660:-2,tile=2x2" -frames:v 1 dist/demo-review/extension.jpg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo-media-review
+          path: |
+            dist/demo-review/
+            public/demo.mp4
+            public/demo.webm
+            public/demo-poster.webp
+            docs/demo.gif
+            docs/extension-demo.mp4
+            docs/extension-demo.gif
+      - name: Commit regenerated media
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/demo.mp4 public/demo.webm public/demo-poster.webp docs/demo.gif docs/extension-demo.mp4 docs/extension-demo.gif
+          if ! git diff --cached --quiet; then
+            git commit -m "Regenerate demos from lossless Retina captures"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
