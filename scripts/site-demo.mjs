@@ -1,7 +1,7 @@
 // Records the homepage demo clip: a real article's link is pasted, the page
 // comes back with its doom phrases highlighted in place, and hovering a
 // highlight shows the original words.
-// Writes public/demo.mp4, public/demo.webm, public/demo-poster.png and
+// Writes public/demo.mp4, public/demo.webm, public/demo-poster.webp and
 // docs/demo.gif (for the README).
 // Needs Playwright with Chromium (`npm i --no-save playwright`; set CHROMIUM_PATH
 // to use another Chromium build), ffmpeg, and network access to the article.
@@ -143,8 +143,8 @@ encodeDemo(video, {
   mp4: out("public", "demo.mp4"),
   webm: out("public", "demo.webm"),
   gif: out("docs", "demo.gif"),
-  poster: out("public", "demo-poster.png"),
+  poster: out("public", "demo-poster.webp"),
   speed: SPEED,
 });
 fs.rmSync(path.join(root, "dist", "demo-tmp"), { recursive: true, force: true });
-console.log("Wrote Retina MP4/WebM, lossless PNG poster and README GIF");
+console.log("Wrote Retina MP4/WebM, high-quality WebP poster and README GIF");

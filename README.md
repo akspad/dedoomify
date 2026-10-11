@@ -66,7 +66,7 @@ Files:
   `diff.js` (highlights what changed), `tooltip.js` (the hover card with the
   original words), `local-ai.js` and `llm-worker.js` for the on-device model,
   `privacy.html`, and the homepage demo clip (`demo.mp4`, with `demo.webm` for
-  browsers without H.264, and `demo-poster.png`). `npm run build` copies the
+  browsers without H.264, and `demo-poster.webp`). `npm run build` copies the
   shared scripts and WebLLM into `public/vendor/`.
 - **`api/page.js`** retains publisher CSS, scoped attributes and static SVG artwork,
   with active media, scripts, frames and event handlers removed and the phrase rules applied in place
@@ -109,7 +109,7 @@ Files:
 **[Install dedoomify from the Chrome Web Store](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl).** It works
 in Chrome, Edge, Brave and other Chromium browsers.
 
-[![The dedoomify extension on a news article: the toolbar popup's "De-doom this page" button rewrites 12 doom phrases in place, and hovering a highlight shows the original words](docs/extension-demo.gif)](docs/extension-demo.mp4)
+[![The dedoomify extension on a news article: the toolbar popup's "De-doom this page" button rewrites 10 doom phrases in place, and hovering a highlight shows the original words](docs/extension-demo.gif)](docs/extension-demo.mp4)
 
 *The extension on a sample article. Click it for the
 [MP4](docs/extension-demo.mp4).*
@@ -134,7 +134,7 @@ the text), so pages without AI doom are left alone.
 
 The site and extension demos capture lossless PNG frames at 2× device scale.
 The MP4s play at 30 fps (2200×1408 for the site, 2560×1464 for the extension).
-WebM, the lossless PNG poster, and the 1100-pixel, 15 fps GIFs are generated
+WebM, the high-quality WebP poster, and the 1100-pixel, 15 fps GIFs are generated
 directly from the same lossless master, avoiding compression between formats.
 
 With ffmpeg and Playwright's Chromium installed:
@@ -148,6 +148,9 @@ npm run site-demo
 npm run build:extension
 npm run extension-demo
 ```
+
+Alternatively, run **Regenerate demo media** in the repository's Actions tab
+on a branch. It validates the clips and commits the refreshed media to that branch.
 
 The site demo requires access to its linked TechCrunch article. Set `ARTICLE`
 or `SITE` to record another article or deployment. `SKIP_ENCODE=1 npm run

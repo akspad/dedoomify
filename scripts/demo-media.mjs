@@ -46,5 +46,5 @@ export function encodeDemo(master, { mp4, gif, webm, poster, speed = 1, posterTi
   if (webm) ff(...input, "-vf", filter, "-c:v", "libvpx-vp9", "-crf", "24", "-b:v", "0", "-row-mt", "1", "-pix_fmt", "yuv420p", "-an", webm);
   // Full palette, native README width, and stable dithering for text edges.
   ff(...input, "-filter_complex", `setpts=(PTS-STARTPTS)/${speed},fps=15,scale=1100:-2:flags=lanczos,split[a][b];[a]palettegen=max_colors=256:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle`, "-loop", "0", "-an", gif);
-  if (poster) ff("-ss", String(posterTime * speed), ...input, "-frames:v", "1", "-update", "1", poster);
+  if (poster) ff("-ss", String(posterTime * speed), ...input, "-frames:v", "1", "-c:v", "libwebp", "-quality", "92", "-compression_level", "6", "-update", "1", poster);
 }
