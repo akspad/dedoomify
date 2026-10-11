@@ -10,9 +10,9 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { startCapture, encodeDemo } from "./demo-media.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml" };
@@ -60,10 +60,10 @@ const server = http
   .listen(0);
 const origin = `http://localhost:${server.address().port}`;
 
-const tmp = path.join(root, "dist", "demo-tmp");
+const tmp = path.join(root, "dist", "extension-demo-tmp");
 fs.rmSync(tmp, { recursive: true, force: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-const context = await browser.newContext({ viewport: { width: W, height: H }, colorScheme: "light", recordVideo: { dir: tmp, size: { width: W, height: H } } });
+const context = await browser.newContext({ viewport: { width: W, height: H }, colorScheme: "light", deviceScaleFactor: 2 });
 
 // In the popup frame, chrome.* runs the extension's files in the article frame.
 await context.addInitScript(() => {
@@ -115,6 +115,8 @@ const centre = async (locator) => {
 };
 
 await cursor(at);
+await page.evaluate(() => document.fonts.ready);
+const finishCapture = await startCapture(page, tmp);
 await page.waitForTimeout(1400);
 
 // Open the popup from the toolbar button.
@@ -156,15 +158,15 @@ await page.waitForTimeout(2600);
 await moveTo(...(await centre(page.frameLocator("#article").locator("mark.dedoomify", { hasText: "estimated failure rate" }).first())), 30);
 await page.waitForTimeout(2600);
 
-const video = await page.video().path();
+const video = await finishCapture();
 await context.close();
 await browser.close();
 server.close();
 
 const docs = path.join(root, "docs");
-const ff = (...args) => execFileSync("ffmpeg", ["-v", "error", "-y", ...args], { stdio: "inherit" });
-// Trim the blank first moments of the recording.
-ff("-ss", "0.6", "-i", video, "-c:v", "libx264", "-preset", "slow", "-crf", "26", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", path.join(docs, "extension-demo.mp4"));
-ff("-i", path.join(docs, "extension-demo.mp4"), "-vf", "fps=12,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96[p];[b][p]paletteuse=dither=bayer:bayer_scale=4", path.join(docs, "extension-demo.gif"));
+encodeDemo(video, {
+  mp4: path.join(docs, "extension-demo.mp4"),
+  gif: path.join(docs, "extension-demo.gif"),
+});
 fs.rmSync(tmp, { recursive: true, force: true });
-console.log("Wrote docs/extension-demo.mp4 and docs/extension-demo.gif");
+console.log("Wrote Retina extension MP4 and README GIF");

@@ -20,12 +20,12 @@ place; hover a highlight to see the original words. A reader view shows just the
 
 You can also [add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl) to de-doom the page you're reading with one click.
 
-[![dedoomify on a TechCrunch story about rogue AI: the link is pasted, 8 doom phrases are highlighted in place, and hovering one shows the original words](docs/demo.gif)](public/demo.mp4)
+[![dedoomify on a TechCrunch story about rogue AI: the link is pasted, 8 doom phrases are highlighted in place, and hovering one shows the original words](docs/demo.gif)](https://dedoomify.com/demo.mp4)
 
 *dedoomify on TechCrunch's [OpenAI still doesn't seem to have a handle on all
 of its rogue AI activity](https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/)
 (Sept 28, 2026), with the quick phrase rules. The same clip plays on the
-homepage; click it for the [MP4](public/demo.mp4).*
+homepage; click it for the [Retina MP4](https://dedoomify.com/demo.mp4).*
 
 Built by [@akspad](https://x.com/akspad)
 
@@ -66,7 +66,7 @@ Files:
   `diff.js` (highlights what changed), `tooltip.js` (the hover card with the
   original words), `local-ai.js` and `llm-worker.js` for the on-device model,
   `privacy.html`, and the homepage demo clip (`demo.mp4`, with `demo.webm` for
-  browsers without H.264, and `demo-poster.jpg`). `npm run build` copies the
+  browsers without H.264, and `demo-poster.png`). `npm run build` copies the
   shared scripts and WebLLM into `public/vendor/`.
 - **`api/page.js`** retains publisher CSS, scoped attributes and static SVG artwork,
   with active media, scripts, frames and event handlers removed and the phrase rules applied in place
@@ -130,6 +130,30 @@ text for a mention of AI and any phrase the rules would change (a few
 milliseconds at most, since each rule is skipped unless its key word is in
 the text), so pages without AI doom are left alone.
 
+## Regenerating the demos
+
+The site and extension demos capture lossless PNG frames at 2× device scale.
+The MP4s play at 30 fps (2200×1408 for the site, 2560×1464 for the extension).
+WebM, the lossless PNG poster, and the 1100-pixel, 15 fps GIFs are generated
+directly from the same lossless master, avoiding compression between formats.
+
+With ffmpeg and Playwright's Chromium installed:
+
+```sh
+npm ci
+npm install --no-save --package-lock=false playwright@1.58.2
+npx playwright install chromium
+npm run build
+npm run site-demo
+npm run build:extension
+npm run extension-demo
+```
+
+The site demo requires access to its linked TechCrunch article. Set `ARTICLE`
+or `SITE` to record another article or deployment. `SKIP_ENCODE=1 npm run
+site-demo` retains `dist/demo-raw.mkv`; `FROM_RAW=dist/demo-raw.mkv npm run
+site-demo` re-encodes it. `CHROMIUM_PATH` selects an installed Chromium build.
+
 ## Contributing
 
 Rule ideas are the easiest contribution: add a phrase pair to
@@ -147,3 +171,4 @@ original too.
 ## License
 
 MIT
+
