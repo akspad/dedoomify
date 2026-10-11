@@ -21,7 +21,7 @@ const ARTICLE =
   process.env.ARTICLE ||
   "https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/";
 // Playback speed of the published clip relative to the recording.
-const SPEED = Number(process.env.SPEED) || 1.5;
+const SPEED = Number(process.env.SPEED) || 1;
 const W = 1100;
 const H = 704;
 
@@ -63,67 +63,54 @@ async function record() {
   await page.evaluate(() => document.querySelector("#demo video")?.pause());
   await page.evaluate(() => document.fonts.ready);
 
-  let at = { x: 700, y: 120 };
-  const cursor = (p) => page.evaluate(({ x, y }) => { document.getElementById("demo-cursor").style.transform = `translate(${x - 3}px, ${y - 2}px)`; }, p);
-  async function moveTo(x, y, steps = 24) {
-    const from = at;
-    for (let i = 1; i <= steps; i++) {
-      const t = i / steps;
-      const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-      const p = { x: from.x + (x - from.x) * e, y: from.y + (y - from.y) * e };
-      await page.mouse.move(p.x, p.y);
-      await cursor(p);
-      await page.waitForTimeout(16);
-    }
-    at = { x, y };
-  }
+  const capture = await startCapture(page, tmp, { reportPath: path.join(root, "dist", "site-demo-motion.json") });
+  const moveTo = (x, y, steps = 24) => capture.moveTo(x, y, steps / 30);
   const centre = async (locator) => {
     const box = await locator.boundingBox();
     return [box.x + box.width / 2, box.y + box.height / 2];
   };
 
-  await cursor(at);
-  const finishCapture = await startCapture(page, tmp);
-  await page.waitForTimeout(1200);
+  await capture.cursor({ x: 700, y: 120 });
+  await capture.hold(1200);
 
   // Paste the link and de-doom it.
   const input = page.locator("#url");
   await input.scrollIntoViewIfNeeded();
   await moveTo(...(await centre(input)));
   await input.click();
-  await page.waitForTimeout(250);
+  await capture.hold(250);
   await input.fill(ARTICLE);
-  await page.waitForTimeout(700);
+  await capture.hold(700);
   await moveTo(...(await centre(page.locator("#go"))));
-  await page.waitForTimeout(250);
+  await capture.hold(250);
   await page.locator("#go").click();
   const frame = page.frameLocator("#page");
   await frame.locator("mark.dd").first().waitFor({ timeout: 45_000 });
-  await page.waitForTimeout(1800);
+  await capture.hold(1800);
 
   // Hover a highlight to see the original words, then read on.
   const marks = frame.locator("mark.dd");
   const hover = async (mark) => {
     await mark.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(400);
+    await capture.hold(400);
     await moveTo(...(await centre(mark)), 30);
-    await page.waitForTimeout(2400);
+    await capture.hold(2400);
   };
   const title = frame.locator("h1 mark.dd").first();
   await hover((await title.count()) ? title : marks.first());
   await moveTo(W - 120, H - 140, 20);
-  for (let i = 0; i < 6; i++) {
-    await page.mouse.wheel(0, 90);
-    await page.waitForTimeout(110);
+  for (let i = 0; i < 40; i++) {
+    await frame.locator("body").evaluate(() => window.scrollBy({ top: 13.5, behavior: "instant" }));
+    await capture.frame();
   }
-  await page.waitForTimeout(800);
+  await capture.hold(800);
   const visible = await marks.evaluateAll((els) => els.findIndex((el) => {
     const r = el.getBoundingClientRect();
     return r.top > 140 && r.bottom < innerHeight - 60;
   }));
   if (visible >= 0) await hover(marks.nth(visible));
 
-  const recording = await finishCapture();
+  const recording = await capture.finish();
   await context.close();
   await browser.close();
   server?.kill();

@@ -2,6 +2,14 @@ name: Regenerate demo media
 
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/smooth-demo-motion]
+    paths:
+      - scripts/demo-media.mjs
+      - scripts/site-demo.mjs
+      - scripts/extension-demo.mjs
+      - scripts/verify-demo-motion.mjs
+      - .github/workflows/demo-media.yml
 
 permissions:
   contents: write
@@ -9,7 +17,7 @@ permissions:
 jobs:
   record:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,6 +36,7 @@ jobs:
       - name: Verify media and extract review frames
         run: |
           mkdir -p dist/demo-review
+          node scripts/verify-demo-motion.mjs
           ffprobe -v error -show_entries stream=codec_name,width,height,avg_frame_rate -show_entries format=duration,size -of json public/demo.mp4
           ffprobe -v error -show_entries stream=codec_name,width,height,avg_frame_rate -show_entries format=duration,size -of json docs/extension-demo.mp4
           for media in public/demo.mp4 public/demo.webm docs/demo.gif docs/extension-demo.mp4 docs/extension-demo.gif; do
@@ -36,11 +45,14 @@ jobs:
           done
           ffmpeg -v error -i public/demo.mp4 -vf "fps=1/3,scale=660:-2,tile=2x2" -frames:v 1 dist/demo-review/site.jpg
           ffmpeg -v error -i docs/extension-demo.mp4 -vf "fps=1/4,scale=660:-2,tile=2x2" -frames:v 1 dist/demo-review/extension.jpg
+          base64 -w 0 dist/demo-review/site.jpg > docs/site-review.jpg.base64
+          base64 -w 0 dist/demo-review/extension.jpg > docs/extension-review.jpg.base64
       - uses: actions/upload-artifact@v4
         with:
           name: demo-media-review
           path: |
             dist/demo-review/
+            dist/*-demo-motion.json
             public/demo.mp4
             public/demo.webm
             public/demo-poster.webp
@@ -51,8 +63,8 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/demo.mp4 public/demo.webm public/demo-poster.webp docs/demo.gif docs/extension-demo.mp4 docs/extension-demo.gif
+          git add public/demo.mp4 public/demo.webm public/demo-poster.webp docs/demo.gif docs/extension-demo.mp4 docs/extension-demo.gif docs/site-review.jpg.base64 docs/extension-review.jpg.base64
           if ! git diff --cached --quiet; then
-            git commit -m "Regenerate demos from lossless Retina captures"
+            git commit -m "Regenerate demos with smooth frame-driven cursor motion"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
