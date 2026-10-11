@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Optimize poster and extract review frames
         run: |
           ffmpeg -v error -y -i public/demo-poster.png -c:v libwebp -quality 92 -compression_level 6 public/demo-poster.webp
