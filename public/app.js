@@ -10,6 +10,23 @@ const modeSelect = $("mode");
 const tabUrl = $("tab-url"), tabText = $("tab-text");
 const panelUrl = $("panel-url"), panelText = $("panel-text");
 const demo = $("demo");
+
+// Select the URL when entering the field. The first click repeats selection
+// after the browser places its caret; later clicks can position it for edits.
+const urlInput = $("url");
+let selectUrlOnClick = false;
+urlInput.addEventListener("focus", () => {
+  selectUrlOnClick = true;
+  urlInput.select();
+});
+urlInput.addEventListener("click", () => {
+  if (!selectUrlOnClick) return;
+  selectUrlOnClick = false;
+  urlInput.select();
+});
+for (const type of ["blur", "keydown", "input"]) {
+  urlInput.addEventListener(type, () => { selectUrlOnClick = false; });
+}
 // With reduced motion, the demo waits for a press instead of autoplaying.
 if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
   const video = demo.querySelector("video");
