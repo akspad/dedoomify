@@ -1,5 +1,6 @@
 import * as localAi from "./local-ai.js";
 import * as tooltip from "./tooltip.js";
+import { attachUrlInput } from "./url-input.js";
 
 const $ = (id) => document.getElementById(id);
 const form = $("form"), go = $("go"), errorEl = $("error");
@@ -11,22 +12,8 @@ const tabUrl = $("tab-url"), tabText = $("tab-text");
 const panelUrl = $("panel-url"), panelText = $("panel-text");
 const demo = $("demo");
 
-// Select the URL when entering the field. The first click repeats selection
-// after the browser places its caret; later clicks can position it for edits.
 const urlInput = $("url");
-let selectUrlOnClick = false;
-urlInput.addEventListener("focus", () => {
-  selectUrlOnClick = true;
-  urlInput.select();
-});
-urlInput.addEventListener("click", () => {
-  if (!selectUrlOnClick) return;
-  selectUrlOnClick = false;
-  urlInput.select();
-});
-for (const type of ["blur", "keydown", "input"]) {
-  urlInput.addEventListener(type, () => { selectUrlOnClick = false; });
-}
+attachUrlInput(urlInput, window);
 // With reduced motion, the demo waits for a press instead of autoplaying.
 if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
   const video = demo.querySelector("video");
@@ -383,6 +370,8 @@ unpinOnInput(window);
 // A reader sitting at the banner stays there when the banner changes height
 // (the progress line clearing), even after they have scrolled or clicked.
 let atTop = false;
+// Editing a new URL takes priority over keeping the previous article pinned.
+urlInput.addEventListener("focus", () => { pinned = false; atTop = false; });
 addEventListener("scroll", () => {
   atTop = !result.hidden && Math.abs(result.getBoundingClientRect().top) < 2;
 }, { passive: true });
@@ -535,3 +524,4 @@ async function init() {
   }
 }
 init();
+

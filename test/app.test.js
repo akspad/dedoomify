@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 import { parseHTML } from "linkedom";
+import { attachUrlInput } from "../public/url-input.js";
 import "../shared/dedoom-core.js";
 import "../shared/dedoom-prompt.js";
 import "../shared/page-dedoom.js";
@@ -19,7 +20,9 @@ const response = (text) => ({ ok: true, json: async () => ({ title: "Your text",
 async function browser(fetch, localAi = {}) {
   const { document, Event } = parseHTML(html);
   const context = {
-    document, console, URLSearchParams, fetch,
+    document, console, URLSearchParams, fetch, attachUrlInput,
+    requestAnimationFrame: setImmediate, cancelAnimationFrame: clearImmediate,
+    setTimeout, clearTimeout,
     matchMedia: () => ({ matches: false }), navigator: {},
     localStorage: { getItem: () => null, setItem() {} },
     location: { origin: "https://dedoomify.com", href: "https://dedoomify.com/", search: "" },
@@ -104,3 +107,4 @@ test("a late response cannot overwrite a newer reader result", async () => {
   assert.match($("article").textContent, /new model has a bug/);
   assert.doesNotMatch($("article").textContent, /old model/);
 });
+
