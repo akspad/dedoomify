@@ -9,17 +9,18 @@ import imageHandler from "../api/image.js";
 import pageHandler from "../api/page.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
-const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".mp4": "video/mp4", ".webm": "video/webm" };
+const types = { ".html": "text/html; charset=utf-8", ".txt": "text/plain; charset=utf-8", ".xml": "application/xml; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".mp4": "video/mp4", ".webm": "video/webm" };
 const port = Number(process.env.PORT) || 3000;
-// Send the same security headers Vercel does, so problems show up locally.
+// Send the same security and indexing headers Vercel does, so problems show up locally.
 const vercel = JSON.parse(await fs.readFile(new URL("../vercel.json", import.meta.url), "utf8"));
-const headerRules = vercel.headers.map((rule) => ({ re: new RegExp(`^${rule.source}$`), headers: rule.headers }));
+const headerRules = vercel.headers.map((rule) => ({ re: new RegExp(`^${rule.source}$`), has: rule.has ?? [], headers: rule.headers }));
 
 http
   .createServer(async (req, res) => {
-    const { pathname } = new URL(req.url, "http://localhost");
+    const { pathname, searchParams } = new URL(req.url, "http://localhost");
     for (const rule of headerRules) {
-      if (rule.re.test(pathname)) for (const { key, value } of rule.headers) res.setHeader(key, value);
+      const conditionsMatch = rule.has.every((condition) => condition.type === "query" && searchParams.has(condition.key));
+      if (rule.re.test(pathname) && conditionsMatch) for (const { key, value } of rule.headers) res.setHeader(key, value);
     }
     if (pathname === "/api/dedoom") return handler(req, res);
     if (pathname === "/api/image") return imageHandler(req, res);
