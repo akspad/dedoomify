@@ -204,3 +204,16 @@ del.dd { display: none; }
 .prose a { color: var(--accent); }
 .prose code { font-size: 0.9em; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; }
 .prose .updated { color: var(--muted); font-size: 0.9rem; }
+
+/* VIM-Like injects hint styles inline, which our CSP blocks in Safari.
+   Keep its labels out of document flow so scrolling cannot reveal a column
+   of shortcut letters below the article. Coordinates still come from VIM-Like. */
+#geek-browser-container {
+  position: absolute; top: 0; left: 0; width: 0; height: 0;
+  z-index: 2147483645; pointer-events: none;
+}
+#geek-browser-container > .gb-label {
+  position: absolute !important; white-space: nowrap;
+  font: 600 11px/1.2 var(--sans); color: var(--mark-ink);
+  background: var(--mark); border-radius: 3px; padding: 2px 4px;
+}
