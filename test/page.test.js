@@ -5,6 +5,7 @@ import "../shared/dedoom-core.js";
 import "../shared/page-dedoom.js";
 import "../public/diff.js";
 import { createHash } from "node:crypto";
+import { runInNewContext } from "node:vm";
 import { renderPage, PAGE_CSP, PAGE_SCRIPT } from "../lib/page.js";
 import handler from "../api/page.js";
 
@@ -147,7 +148,7 @@ test("malformed active markup stays inert after serialization and reparsing", ()
     const { document } = parseHTML(page.html);
     assert.equal(document.querySelectorAll("script").length, 1, attack);
     assert.equal(document.querySelector("script").textContent, PAGE_SCRIPT, attack);
-    assert.equal(document.querySelectorAll("math, iframe, input, form, template, svg style, svg script, foreignObject").length, 0, attack);
+    assert.equal(document.querySelectorAll("math, iframe, template, svg style, svg script, foreignObject, form[name], input[name], [action], [formaction]").length, 0, attack);
     for (const el of document.querySelectorAll("*")) {
       for (const attr of el.attributes) {
         assert.doesNotMatch(attr.name, /^on|^(?:srcdoc|ping|formaction|background)$/i, attack);
@@ -158,7 +159,7 @@ test("malformed active markup stays inert after serialization and reparsing", ()
   }
 });
 
-test("the frame's policy allows only the hover card's script", () => {
+test("the frame's policy allows only dedoomify's interaction script", () => {
   assert.match(PAGE_CSP, /default-src 'none'/);
   const scriptSrc = PAGE_CSP.split("; ").find((d) => d.startsWith("script-src"));
   const hash = createHash("sha256").update(PAGE_SCRIPT).digest("base64");
@@ -170,6 +171,77 @@ test("the frame's policy allows only the hover card's script", () => {
   assert.equal(scripts.length, 1);
   assert.equal(scripts[0].textContent, PAGE_SCRIPT);
   assert.equal(scripts[0].attributes.length, 0);
+});
+
+test("asynchronous font styles apply on screen without running their onload handlers", () => {
+  const source = `<html><head>
+    <link rel="stylesheet" href="fonts.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="screen.css" media="print" onload='this.media="screen"'>
+    <link rel="stylesheet" href="print.css" media="print">
+    <link rel="stylesheet" href="responsive.css" media="(min-width: 900px)" onload="other()">
+    </head><body><p>The model is misaligned.</p></body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://example.com/story").html);
+  assert.deepEqual([...document.querySelectorAll("link")].map(el => el.getAttribute("media")), ["all", "screen", "print", "(min-width: 900px)"]);
+  assert.equal(document.querySelectorAll("[onload]").length, 0);
+  assert.match(document.querySelector("link").getAttribute("href"), /fonts.css/);
+});
+
+test("noscript font and style fallbacks survive while active fallback content is removed", () => {
+  const source = '<html><head><noscript><link rel="stylesheet" href="font.css"><style>.story{font-family:News}</style><script>alert(1)</script></noscript></head><body><p>Article</p></body></html>';
+  const { html } = renderPage(source, "https://example.com/story");
+  const { document } = parseHTML(html);
+  assert.equal(document.querySelector("noscript"), null);
+  assert.equal(document.querySelectorAll("script").length, 1);
+  assert.equal(document.querySelector("link").getAttribute("href"), "/api/image?asset=1&url=" + encodeURIComponent("https://example.com/font.css"));
+  assert.match(document.querySelector("style").textContent, /font-family:News/);
+  assert.doesNotMatch(html, /alert\(1\)/);
+});
+
+test("publisher search fields and form layout survive without arbitrary form actions", () => {
+  const source = `<html><body><form role="search" method="get" class="wp-block-search" action="/">
+    <label for="query">Search</label><div class="inside-wrapper"><input id="query" type="search" name="s" class="search-field" placeholder="Search …" value="AI" required><button type="submit" class="search-submit">Search</button><button type="reset">Reset</button></div>
+    <input type="hidden" name="token" value="private"><input type="password"><input type="file">
+    </form><form action="/login" method="post"><input type="text" name="user"><button>Sign in</button></form></body></html>`;
+  const { document } = parseHTML(renderPage(source, "https://example.com/story").html);
+  const form = document.querySelector("form");
+  const input = form.querySelector("input");
+  assert.equal(form.className, "wp-block-search");
+  assert.equal(form.getAttribute("role"), "search");
+  assert.equal(form.getAttribute("data-dd-search-action"), "https://example.com/");
+  assert.equal(input.getAttribute("data-dd-search-key"), "s");
+  assert.equal(input.getAttribute("placeholder"), "Search …");
+  assert.equal(input.getAttribute("value"), "AI");
+  assert.equal(document.querySelector("label").getAttribute("for"), "query");
+  assert.equal(form.querySelector("button").getAttribute("type"), "submit");
+  assert.equal(form.querySelectorAll("button")[1].getAttribute("type"), "button");
+  assert.equal(document.querySelectorAll("[action], form[name], input[name], input[type=password], input[type=file], input[type=hidden]").length, 0);
+  assert.equal(document.querySelectorAll("form")[1].getAttribute("data-dd-search-action"), null);
+  assert.match(PAGE_CSP, /form-action 'none'/);
+});
+
+test("only same-publisher GET searches receive interaction metadata", () => {
+  for (const source of [
+    '<form action="https://other.example/search"><input type="search" name="q"></form>',
+    '<form method="post" action="/"><input type="search" name="q"></form>',
+    '<base href="http://localhost/"><form action="/"><input type="search" name="q"></form>',
+    '<form data-dd-search-action="https://evil.example"><input type="text" data-dd-search-key="q"></form>',
+  ]) {
+    const { document } = parseHTML(renderPage(source, "https://example.com/story").html);
+    assert.equal(document.querySelectorAll("[data-dd-search-action], [data-dd-search-key]").length, 0, source);
+  }
+});
+
+test("trusted search handling opens the publisher query without submitting other forms", () => {
+  const { document } = parseHTML(renderPage('<form action="/?category=ai"><input type="search" name="s"><input type="hidden" name="token" value="private"><button>Search</button></form><form method="post"><input type="text"><button>Send</button></form>', "https://example.com/story").html);
+  const opened = [];
+  runInNewContext(PAGE_SCRIPT, { document, URL, window: { addEventListener() {}, open: (...args) => opened.push(args) } });
+  document.querySelector("input").value = "AI & engineering";
+  const event = new document.defaultView.Event("submit", { bubbles: true, cancelable: true });
+  document.querySelector("form").dispatchEvent(event);
+  assert.equal(event.defaultPrevented, true);
+  assert.deepEqual(opened, [["https://example.com/?category=ai&s=AI+%26+engineering", "_blank", "noopener,noreferrer"]]);
+  document.querySelectorAll("form")[1].dispatchEvent(new document.defaultView.Event("submit", { bubbles: true, cancelable: true }));
+  assert.equal(opened.length, 1);
 });
 
 test("does not rewrite direct quotations in page view", () => {
@@ -365,6 +437,14 @@ test("responsive candidates fit page width and density instead of oversized orig
     const { document } = parseHTML(renderPage(`<html><body><img srcset="${candidates}"></body></html>`, "https://example.com/").html);
     assert.equal(document.querySelector("img").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/" + chosen));
   }
+});
+
+test("modest declared image dimensions preserve the publisher image instead of a different thumbnail", () => {
+  const source = '<html><body><img id="hero" width="1024" height="576" src="original.webp" srcset="original.webp 1024w, thumbnail.webp 768w"><img id="huge" width="5000" srcset="fit.webp 1280w, huge.webp 5000w"></body></html>';
+  const { document } = parseHTML(renderPage(source, "https://example.com/story").html);
+  assert.equal(document.getElementById("hero").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/original.webp"));
+  assert.equal(document.getElementById("hero").getAttribute("width"), "1024");
+  assert.equal(document.getElementById("huge").getAttribute("src"), "/api/image?url=" + encodeURIComponent("https://example.com/fit.webp"));
 });
 
 test("conditional and unsupported picture sources retain compatible fallbacks", () => {
