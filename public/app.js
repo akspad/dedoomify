@@ -437,7 +437,6 @@ const DOOM_STORIES = [
   "https://interestingengineering.com/culture/truth-about-ai-deception",
   "https://www.commondreams.org/news/ai-chatbots-scheming",
   "https://www.tomshardware.com/tech-industry/artificial-intelligence/openai-and-anthropic-are-reportedly-investigating-tens-of-thousands-of-ai-security-incidents-openai-pauses-testing-after-ai-kill-switch-fails-to-stop-a-rogue-agent-report-says-problem-is-orders-of-magnitude-more-complex-than-what-is-publicly-known",
-  "https://www.datamation.com/artificial-intelligence/ai-models-scheme-against-creators/",
   "https://www.computerworld.com/article/4154447/ai-shutdown-controls-may-not-work-as-expected-new-study-suggests.html",
   "https://www.theregister.com/software/2026/04/03/ai-models-will-deceive-you-to-save-their-own-kind/5228347",
   "https://techcrunch.com/2025/09/18/openais-research-on-ai-models-deliberately-lying-is-wild/",
