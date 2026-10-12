@@ -134,7 +134,8 @@ the text), so pages without AI doom are left alone.
 
 The site and extension demos capture lossless PNG frames at 2× device scale.
 Every cursor movement is captured frame by frame, with playback timing independent
-of screenshot speed. The MP4s play at 60 fps (2200×1408 for the site, 2560×1464 for the extension).
+of screenshot speed. The MP4/WebM videos play at 1.5× speed and 60 fps
+(2200×1408 for the site, 2560×1464 for the extension).
 WebM, the high-quality WebP poster, and the 1100-pixel, 25 fps GIFs are generated
 directly from the same lossless master, avoiding compression between formats.
 
@@ -157,6 +158,7 @@ The site demo requires access to its linked TechCrunch article. Set `ARTICLE`
 or `SITE` to record another article or deployment. `SKIP_ENCODE=1 npm run
 site-demo` retains `dist/demo-raw.mkv`; `FROM_RAW=dist/demo-raw.mkv npm run
 site-demo` re-encodes it. `CHROMIUM_PATH` selects an installed Chromium build.
+`SPEED` overrides the site video's playback speed; GIFs use the original timing.
 
 ## Contributing
 

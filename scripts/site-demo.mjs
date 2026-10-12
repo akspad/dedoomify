@@ -14,14 +14,14 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { startCapture, encodeDemo } from "./demo-media.mjs";
+import { startCapture, encodeDemo, VIDEO_SPEED } from "./demo-media.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ARTICLE =
   process.env.ARTICLE ||
   "https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/";
 // Playback speed of the published clip relative to the recording.
-const SPEED = Number(process.env.SPEED) || 1;
+const SPEED = Number(process.env.SPEED) || VIDEO_SPEED;
 const W = 1100;
 const H = 704;
 
@@ -63,7 +63,7 @@ async function record() {
   await page.evaluate(() => document.querySelector("#demo video")?.pause());
   await page.evaluate(() => document.fonts.ready);
 
-  const capture = await startCapture(page, tmp, { reportPath: path.join(root, "dist", "site-demo-motion.json") });
+  const capture = await startCapture(page, tmp, { reportPath: path.join(root, "dist", "site-demo-motion.json"), videoSpeed: SPEED });
   const moveTo = (x, y, steps = 24) => capture.moveTo(x, y, steps / 30);
   const centre = async (locator) => {
     const box = await locator.boundingBox();

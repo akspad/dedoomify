@@ -6,9 +6,10 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 
 export const VIDEO_FPS = 60;
+export const VIDEO_SPEED = 1.5;
 const ff = (...args) => execFileSync("ffmpeg", ["-v", "error", "-y", ...args], { stdio: "inherit" });
 
-export async function startCapture(page, directory, { reportPath } = {}) {
+export async function startCapture(page, directory, { reportPath, videoSpeed = VIDEO_SPEED } = {}) {
   fs.mkdirSync(directory, { recursive: true });
   const frames = [];
   const motions = [];
@@ -60,8 +61,8 @@ export async function startCapture(page, directory, { reportPath } = {}) {
     const manifest = path.join(directory, "frames.txt");
     fs.writeFileSync(manifest, timeline);
     const master = path.join(directory, "master.mkv");
-    ff("-f", "concat", "-safe", "0", "-i", manifest, "-vf", `fps=${VIDEO_FPS}`, "-c:v", "ffv1", "-level", "3", "-pix_fmt", "bgr0", "-an", master);
-    if (reportPath) fs.writeFileSync(reportPath, JSON.stringify({ fps: VIDEO_FPS, duration: elapsed, motions }, null, 2));
+    ff("-f", "concat", "-safe", "0", "-i", manifest, "-t", String(elapsed), "-vf", `fps=${VIDEO_FPS}`, "-c:v", "ffv1", "-level", "3", "-pix_fmt", "bgr0", "-an", master);
+    if (reportPath) fs.writeFileSync(reportPath, JSON.stringify({ fps: VIDEO_FPS, videoSpeed, duration: elapsed, motions }, null, 2));
     console.log(`Captured ${frames.length} Retina images for ${elapsed.toFixed(2)}s of playback; ${motions.length} cursor movements`);
     return master;
   }
@@ -69,12 +70,12 @@ export async function startCapture(page, directory, { reportPath } = {}) {
   return { cursor, moveTo, frame, hold, finish };
 }
 
-export function encodeDemo(master, { mp4, gif, webm, poster, speed = 1, posterTime = 6 }) {
+export function encodeDemo(master, { mp4, gif, webm, poster, speed = VIDEO_SPEED, posterTime = 6 }) {
   const filter = `setpts=(PTS-STARTPTS)/${speed},fps=${VIDEO_FPS}`;
   const input = ["-i", master];
   ff(...input, "-vf", filter, "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", mp4);
   if (webm) ff(...input, "-vf", filter, "-c:v", "libvpx-vp9", "-crf", "24", "-b:v", "0", "-cpu-used", "4", "-row-mt", "1", "-pix_fmt", "yuv420p", "-an", webm);
   // 25 fps uses exact 40ms GIF delays rather than uneven rounded frame timing.
-  ff(...input, "-filter_complex", `setpts=(PTS-STARTPTS)/${speed},fps=25,scale=1100:-2:flags=lanczos,split[a][b];[a]palettegen=max_colors=256:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle`, "-loop", "0", "-an", gif);
+  ff(...input, "-filter_complex", "setpts=PTS-STARTPTS,fps=25,scale=1100:-2:flags=lanczos,split[a][b];[a]palettegen=max_colors=256:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle", "-loop", "0", "-an", gif);
   if (poster) ff("-ss", String(posterTime * speed), ...input, "-frames:v", "1", "-c:v", "libwebp", "-quality", "92", "-compression_level", "6", "-update", "1", poster);
 }
