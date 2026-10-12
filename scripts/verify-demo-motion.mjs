@@ -24,12 +24,28 @@ for (const [reportPath, media] of pairs) {
     for (const motion of motions) {
       const start = motion.start + motion.duration * 0.1;
       const duration = motion.duration * 0.8;
-      const decoded = execFileSync("ffmpeg", ["-v", "error", "-ss", String(start), "-i", file, "-t", String(duration), "-an", "-vf", `fps=${expectedFps}`, "-f", "framemd5", "-"], { encoding: "utf8", maxBuffer: 4 * 1024 * 1024 });
-      const hashes = decoded.split("\n").filter((line) => line && !line.startsWith("#")).map((line) => line.split(",").at(-1).trim());
-      const unique = new Set(hashes).size;
-      assert(hashes.length >= Math.floor(duration * expectedFps) - 1, `${file}: missing movement frames`);
-      assert(unique / hashes.length >= 0.9, `${file}: only ${unique}/${hashes.length} distinct frames during movement at ${start.toFixed(2)}s`);
-      console.log(`${file}: ${unique}/${hashes.length} distinct decoded cursor frames at ${expectedFps} fps (${start.toFixed(2)}s)`);
+      // Normalize to CSS pixels and ignore small compression differences: byte
+      // hashes alone can mistake H.264 noise in a repeated image for motion.
+      const width = reportPath.includes("extension") ? 1280 : 1100;
+      const height = reportPath.includes("extension") ? 732 : 704;
+      const decoded = execFileSync("ffmpeg", ["-v", "error", "-ss", String(start), "-i", file, "-t", String(duration), "-an", "-vf", `fps=${expectedFps},scale=${width}:${height}`, "-pix_fmt", "rgb24", "-f", "rawvideo", "-"], { maxBuffer: 256 * 1024 * 1024 });
+      const frameBytes = width * height * 3;
+      const count = decoded.length / frameBytes;
+      assert(Number.isInteger(count) && count >= Math.floor(duration * expectedFps) - 1, `${file}: missing movement frames`);
+      let moving = 0;
+      for (let frame = 1; frame < count; frame++) {
+        let changed = 0;
+        const offset = frame * frameBytes;
+        for (let pixel = 0; pixel < frameBytes; pixel += 3) {
+          const difference = Math.abs(decoded[offset + pixel] - decoded[offset + pixel - frameBytes])
+            + Math.abs(decoded[offset + pixel + 1] - decoded[offset + pixel + 1 - frameBytes])
+            + Math.abs(decoded[offset + pixel + 2] - decoded[offset + pixel + 2 - frameBytes]);
+          if (difference > 96 && ++changed >= 8) break;
+        }
+        if (changed >= 8) moving++;
+      }
+      assert(moving / (count - 1) >= 0.9, `${file}: visible motion in only ${moving}/${count - 1} adjacent frames at ${start.toFixed(2)}s`);
+      console.log(`${file}: visible motion in ${moving}/${count - 1} adjacent decoded frames at ${expectedFps} fps (${start.toFixed(2)}s)`);
     }
   }
 }
