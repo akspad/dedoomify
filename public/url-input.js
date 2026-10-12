@@ -4,11 +4,9 @@ export function attachUrlInput(input, view = window) {
   let frame = null;
   let keyboardTimer = null;
 
-  function update() {
-    frame = null;
+  function updateVisibility() {
+    keyboardTimer = null;
     if (view.document.activeElement !== input) return;
-    // Let the browser's focus action run before selecting for keyboard users.
-    if (selectOnClick) input.select();
     const viewport = view.visualViewport;
     const top = viewport?.offsetTop ?? 0;
     const height = viewport?.height ?? view.innerHeight;
@@ -16,30 +14,36 @@ export function attachUrlInput(input, view = window) {
     const bottom = top + height;
     const box = input.getBoundingClientRect();
     const gap = 16;
-    if (box.bottom > bottom - gap) {
+    // Leave native keyboard scrolling alone when it already reveals the field,
+    // even if it places the field close to the viewport edge.
+    if (box.bottom > bottom) {
       view.scrollBy({ top: box.bottom - bottom + gap, behavior: "instant" });
-    } else if (box.top < top + gap) {
+    } else if (box.top < top) {
       view.scrollBy({ top: box.top - top - gap, behavior: "instant" });
     }
   }
 
-  function queueUpdate() {
-    if (frame === null) frame = view.requestAnimationFrame(update);
+  function queueVisibility(delay = 150) {
+    if (view.document.activeElement !== input) return;
+    view.clearTimeout(keyboardTimer);
+    keyboardTimer = view.setTimeout(updateVisibility, delay);
   }
 
   input.addEventListener("focus", () => {
     selectOnClick = true;
-    queueUpdate();
-    // Recheck after the keyboard animation, including browsers with late
-    // visual-viewport updates. The callback never refocuses the input.
-    view.clearTimeout(keyboardTimer);
-    keyboardTimer = view.setTimeout(queueUpdate, 350);
+    // Select after native focus, separately from keyboard visibility updates.
+    frame = view.requestAnimationFrame(() => {
+      frame = null;
+      if (selectOnClick && view.document.activeElement === input) input.select();
+    });
+    // Give native scrolling time to finish. Resizes restart this single check,
+    // avoiding incremental corrections throughout the keyboard animation.
+    queueVisibility(350);
   });
   input.addEventListener("click", () => {
     if (!selectOnClick) return;
     selectOnClick = false;
     input.select();
-    queueUpdate();
   });
   for (const type of ["keydown", "input"]) {
     input.addEventListener(type, () => { selectOnClick = false; });
@@ -47,10 +51,11 @@ export function attachUrlInput(input, view = window) {
   input.addEventListener("blur", () => {
     selectOnClick = false;
     view.clearTimeout(keyboardTimer);
+    keyboardTimer = null;
     if (frame !== null) view.cancelAnimationFrame(frame);
     frame = null;
   });
   // Only react to resizing, so ordinary user scrolling is never pulled back.
-  view.visualViewport?.addEventListener("resize", queueUpdate);
-  view.addEventListener("resize", queueUpdate);
+  view.visualViewport?.addEventListener("resize", () => queueVisibility());
+  view.addEventListener("resize", () => queueVisibility());
 }
