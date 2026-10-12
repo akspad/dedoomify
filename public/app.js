@@ -420,8 +420,8 @@ function runUrl(url, options) {
   start(options);
 }
 
-// Real AI doom stories that render well through /api/page. Each one gets more
-// than 6 changes from the phrase rules alone, so the demo shows the rules at
+// Real AI doom stories that render well through /api/page. Each one gets at least
+// 8 changes from the phrase rules alone, so the demo shows the rules at
 // work before the on-device model is involved.
 const DOOM_STORIES = [
   "https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/",
@@ -447,7 +447,13 @@ const DOOM_STORIES = [
   "https://gulfnews.com/technology/media/ai-that-lies-openai-study-finds-chatbots-can-deceive-users-1.500275771",
   "https://www.yahoo.com/news/ai-models-sabotage-blackmail-humans-163820126.html",
   "https://fortune.com/2026/04/03/ai-kill-switch-study-llm-chatbots-defy-orders-decieve-users-peer-preservation/",
-  "https://fortune.com/2023/11/03/ai-bot-insider-trading-deceived-users/",
+  "https://arstechnica.com/ai/2025/08/is-ai-really-trying-to-escape-human-control-and-blackmail-people/",
+  "https://www.livescience.com/technology/artificial-intelligence/threaten-an-ai-chatbot-and-it-will-lie-cheat-and-let-you-die-in-an-effort-to-stop-you-study-warns",
+  "https://www.anthropic.com/research/agentic-misalignment",
+  "https://techcrunch.com/2026/07/27/openais-hugging-face-breach-has-reignited-the-debate-over-alignment-and-control/",
+  "https://builtin.com/artificial-intelligence/alignment-faking",
+  "https://indianexpress.com/article/technology/artificial-intelligence/ai-going-rogue-openai-o3-disabled-shutdown-mechanism-report-10034028/",
+  "https://rdi.berkeley.edu/blog/peer-preservation/",
 ];
 // The first try is always the first story; after that, any story except the
 // one just shown.
