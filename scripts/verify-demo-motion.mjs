@@ -16,14 +16,18 @@ for (const [reportPath, media] of pairs) {
   for (const file of media) {
     const gif = file.endsWith(".gif");
     const expectedFps = gif ? 25 : 60;
-    const info = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=avg_frame_rate", "-of", "json", file], { encoding: "utf8" }));
+    const playbackSpeed = gif ? 1 : (report.videoSpeed ?? 1);
+    const info = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=avg_frame_rate:format=duration", "-of", "json", file], { encoding: "utf8" }));
+    const expectedDuration = report.duration / playbackSpeed;
+    assert(Math.abs(Number(info.format.duration) - expectedDuration) < 0.12, `${file}: expected ${playbackSpeed}× playback (${expectedDuration.toFixed(2)}s)`);
+    console.log(`${file}: verified ${playbackSpeed}× playback (${Number(info.format.duration).toFixed(2)}s)`);
     const [n, d] = info.streams[0].avg_frame_rate.split("/").map(Number);
     // GIF merges identical frames in stationary holds; its overall average is
     // lower. Its moving sections still need one distinct frame every 40ms.
     if (!gif) assert.equal(n / d, expectedFps, `${file}: expected 60 fps`);
     for (const motion of motions) {
-      const start = motion.start + motion.duration * 0.1;
-      const duration = motion.duration * 0.8;
+      const start = (motion.start + motion.duration * 0.1) / playbackSpeed;
+      const duration = motion.duration * 0.8 / playbackSpeed;
       // Normalize to CSS pixels and ignore small compression differences: byte
       // hashes alone can mistake H.264 noise in a repeated image for motion.
       const width = reportPath.includes("extension") ? 1280 : 1100;
