@@ -95,33 +95,20 @@ const page = await context.newPage();
 await page.goto(origin);
 await page.frameLocator("#article").locator("h1").waitFor();
 
-let at = { x: 640, y: 460 };
-const cursor = (p) => page.evaluate(({ x, y }) => { document.getElementById("cursor").style.transform = `translate(${x - 3}px, ${y - 2}px)`; }, p);
-async function moveTo(x, y, steps = 24) {
-  const from = at;
-  for (let i = 1; i <= steps; i++) {
-    const t = i / steps;
-    const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-    const p = { x: from.x + (x - from.x) * e, y: from.y + (y - from.y) * e };
-    await page.mouse.move(p.x, p.y);
-    await cursor(p);
-    await page.waitForTimeout(16);
-  }
-  at = { x, y };
-}
+const capture = await startCapture(page, tmp, { reportPath: path.join(root, "dist", "extension-demo-motion.json") });
+const moveTo = (x, y, steps = 24) => capture.moveTo(x, y, steps / 30);
 const centre = async (locator) => {
   const box = await locator.boundingBox();
   return [box.x + box.width / 2, box.y + box.height / 2];
 };
 
-await cursor(at);
+await capture.cursor({ x: 640, y: 460 });
 await page.evaluate(() => document.fonts.ready);
-const finishCapture = await startCapture(page, tmp);
-await page.waitForTimeout(1400);
+await capture.hold(1400);
 
 // Open the popup from the toolbar button.
 await moveTo(...(await centre(page.locator("#button"))));
-await page.waitForTimeout(250);
+await capture.hold(250);
 await page.evaluate(() => {
   document.getElementById("button").classList.add("on");
   const popup = document.getElementById("popup");
@@ -135,15 +122,15 @@ const fitPopup = () => page.evaluate(() => {
 });
 await popup.locator("#run").waitFor();
 await fitPopup();
-await page.waitForTimeout(900);
+await capture.hold(900);
 
 // De-doom the page.
 await moveTo(...(await centre(popup.locator("#run"))));
-await page.waitForTimeout(300);
+await capture.hold(300);
 await popup.locator("#run").click();
 await popup.locator("#result").waitFor();
 await fitPopup();
-await page.waitForTimeout(2000);
+await capture.hold(2000);
 
 // Close the popup and hover a highlight to see the original words.
 await moveTo(700, 300, 20);
@@ -151,14 +138,14 @@ await page.evaluate(() => {
   document.getElementById("popup").style.display = "none";
   document.getElementById("button").classList.remove("on");
 });
-await page.waitForTimeout(500);
+await capture.hold(500);
 const mark = page.frameLocator("#article").locator("mark.dedoomify", { hasText: "malfunctioning AI" }).first();
 await moveTo(...(await centre(mark)), 30);
-await page.waitForTimeout(2600);
+await capture.hold(2600);
 await moveTo(...(await centre(page.frameLocator("#article").locator("mark.dedoomify", { hasText: "estimated failure rate" }).first())), 30);
-await page.waitForTimeout(2600);
+await capture.hold(2600);
 
-const video = await finishCapture();
+const video = await capture.finish();
 await context.close();
 await browser.close();
 server.close();

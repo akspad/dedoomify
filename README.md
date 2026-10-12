@@ -133,8 +133,9 @@ the text), so pages without AI doom are left alone.
 ## Regenerating the demos
 
 The site and extension demos capture lossless PNG frames at 2× device scale.
-The MP4s play at 30 fps (2200×1408 for the site, 2560×1464 for the extension).
-WebM, the high-quality WebP poster, and the 1100-pixel, 15 fps GIFs are generated
+Every cursor movement is captured frame by frame, with playback timing independent
+of screenshot speed. The MP4s play at 60 fps (2200×1408 for the site, 2560×1464 for the extension).
+WebM, the high-quality WebP poster, and the 1100-pixel, 25 fps GIFs are generated
 directly from the same lossless master, avoiding compression between formats.
 
 With ffmpeg and Playwright's Chromium installed:
