@@ -2,6 +2,19 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm test && npm run build",
   "outputDirectory": "public",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.dedoomify.com" }],
+      "destination": "https://dedoomify.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    }
+  ],
   "functions": {
     "api/dedoom.js": {
       "maxDuration": 60
@@ -12,6 +25,15 @@
     }
   },
   "headers": [
+    {
+      "source": "/",
+      "has": [{ "type": "query", "key": "url" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
     {
       "source": "/((?!api/page).*)",
       "headers": [
