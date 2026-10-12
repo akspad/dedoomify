@@ -2,13 +2,6 @@ name: Regenerate demo media
 
 on:
   workflow_dispatch:
-  push:
-    branches: [codex/faster-demo-videos]
-    paths:
-      - scripts/demo-media.mjs
-      - scripts/site-demo.mjs
-      - scripts/verify-demo-motion.mjs
-      - .github/workflows/demo-media.yml
 
 permissions:
   contents: write
@@ -60,8 +53,8 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/demo.mp4 public/demo.webm docs/extension-demo.mp4
+          git add public/demo.mp4 public/demo.webm public/demo-poster.webp docs/demo.gif docs/extension-demo.mp4 docs/extension-demo.gif
           if ! git diff --cached --quiet; then
-            git commit -m "Speed up the demo videos to 1.5x at 60 fps"
+            git commit -m "Regenerate demos with smooth frame-driven cursor motion"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
