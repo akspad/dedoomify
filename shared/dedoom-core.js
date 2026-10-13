@@ -814,6 +814,11 @@
 
     // Scheming comes last so the verbs after it ("scheming to escape") are
     // rewritten while the AI subject is still in view.
+    ["an AI schemer", "a buggy AI model"],
+    ["AI schemers", "buggy AI models"],
+    ["AI schemer", "buggy AI model"],
+    ["schemers", "buggy models"],
+    ["schemer", "buggy model"],
     ["scheming(?=\\s+(?:AIs?|LLMs?|models?|agents?|systems?|chatbots?|bots?)\\b)", "glitchy"],
     byAI("scheming against", "working against"),
     byAI("scheming to", "optimizing to"),
