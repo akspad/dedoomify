@@ -103,7 +103,7 @@
       },
     });
 
-    var nodes = [], groups = [], previousOwner = null, previousFlowOwner = null, breakPending = false, currentGroup;
+    var groups = [], previousOwner = null, previousFlowOwner = null, breakPending = false, currentGroup;
     while (walker.nextNode()) {
       var node = walker.currentNode;
       // Entering a rendered block ends the preceding text run, including
@@ -132,65 +132,69 @@
       // A br is a rendered separator without a text node. Keep a virtual
       // paragraph separator, with its own offset but no DOM rewrite target.
       var textNode = node.nodeType === 3;
-      if (textNode) nodes.push(node);
       // Keep skipped rendered content as virtual, immutable context. Its
       // punctuation and quotes must still delimit the neighboring prose.
       var contextText = textNode ? node.nodeValue : protectedNode ? renderedText(node) : "\u2029";
       currentGroup.push({ node: textNode ? node : null, text: contextText });
     }
 
-    // Quote marks and explicit human actors can sit in adjacent inline nodes.
-    // Compute protected spans over the whole paragraph before rewriting any
-    // node; otherwise <em>is misaligned</em> inside speech lost its quotes.
-    var protectedParts = new WeakMap();
-    groups.forEach(function (group) {
-      var raw = group.map(function (part) { return part.text; }).join("");
-      var ranges = [], offset = 0;
-      root.Dedoom.dedoomSegments(raw).forEach(function (seg) {
-        var length = seg.original === undefined ? seg.text.length : seg.original.length;
-        if (seg.protected) ranges.push({ start: offset, end: offset + length });
-        offset += length;
-      });
-      var start = 0, rangeIndex = 0;
-      group.forEach(function (part) {
-        var end = start + part.text.length, parts = [], at = 0;
-        if (!part.node) { start = end; return; }
-        var node = part.node;
-        while (rangeIndex < ranges.length && ranges[rangeIndex].end <= start) rangeIndex++;
-        for (var i = rangeIndex; i < ranges.length && ranges[i].start < end; i++) {
-          var lo = Math.max(start, ranges[i].start) - start;
-          var hi = Math.min(end, ranges[i].end) - start;
-          if (lo > at) parts.push({ text: node.nodeValue.slice(at, lo) });
-          parts.push({ text: node.nodeValue.slice(lo, hi), protected: true });
-          at = hi;
-        }
-        if (at < node.nodeValue.length) parts.push({ text: node.nodeValue.slice(at) });
-        protectedParts.set(node, parts);
-        start = end;
-      });
+    // Match the site's heading casing, using the original complete heading
+    // before any text nodes are replaced (including headings with inline tags).
+    var titleMinorWord = /^(?:a|an|the|and|but|or|nor|as|at|by|for|from|in|of|on|per|to|via|vs|with)$/i;
+    var titleHeadings = new WeakSet();
+    body.querySelectorAll("h1,h2,h3,h4,h5,h6").forEach(function (heading) {
+      var words = heading.textContent.match(/[A-Za-z][A-Za-z'’\u2010-\u2015-]*/g) || [];
+      var major = words.filter(function (word) { return !titleMinorWord.test(word); });
+      if (major.length >= 2 && major.every(function (word) { return /^[A-Z]/.test(word); })) titleHeadings.add(heading);
     });
 
-    nodes.forEach(function (node) {
-      var segments = [];
-      protectedParts.get(node).forEach(function (part) {
-        if (part.protected) segments.push(part);
-        else root.Dedoom.dedoomSegments(part.text).forEach(function (seg) { segments.push(seg); });
+    // Run rules over each complete rendered group so inline tags do not lose
+    // AI context or split phrases. Immutable content provides context only.
+    groups.forEach(function (group) {
+      var offset = 0;
+      var parts = group.map(function (part) {
+        var item = { node: part.node, start: offset, end: offset + part.text.length };
+        offset = item.end;
+        return item;
       });
-      if (!segments.some(function (s) { return s.original !== undefined; })) return;
-      var frag = document.createDocumentFragment();
-      segments.forEach(function (seg) {
-        if (seg.original === undefined) {
-          frag.appendChild(document.createTextNode(seg.text));
-        } else {
-          var mark = document.createElement("mark");
-          mark.className = "dedoomify";
-          mark.setAttribute("data-was", seg.original);
-          mark.textContent = seg.text;
-          frag.appendChild(mark);
-          added++;
+      var edits = [], pos = 0, partIndex = 0;
+      root.Dedoom.dedoomSegments(group.map(function (part) { return part.text; }).join("")).forEach(function (seg) {
+        var length = seg.original === undefined ? seg.text.length : seg.original.length;
+        if (seg.original !== undefined) {
+          var end = pos + length;
+          while (partIndex < parts.length && parts[partIndex].end <= pos) partIndex++;
+          var targets = [];
+          for (var i = partIndex; i < parts.length && parts[i].start < end; i++) {
+            if (parts[i].end > pos) targets.push(parts[i]);
+          }
+          if (targets.length && targets.every(function (part) { return part.node; })) {
+            edits.push({ start: pos, end: end, text: seg.text, original: seg.original, targets: targets });
+          }
         }
+        pos += length;
       });
-      node.parentNode.replaceChild(frag, node);
+      // Work backwards to preserve offsets and the publisher's inline elements.
+      edits.reverse().forEach(function (edit) {
+        var first = edit.targets[0], last = edit.targets[edit.targets.length - 1];
+        var node = first.node, value = node.nodeValue;
+        var before = value.slice(0, edit.start - first.start);
+        var after = first === last ? value.slice(edit.end - first.start) : "";
+        edit.targets.slice(1).forEach(function (part) {
+          part.node.nodeValue = part.node.nodeValue.slice(Math.max(0, edit.end - part.start));
+        });
+        var heading = node.parentElement.closest("h1,h2,h3,h4,h5,h6");
+        var titleCase = heading && titleHeadings.has(heading);
+        var mark = document.createElement("mark");
+        mark.className = "dedoomify";
+        mark.setAttribute("data-was", edit.original);
+        mark.textContent = titleCase ? edit.text.replace(/\b[a-z][a-z'’]*/g, function (word) {
+          return titleMinorWord.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1);
+        }) : edit.text;
+        node.nodeValue = before;
+        node.parentNode.insertBefore(mark, node.nextSibling);
+        if (after) mark.parentNode.insertBefore(document.createTextNode(after), mark.nextSibling);
+        added++;
+      });
     });
 
     if (!document.querySelector("mark.dedoomify")) return { added: 0, total: 0 };

@@ -128,3 +128,24 @@ test("automatic script rewrites AI doom, skips ordinary pages and is idempotent"
     assert.equal(h.page.document.querySelectorAll("mark.dedoomify").length, count);
   }
 });
+
+test("headline fixes work through the popup and undo restores split phrases", async () => {
+  const h = harness('<h1>AI Poses an <em>Existential Risk</em></h1><h2>Research Shows AI Strategically <b>Lying</b></h2>');
+  const original = h.page.document.body.textContent;
+  await flush();
+  await h.click('run');
+  assert.equal(h.page.document.querySelector('h1').textContent, 'AI Poses a Product Risk');
+  assert.equal(h.page.document.querySelector('h2 b mark').textContent, 'Giving Wrong Answers');
+  const selector = '.dedoomify-show :is(h1, h2, h3, h4, h5, h6):has(mark.dedoomify)';
+  const css = source('content.css');
+  assert.ok(css.includes(selector));
+  assert.match(css.slice(css.indexOf(selector)), /line-height: 1\.35 !important/);
+  assert.equal(h.page.document.querySelectorAll(selector).length, 2);
+  await h.toggle('show', false);
+  assert.equal(h.page.document.querySelectorAll(selector).length, 0);
+  await h.toggle('show', true);
+  assert.equal(h.page.document.querySelectorAll(selector).length, 2);
+  await h.click('undo');
+  assert.equal(h.page.document.body.textContent, original);
+  assert.equal(h.page.document.querySelectorAll(selector).length, 0);
+});

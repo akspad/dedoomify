@@ -263,3 +263,37 @@ test("semantic quote boundaries survive nested immutable subtrees", () => {
     assert.equal(run().added, 0);
   }
 });
+
+test("extension bundles the exact current phrase rules", () => {
+  assert.equal(fs.readFileSync(ext("dedoom-core.js"), "utf8"), fs.readFileSync(new URL("../shared/dedoom-core.js", import.meta.url), "utf8"));
+});
+
+test("extension headings match today's site rewrites across inline formatting", () => {
+  const { document, run } = extensionPage(`<h1>Exclusive: New Research Shows AI Strategically <em>Lying</em></h1>
+    <h2>What Is Agentic <em>Misalignment</em>?</h2>
+    <h2>AI Poses an Existential Risk</h2>
+    <h2>AI <em>Schemers</em> Can Emerge</h2>
+    <h2>AI Models <em>Blackmail</em> Humans</h2>
+    <h2>New research shows AI strategically lying</h2>
+    <h2>Research Shows AI “<em>Lying</em>”</h2>
+    <p>Exclusive: New Research Shows AI Strategically <em>Lying</em></p>`);
+  run();
+  assert.equal(document.querySelector('h1').textContent, 'Exclusive: New Research Shows AI Strategically Giving Wrong Answers');
+  assert.equal(document.querySelector('h1 em mark').getAttribute('data-was'), 'Lying');
+  assert.deepEqual([...document.querySelectorAll('h2')].map(h=>h.textContent), [
+    'What Are Agentic Bugs?', 'AI Poses a Product Risk',
+    'Buggy AI Models Can Emerge', 'AI Models Threaten to Expose Private Information About Humans',
+    'New research shows AI strategically giving wrong answers', 'Research Shows AI “Lying”'
+  ]);
+  assert.equal(document.querySelector('p em mark').textContent, 'Giving wrong answers');
+  assert.equal(run().added, 0);
+});
+
+test("multiple inline edits preserve offsets and leave immutable text alone", () => {
+  const { document, run } = extensionPage('<p id="changes">The AI is <em>misaligned</em>, poses an <b>existential risk</b>, and might develop superintelligence.</p><p id="code">The AI poses an <code>existential risk</code> and is misaligned.</p>');
+  assert.equal(run().added, 4);
+  assert.equal(document.querySelector('#changes').textContent, 'The AI has a bug, poses a product risk, and might develop very capable software.');
+  assert.equal(document.querySelector('#code code').textContent, 'existential risk');
+  assert.equal(document.querySelector('#code code mark'), null);
+  assert.equal(run().added, 0);
+});
