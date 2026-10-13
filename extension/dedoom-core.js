@@ -211,6 +211,9 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    ["treacherous turns", "late-surfacing bugs"],
+    ["an intelligence explosion", "rapid capability growth"],
+    ["misalignment domains", "bug categories"],
     ["agentic misalignment describes", "agentic bugs describe"],
     ["model weight exfiltration", "unauthorized copying of model files"],
     afterSoftware("deceptive tendencies", "patterns of misleading behavior", FILLER + "\\s+develop"),

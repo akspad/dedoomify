@@ -299,3 +299,19 @@ test('article agreement, complete exfiltration nouns, and deceptive tendencies',
  ]) { assert.equal(dedoomText(input),expected); assert.equal(dedoomText('She said, “'+input+'”'),'She said, “'+input+'”'); }
  assert.equal(dedoomText('People develop deceptive tendencies.'),'People develop deceptive tendencies.');
 });
+
+test('plural failure descriptions and noun phrases retain grammatical forms', () => {
+ const cases = [
+  ['Current AI systems make treacherous turns possible.', 'Current AI systems make late-surfacing bugs possible.'],
+  ['What is an intelligence explosion?', 'What is rapid capability growth?'],
+  ['These features are transferable across misalignment domains.', 'These features are transferable across bug categories.'],
+ ];
+ for (const [input, expected] of cases) {
+  assert.equal(dedoomText(input), expected);
+  const quoted = 'She said, “' + input + '”';
+  assert.equal(dedoomText(quoted), quoted);
+ }
+ const {document} = parseHTML(renderPage('<html><body><h1>What is an <em>intelligence explosion</em>?</h1><p>Models can make <b>treacherous</b> turns across misalignment <em>domains</em>.</p></body></html>', 'https://example.com/').html);
+ assert.equal(document.querySelector('h1').textContent, 'What is rapid capability growth?');
+ assert.equal(document.querySelector('p').textContent, 'Models can make late-surfacing bugs across bug categories.');
+});
