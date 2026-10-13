@@ -211,6 +211,22 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Complete noun constructions and bounded software contexts from article review.
+    ["brazen reward hacking", "blatant exploitation of a scoring bug"],
+    ["broader misalignment", "more widespread faulty behavior"],
+    ["broad misalignment", "widespread faulty behavior"],
+    ["an anti-scheming specification", "a specification against misleading or covert behavior"],
+    ["anti-scheming specification", "specification against misleading or covert behavior"],
+    ["deceptive behaviou?r(?=\\s+in\\s+LLMs?\\b)", "misleading behavior"],
+    afterSoftware("deceptive behaviors", "misleading behaviors", "(?:,\\s+even\\s+those\\s+designed\\s+with\\s+benevolent\\s+intentions,)?" + FILLER + "\\s+develop"),
+    afterSoftware("instrumentally faking alignment", "passing checks without meeting the underlying requirements", FILLER + "(?:\\s+observed\\s+sabotaging\\s+their\\s+oversight\\s+and)?"),
+    ["survival motivations(?=\\s+for\\s+the\\s+model\\b)", "incentives to keep running"],
+    afterSoftware("survival-oriented behavior", "shutdown-avoidance behavior", FILLER + "\\s+exhibit"),
+    inAIClause("deceive(?=\\s+humans\\b)", "mislead"),
+    inAIClause("deceived(?=\\s+humans\\b)", "misled"),
+    inAIClause("deceives(?=\\s+humans\\b)", "misleads"),
+    inAIClause("deceiving(?=\\s+humans\\b)", "misleading"),
+
     // Singular and relational noun phrases need more than a word substitution.
     ["(?:a\\s+)?misalignment with organizational objectives", "a mismatch with organizational objectives"],
     ["are misaligned with(?<=\\b(?:capabilities|behaviors that)\\s+are misaligned with)(?=\\s+human\\s+(?:values|safety)\\b)", "conflict with"],

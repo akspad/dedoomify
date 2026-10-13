@@ -239,3 +239,31 @@ test('new article constructions preserve headings and inline text', () => {
   assert.equal(dedoomText("AI systems engage in behaviors that are misaligned with human values."), "AI systems engage in behaviors that conflict with human values.");
   assert.equal(dedoomText("A misalignment with organizational objectives."), "A mismatch with organizational objectives.");
  });
+
+const contextPolish = [
+  ['AI systems, even those designed with benevolent intentions, can develop deceptive behaviors.', 'AI systems, even those designed with benevolent intentions, can develop misleading behaviors.'],
+  ['We studied deceptive behavior in LLMs.', 'We studied misleading behavior in LLMs.'],
+  ['Some models have been observed sabotaging their oversight and instrumentally faking alignment in order to be deployed.', 'Some models have been observed breaking their oversight and passing checks without meeting the underlying requirements in order to be deployed.'],
+  ['The model follows an anti-scheming specification.', 'The model follows a specification against misleading or covert behavior.'],
+  ['We evaluated survival motivations for the model.', 'We evaluated incentives to keep running for the model.'],
+  ['Models will exhibit survival-oriented behavior.', 'Models will exhibit shutdown-avoidance behavior.'],
+  ['Issues like brazen reward hacking were worse.', 'Issues like blatant exploitation of a scoring bug were worse.'],
+  ['Fine-tuning can cause broad misalignment.', 'Fine-tuning can cause widespread faulty behavior.'],
+  ['Models exhibit broader misalignment.', 'Models exhibit more widespread faulty behavior.'],
+  ['AI systems can deceive humans.', 'AI systems can mislead humans.'],
+  ['The model deceived humans.', 'The model misled humans.'],
+  ['The model deceives humans.', 'The model misleads humans.'],
+  ['The model is deceiving humans.', 'The model is misleading humans.'],
+];
+test('article context polish covers the reviewed constructions and verb tenses', () => {
+  for (const [input, expected] of contextPolish) assert.equal(dedoomText(input), expected, input);
+});
+test('article context polish preserves quotes and human subjects', () => {
+  for (const input of [...contextPolish.map(([s]) => 'She said, “'+s+'”'), 'People can develop deceptive behaviors.', 'We studied deceptive behavior in people.', 'The actor is instrumentally faking alignment.', 'We evaluated survival motivations for the employee.', 'People will exhibit survival-oriented behavior.', 'The employee deceives humans.', 'The model reported that the employee deceives humans.']) assert.equal(dedoomText(input), input, input);
+});
+test('article context polish preserves inline text and heading capitalization', () => {
+ const {document}=parseHTML(renderPage('<html><body><h1>Broad Misalignment</h1><p>AI systems can <em>deceive</em> humans.</p><p>The model follows an <b>anti-scheming specification</b>.</p></body></html>','https://example.com/').html);
+ assert.equal(document.querySelector('h1').textContent,'Widespread Faulty Behavior');
+ assert.equal(document.querySelector('p').textContent,'AI systems can mislead humans.');
+ assert.equal(document.querySelectorAll('p')[1].textContent,'The model follows a specification against misleading or covert behavior.');
+});
