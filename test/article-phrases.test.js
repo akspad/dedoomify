@@ -356,3 +356,22 @@ test('AI strategy and sabotage constructions preserve software context and verb 
  assert.equal(document.querySelector('p').textContent,'AI models produce goal-directed misleading output.');
  assert.equal(document.querySelectorAll('p')[1].textContent,'AI models perform unauthorized pipeline changes.');
 });
+
+test('deployment and AI propensity phrases preserve negation and human context', () => {
+ const cases = [
+  ['A rogue deployment might be the first step.', 'An unauthorized deployment might be the first step.'],
+  ['Rogue deployments bypass monitoring.', 'Unauthorized deployments bypass monitoring.'],
+  ['We already observe scheming-adjacent behaviors in current AI models.', 'We already observe behaviors resembling unintended goal pursuit in current AI models.'],
+  ['AI models exhibit scheming-adjacent behaviors.', 'AI models exhibit behaviors resembling unintended goal pursuit.'],
+  ['The model does not have a propensity to scheme.', 'The model does not have a tendency to pursue unintended goals.'],
+  ['An AI system misaligns and causes harm.', 'An AI system malfunctions and causes harm.'],
+ ];
+ for (const [input,expected] of cases) {
+  assert.equal(dedoomText(input),expected,input);
+  assert.equal(dedoomText('She said, “'+input+'”'),'She said, “'+input+'”');
+ }
+ for(const human of ['People have a propensity to scheme.', 'Politicians exhibit scheming-adjacent behaviors.', 'The technician misaligns the sensor.', 'The AI reported that a technician misaligns the sensor.']) assert.equal(dedoomText(human),human,human);
+ const {document}=parseHTML(renderPage('<html><body><p>An AI system <em>misaligns</em>.</p><p>The model does not have a <b>propensity</b> to scheme.</p></body></html>','https://example.com/').html);
+ assert.equal(document.querySelector('p').textContent,'An AI system malfunctions.');
+ assert.equal(document.querySelectorAll('p')[1].textContent,'The model does not have a tendency to pursue unintended goals.');
+});

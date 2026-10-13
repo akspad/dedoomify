@@ -454,5 +454,15 @@
       "liveArticleChanges": 100,
       "liveHeadlineChanges": 1
     }
+  ],
+  "replacements": [
+    {
+      "checkedAt": "2026-10-13",
+      "removed": "https://jolt.law.harvard.edu/digest/ai-sandbagging-allocating-the-risk-of-loss-for-scheming-by-ai-systems",
+      "added": "https://superintelligenceguide.co.uk/guide/intelligence-explosion/",
+      "renderedTitle": "What is rapid capability growth?",
+      "liveArticleChanges": 19,
+      "liveHeadlineChanges": 1
+    }
   ]
 }

@@ -87,7 +87,7 @@ export const DOOM_STORIES = [
   "https://pixeldefence.com/ai-sandbagging/",
   "https://www.nature.com/articles/d41586-026-03198-6",
   "https://failurefirst.org/blog/deceptive-alignment-detection-evaluation-aware-ai/",
-  "https://jolt.law.harvard.edu/digest/ai-sandbagging-allocating-the-risk-of-loss-for-scheming-by-ai-systems",
+  "https://superintelligenceguide.co.uk/guide/intelligence-explosion/",
   "https://link.springer.com/article/10.1007/s11229-023-04367-0",
   "https://tomdug.github.io/ai-sandbagging/",
   "https://www.itechguides.com/the-dangers-of-misaligned-ai-what-we-know-and-what-remains-uncertain/",

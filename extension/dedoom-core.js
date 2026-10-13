@@ -211,6 +211,14 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    ["a rogue deployment", "an unauthorized deployment"],
+    ["rogue deployments", "unauthorized deployments"],
+    ["rogue deployment", "unauthorized deployment"],
+    ["scheming-adjacent behaviors(?=\\s+in\\s+(?:current\\s+)?AI\\s+models\\b)", "behaviors resembling unintended goal pursuit"],
+    afterSoftware("scheming-adjacent behaviors", "behaviors resembling unintended goal pursuit", FILLER + "\\s+(?:show|shows|showed|exhibit|exhibits|exhibited|display|displays|displayed)"),
+    afterSoftware("propensity to scheme", "tendency to pursue unintended goals", FILLER + "\\s+(?:a|the|no)"),
+    afterSoftware("misaligns", "malfunctions", FILLER),
+
     afterSoftware("are strategically deceptive", "produce goal-directed misleading output", FILLER),
     afterSoftware("deceptive strategies", "strategies that produce misleading output", "(?:\\s+trained\\s+with\\s+the\\s+best\\s+intentions)?" + FILLER + "\\s+develop"),
     afterSoftware("pipeline sabotage", "unauthorized pipeline changes", FILLER + "\\s+(?:show|showed|shows|perform|performed|performs|attempt|attempted|attempts|exhibit|exhibited|exhibits)(?:\\s+no)?"),
