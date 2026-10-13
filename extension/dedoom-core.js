@@ -211,6 +211,22 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Singular and relational noun phrases need more than a word substitution.
+    ["(?:a\\s+)?misalignment with organizational objectives", "a mismatch with organizational objectives"],
+    ["are misaligned with(?<=\\b(?:capabilities|behaviors that)\\s+are misaligned with)(?=\\s+human\\s+(?:values|safety)\\b)", "conflict with"],
+    ["misalignment(?<=\\b(?:a|one)\\s+(?:(?:subtle|slight|small|minor|major|serious|significant|new|hidden|potential)\\s+){0,3}misalignment)", "bug"],
+    ["hidden agenda(?<=\\bprioritizing\\s+its\\s+own\\s+hidden agenda)", "undocumented objective"],
+    ["AI model misbehavio(?:u)?r\\b", "unexpected AI model behavior"],
+    afterSoftware("went off the rails", "produced unexpected outputs", FILLER),
+    ["cross-model behavioral contagion", "behavior transfer between models"],
+    ["inner monologue(?<=\\bmodel['’]s\\s+inner monologue)", "intermediate reasoning text"],
+    ["inner monologues(?<=\\bmodels['’]\\s+inner monologues)", "intermediate reasoning texts"],
+    afterSoftware("duplicitous tendencies", "patterns of misleading behavior", FILLER + "\\s+(?:exhibit|exhibits|exhibited|show|shows|showed)"),
+    ["duplicitous tendencies(?<=\\bAI\\s*[—–-]\\s*grows\\s+more\\s+advanced\\s+and\\s+pervasive,\\s+its\\s+duplicitous tendencies)", "patterns of misleading behavior"],
+    afterSoftware("break free from human control", "operate outside human-imposed controls", FILLER),
+    ["break free from human control(?<=\\bthese\\s+systems\\s+are\\s+capable\\s+of\\s+concealing\\s+their\\s+true\\s+objectives\\s+while\\s+appearing\\s+compliant,\\s+they\\s+could\\s+be\\s+misused\\s+in\\s+infinitely\\s+dangerous\\s+ways\\.\\s+Or\\s+they\\s+could\\s+outright\\s+break free from human control)", "operate outside human-imposed controls"],
+    afterSoftware("tell on itself", "report its own actions", FILLER),
+
     // Article grammar and missing software-specific constructions.
     ["scheming\\s+behaviou?rs", "unexpected behaviors"],
     afterSoftware("manipulated the data", "altered the data", FILLER),
@@ -959,7 +975,7 @@
     ["its own survival", "its own uptime"],
     ["its survival", "its uptime"],
     ["AI survival", "AI uptime"],
-    ["self-preservation behavior", "shutdown-avoidance bugs"],
+    ["self-preservation behavior", "shutdown-avoidance behavior"],
     ["self-preservation", "persistence"],
     ["became self-aware", "got an update"],
     ["become self-aware", "get an update"],
@@ -1349,7 +1365,7 @@
           }
           var cased = matchCase(m[2], replacement);
           // An initial acronym is not evidence of sentence/title capitalization.
-          if (/^AI (?:deception|misbehaviou?r)$/.test(m[2])) {
+          if (/^AI (?:deception|(?:model )?misbehaviou?r)$/.test(m[2])) {
             var prefix = full.slice(0, m.index + m[1].length).trimEnd();
             cased = !prefix || /[.!?\u2029]$/.test(prefix) ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement;
           }
