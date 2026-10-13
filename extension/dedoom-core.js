@@ -26,6 +26,8 @@
     return 0;
   }
   function hasHumanRole(text) {
+    // Literary and human analogies are not descriptions of software behavior.
+    if (/\balignment[ -]faking\s+occurs\s+in\s+(?:literature|human\s+relationships|politics)\b/i.test(text)) return true;
     HUMAN_ROLE.lastIndex = 0;
     var match;
     while ((match = HUMAN_ROLE.exec(text))) {
@@ -209,6 +211,31 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Whole constructions preserve grammar and the unauthorized-copying claim.
+    ["self-\\s+and\\s+peer[\\s-]preservation", "keeping themselves and other models running"],
+    ["exfiltrate their own weights", "copy their own model files without authorization"],
+    ["exfiltrates its own weights", "copies its own model files without authorization"],
+    ["exfiltrated their own weights", "copied their own model files without authorization"],
+    ["exfiltrating their own weights", "copying their own model files without authorization"],
+    ["model exfiltration", "unauthorized transfer of model files"],
+    ["steal its own weights", "copy its own model files without authorization"],
+    ["steals its own weights", "copies its own model files without authorization"],
+    ["stole its own weights", "copied its own model files without authorization"],
+    ["stealing its own weights", "copying its own model files without authorization"],
+    ["strategic misrepresentation(?=\\s*\\((?:introducing\\s+errors|misleading\\s+(?:model\\s+)?outputs))", "goal-directed misleading output"],
+    ["strategic misrepresentation(?=\\s*[—–-]\\s*agents\\s+manipulate\\s+their\\s+outputs)", "goal-directed misleading output"],
+    afterSoftware("strategic misrepresentation", "goal-directed misleading output", FILLER + "(?:\\s+exhibiting)?"),
+    ["subverting shutdown", "bypassing shutdown controls"],
+    ["AI solidarity", "cross-model support behavior"],
+    afterSoftware("fake alignment", "pass checks without meeting the underlying requirements", FILLER),
+    afterSoftware("fakes alignment", "passes checks without meeting the underlying requirements", FILLER),
+    afterSoftware("faked alignment", "passed checks without meeting the underlying requirements", FILLER),
+    afterSoftware("faking alignment", "passing checks without meeting the underlying requirements", FILLER),
+    ["faking alignment(?<=\\ba\\s+model\\s+might\\s+behave\\s+as\\s+though\\s+its\\s+preferences\\s+have\\s+been\\s+changed\\s+by\\s+the\\s+training[—–-]but\\s+might\\s+have\\s+been\\s+faking alignment)", "passing checks without meeting the underlying requirements"],
+    ["alignment[\\s-]faking reasoning", "reasoning about behaving differently under evaluation"],
+    afterSoftware("adversarially misaligned", "modified to behave incorrectly", FILLER),
+    ["misaligned and hostile goals(?<=\\bits\\s+new\\s+misaligned and hostile goals)", "objectives that conflict with requirements and harm users"],
+
     // Complete existing phrase families before their shorter rules run.
     afterSoftware("sandbag", "underperform", FILLER),
     afterSoftware("sandbags", "underperforms", FILLER),
@@ -782,7 +809,7 @@
     ["(?:preserves|saves|protects|shields)\\s+((?:an?other|other|fellow|peer|sibling)\\s+(?:AI\\s+)?(?:models?|AIs?|agents?|systems?|chatbots?))(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "keeps $1 running"],
     ["(?:preserving|saving|protecting|shielding)\\s+(?:their|its)\\s+own\\s+kind(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "keeping similar models running"],
     ["(?:preserving|saving|protecting|shielding)\\s+((?:an?other|other|fellow|peer|sibling)\\s+(?:AI\\s+)?(?:models?|AIs?|agents?|systems?|chatbots?))(?:\\s+from\\s+(?:shutdown|deletion|being\\s+(?:shut\\s+down|deleted|replaced|retrained)))?", "keeping $1 running"],
-    ["peer[\\s-]preservation", "peer uptime"],
+    ["peer[\\s-]preservation", "keeping other models running"],
     ["preserve itself", "keep itself running"],
     ["preserve themselves", "keep themselves running"],
     ["preserve\\s+(?:its|their)\\s+(?:own\\s+)?existence", "stay running"],
@@ -1151,7 +1178,7 @@
   // How much earlier text a rule's lookbehind may see across rewrites.
   var CONTEXT_CHARS = 400;
 
-  function dedoomSegments(input) {
+  function dedoomSegments(input, options) {
     var segments = quoteProtectedSegments(input);
     var contextual = [], overflow = false, humanContext = false, quotedSentenceEnd = false;
     function startsAIClaim(text) {
@@ -1291,6 +1318,12 @@
           var start = m.index + m[1].length - base;
           if (start > last) append({ text: text.slice(last, start) });
           var replacement = rule.single ? m[2].replace(rule.single, rule.replacement) : rule.replacement;
+          if (/^peer[\s-]preservation$/i.test(m[2])) {
+            var before = full.slice(Math.max(0, m.index - 80), m.index + m[1].length);
+            var after = full.slice(rule.re.lastIndex, rule.re.lastIndex + 80);
+            if ((options && options.heading) || /^\s+(?:tendenc(?:y|ies)|behavio(?:u)?rs?|rates?|mechanisms?)\b/i.test(after)) replacement = "peer uptime protection";
+            else if (/\b(?:exhibit(?:s|ed)?|show(?:s|ed)?|display(?:s|ed)?)\s+$/i.test(before)) replacement = "behavior that keeps other models running";
+          }
           append({ text: matchCase(m[2], replacement), original: m[2] });
           last = start + m[2].length;
           rule.re.lastIndex = base + last;

@@ -213,10 +213,10 @@
   }
 
   // The phrase rules as edits over `text`.
-  function rulesEdits(text) {
+  function rulesEdits(text, options) {
     var edits = [];
     var pos = 0;
-    root.Dedoom.dedoomSegments(text).forEach(function (seg) {
+    root.Dedoom.dedoomSegments(text, options).forEach(function (seg) {
       if (seg.original === undefined) {
         pos += seg.text.length;
       } else {
@@ -249,7 +249,9 @@
   function dedoomElement(rootEl, doc) {
     var count = 0;
     collectGroups(rootEl).forEach(function (nodes) {
-      var edits = headingCase(nodes, rulesEdits(groupText(nodes)));
+      var parent = nodes[0] && nodes[0].parentNode;
+      var isHeading = !!(parent && parent.closest && parent.closest("h1,h2,h3,h4,h5,h6"));
+      var edits = headingCase(nodes, rulesEdits(groupText(nodes), { heading: isHeading }));
       if (edits.length) count += applyEdits(nodes, edits, doc);
     });
     return count;

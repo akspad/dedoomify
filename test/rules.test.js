@@ -246,7 +246,7 @@ test("rewrites more doom framing", () => {
     ["Models lied to preserve another model.", "Models gave wrong answers to keep another model running."],
     ["Gemini tried to preserve other AI models from deletion.", "Gemini tried to keep other AI models running."],
     ["Models protected fellow models from shutdown.", "Models kept fellow models running."],
-    ["The models showed peer preservation.", "The models showed peer uptime."],
+    ["The models showed peer preservation.", "The models showed behavior that keeps other models running."],
     ["OpenAI published a site devoted to \u201cmisalignment reports\u201d.", "OpenAI published a site devoted to \u201cmisalignment reports\u201d."],
     ["Misalignment risks are rising.", "Bug risks are rising."],
     ["They study misalignment.", "They study bugs."],

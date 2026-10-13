@@ -297,3 +297,13 @@ test("multiple inline edits preserve offsets and leave immutable text alone", ()
   assert.equal(document.querySelector('#code code mark'), null);
   assert.equal(run().added, 0);
 });
+
+test('extension matches peer heading and prose refinements and preserves literary analogies', () => {
+  const { document, run } = extensionPage('<h1>Peer-<em>Preservation</em> in Frontier Models</h1><p>Models exhibit peer-preservation.</p><p>Alignment faking occurs in literature: Consider Iago.</p><blockquote>Peer-preservation</blockquote>');
+  run();
+  assert.equal(document.querySelector('h1').textContent, 'Peer Uptime Protection in Frontier Models');
+  assert.equal(document.querySelector('p').textContent, 'Models exhibit behavior that keeps other models running.');
+  assert.equal(document.querySelectorAll('p')[1].textContent, 'Alignment faking occurs in literature: Consider Iago.');
+  assert.equal(document.querySelector('blockquote').textContent, 'Peer-preservation');
+  assert.equal(run().added, 0);
+});

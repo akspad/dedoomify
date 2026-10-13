@@ -158,7 +158,9 @@
         return item;
       });
       var edits = [], pos = 0, partIndex = 0;
-      root.Dedoom.dedoomSegments(group.map(function (part) { return part.text; }).join("")).forEach(function (seg) {
+      var firstNode = group.find(function (part) { return part.node; });
+      var groupParent = firstNode && firstNode.node.parentElement;
+      root.Dedoom.dedoomSegments(group.map(function (part) { return part.text; }).join(""), { heading: !!(groupParent && groupParent.closest("h1,h2,h3,h4,h5,h6")) }).forEach(function (seg) {
         var length = seg.original === undefined ? seg.text.length : seg.original.length;
         if (seg.original !== undefined) {
           var end = pos + length;
