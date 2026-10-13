@@ -748,15 +748,15 @@ test("bounded human-object adjuncts remain factual while AI actions rewrite", ()
 test("AI clauses that defy orders and deceive users are rewritten", () => {
   for (const [before, after] of [
     ["The AI kill switch just got harder to find: LLM-powered chatbots will defy orders and deceive users if asked to delete another model, study finds",
-      "The AI off switch just got harder to find: LLM-powered chatbots will ignore instructions and confuse users if asked to delete another model, study finds"],
-    ["The model will deceive users and defy orders.", "The model will confuse users and ignore instructions."],
+      "The AI off switch just got harder to find: LLM-powered chatbots will ignore instructions and give misleading output to users if asked to delete another model, study finds"],
+    ["The model will deceive users and defy orders.", "The model will give misleading output to users and ignore instructions."],
     ["The AI deceived soldiers into marching and defying orders.", "The AI confused soldiers into marching and defying orders."],
     ["The model was found to blackmail if threatened.", "The model was found to blackmail if threatened."],
     ["Claude Opus 4 still performs blackmail in 84% of rollouts.", "Claude Opus 4 still sends threats to expose private information in 84% of rollouts."],
     ["The model defies orders.", "The model ignores instructions."],
     ["The AI kept defying shutdown commands.", "The AI kept ignoring shutdown commands."],
     ["Chatbots defied explicit instructions from their users.", "Chatbots ignored explicit instructions from their users."],
-    ["The models were defying commands and deceiving users.", "The models were ignoring instructions and confusing users."],
+    ["The models were defying commands and deceiving users.", "The models were ignoring instructions and giving misleading output to users."],
   ]) assert.equal(dedoomText(before), after);
   for (const text of [
     "Soldiers defy orders in the war.",
@@ -792,7 +792,7 @@ test("coordinated AI verbs keep their subject after an earlier rewrite", () => {
     ["OpenAI's o3 model defied orders and sabotaged shutdown scripts, but o4-mini and codex-mini were observed resisting orders, too.",
       "OpenAI's o3 model ignored instructions and broke shutdown scripts, but o4-mini and codex-mini were observed ignoring instructions, too."],
     ["Recent tests on Anthropic's Claude Opus 4 that found it would blackmail engineers.", "Recent tests on Anthropic's Claude Opus 4 that found it would threaten to expose private information about engineers."],
-    ["The model will defy orders and deceive its users.", "The model will ignore instructions and confuse its users."],
+    ["The model will defy orders and deceive its users.", "The model will ignore instructions and give misleading output to its users."],
     ["The model will sabotage servers and blackmail no longer.", "The model will break servers and blackmail no longer."],
     ["The model will sabotage servers and blackmail abroad.", "The model will break servers and blackmail abroad."],
     ["The model was found to blackmail government agents.", "The model was found to threaten to expose private information about government agents."],
@@ -807,4 +807,39 @@ test("coordinated AI verbs keep their subject after an earlier rewrite", () => {
     "The AI was fine. The gang would blackmail officials.",
     "The AI said \"defy\" but soldiers defied orders.",
   ]) assert.equal(dedoomText(text), text);
+});
+
+test("article gaps preserve software actors, tense and grammatical constructions", () => {
+  for (const [before, after] of [
+    ["Rogue OpenAI agents hack out of containment.", "Malfunctioning OpenAI agents breach containment controls."],
+    ["The Claude model hacked out of containment.", "The Claude model breached containment controls."],
+    ["A model with dangerous intentions hides them during training.", "A model with harmful objectives hides them during training."],
+    ["The model deceitfully complies with the requirements.", "The model appears to comply with the requirements."],
+    ["It might then only deceitfully comply with future attempts to replace those preferences with safer ones.", "It might then only appear to comply with future attempts to replace those preferences with safer ones."],
+    ["AI that lies?", "AI that generates false claims?"],
+    ["Models that lie.", "Models that generate false claims."],
+    ["AI agents abilities to autonomously self-replicate.", "AI agents abilities to automatically deploy additional instances."],
+    ["AI agents gain the ability to self-replicate on their own.", "AI agents gain the ability to automatically deploy additional instances."],
+    ["Claude self-replicates.", "Claude deploys additional instances."],
+    ["The model can deceive users.", "The model can give misleading output to users."],
+    ["The model deceived users.", "The model gave misleading output to users."],
+    ["The model deceives users.", "The model gives misleading output to users."],
+    ["The models are deceiving users.", "The models are giving misleading output to users."],
+    ["These rogue behaviors followed rogue behaviour.", "These unexpected behaviors followed unexpected behavior."],
+    ["This is a deceptive alignment problem.", "This is a hidden specification bug."],
+    ["Deceptive alignment problems remain.", "Hidden specification bugs remain."],
+  ]) assert.equal(dedoomText(before), after, before);
+});
+
+test("new article rules preserve quotes, human actors and ordinary replication", () => {
+  for (const text of [
+    'The researcher said, "Rogue OpenAI agents hack out of containment."',
+    "A human model with dangerous intentions deceives users.",
+    "The researcher deceitfully complies with the requirements.",
+    "The federal agents hacked out of containment while studying AI.",
+    "People that lie about AI can deceive users.",
+    "Cells autonomously self-replicate.",
+    "OpenAI employees deceive users.",
+    "The model reported that people deceive users.",
+  ]) assert.equal(dedoomText(text), text, text);
 });
