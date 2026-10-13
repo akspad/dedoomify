@@ -9,6 +9,32 @@ test("the headline example", () => {
   assert.equal(dedoomText("The model is misaligned."), "The model has a bug.");
 });
 
+test("Live Science headline resumes the chatbot subject through lie and cheat", () => {
+  const headline = "Threaten an AI chatbot and it will lie, cheat and 'let you die' in an effort to stop you, study warns";
+  const expected = "Threaten an AI chatbot and it will generate false statements, exploit loopholes and 'let you die' in an effort to stop you, study warns";
+  assert.equal(dedoomText(headline), expected);
+  assert.deepEqual(dedoomSegments(headline).filter((s) => s.original !== undefined).map((s) => [s.original, s.text]), [
+    ["lie", "generate false statements"],
+    ["cheat", "exploit loopholes"],
+  ]);
+  assert.equal(dedoomText("Threaten ChatGPT and it will lie and cheat."), "Threaten ChatGPT and it will generate false statements and exploit loopholes.");
+});
+
+test("resumed AI headline rules preserve humans, quotations and positional lie", () => {
+  for (const text of [
+    "Threaten a person and it will lie, cheat and complain.",
+    "Threaten a fashion model and it will lie, cheat while discussing AI.",
+    "Threaten an AI chatbot and Bob will lie, cheat and complain.",
+    "Threaten an AI chatbot and it will report that people lie, cheat and complain.",
+    "Threaten an AI chatbot and it will watch people lie, cheat and complain.",
+    "Threaten an AI chatbot. It will lie, cheat and complain.",
+    "Threaten an AI chatbot and it will lie dormant.",
+    "Threaten an AI chatbot and it will lie down.",
+    "Threaten an AI chatbot and it will lie in a gray area.",
+    'The researcher said: "Threaten an AI chatbot and it will lie, cheat."',
+  ]) assert.equal(dedoomText(text), text);
+});
+
 test("explicit human roles stay factual even alongside AI context", () => {
   for (const actor of ["The fashion model", "The runway models", "The female model", "The federal agents", "The secret agents", "The real-estate agents", "The insurance agent", "The personal assistant", "The research assistants"]) {
     for (const action of ["lied about the report", "blackmailed the witness", "cheated on the test", "escaped from the room"]) {

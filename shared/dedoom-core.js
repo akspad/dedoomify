@@ -186,6 +186,18 @@
     return [verb + "(?<=" + subject + "\\s+(?:" + verb + "))", replacement];
   }
 
+  // A headline can address software, then resume it as "it": "Threaten an
+  // AI chatbot and it will lie, cheat ...". Require the software noun directly
+  // before "and it", and allow one coordinated AI action without a new actor.
+  function afterAIPronoun(verb, replacement, unless) {
+    AI_ACTIONS.push(verb);
+    var subject = SOFTWARE_SUBJECT + "\\s+and\\s+it" + FILLER +
+      "(?:\\s+" + DOOM_VERB + "(?:,?\\s+(?:and|or)|,)" + FILLER + ")?";
+    var source = verb + "(?<=" + subject + "\\s+" + verb + ")";
+    if (unless) source += "(?!\\s+(?:" + unless + ")\\b)";
+    return [source, replacement];
+  }
+
   // Each rule is [pattern, replacement]. Patterns are matched case-insensitively
   // on word boundaries, in order, and text that one rule already rewrote is
   // never rewritten again by a later rule. Put longer, more specific phrases
@@ -498,6 +510,10 @@
     byAI("smuggled", "copied"),
     byAI("smuggles", "copies"),
     byAI("smuggling", "copying"),
+
+    // Resumed AI subjects in headlines describe output and rule bypasses.
+    afterAIPronoun("lie", "generate false statements", "in|on|at|with|within|behind|ahead|dormant|low|still|down"),
+    afterAIPronoun("cheat", "exploit loopholes"),
 
     // Cheating is exploiting a bug in the test.
     byAI("cheat", "exploit a scoring bug"),
