@@ -211,6 +211,14 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    afterSoftware("are strategically deceptive", "produce goal-directed misleading output", FILLER),
+    afterSoftware("deceptive strategies", "strategies that produce misleading output", "(?:\\s+trained\\s+with\\s+the\\s+best\\s+intentions)?" + FILLER + "\\s+develop"),
+    afterSoftware("pipeline sabotage", "unauthorized pipeline changes", FILLER + "\\s+(?:show|showed|shows|perform|performed|performs|attempt|attempted|attempts|exhibit|exhibited|exhibits)(?:\\s+no)?"),
+    afterSoftware("covert sabotage", "undisclosed interference", FILLER + "\\s+(?:show|showed|shows|perform|performed|performs|attempt|attempted|attempts|exhibit|exhibited|exhibits)(?:\\s+no)?"),
+    ["pipeline sabotage scenario(?=\\s+against\\s+(?:other\\s+)?(?:frontier\\s+)?models\\b)", "scenario involving unauthorized pipeline changes"],
+    ["covert sabotage(?=\\s+means\\s+the\\s+model\\b)", "undisclosed interference"],
+    ["would be scheming for", "would be pursuing through unexpected behavior"],
+
     ["anti-scheming training", "training to prevent unexpected behavior"],
     ["scheming-related problems", "behavioral bugs"],
     afterSoftware("knowingly deceive humans", "give people misleading information", "\\s+that"),
