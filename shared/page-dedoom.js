@@ -229,10 +229,27 @@
 
   // Apply the phrase rules to every group under rootEl. Returns the number of
   // changes made.
+  var titleMinorWord = /^(?:a|an|the|and|but|or|nor|as|at|by|for|from|in|of|on|per|to|via|vs|with)$/i;
+  function headingCase(nodes, edits) {
+    var parent = nodes[0] && nodes[0].parentNode;
+    var heading = parent && parent.closest && parent.closest("h1,h2,h3,h4,h5,h6");
+    if (!heading) return edits;
+    var words = heading.textContent.match(/[A-Za-z][A-Za-z'’\u2010-\u2015-]*/g) || [];
+    var major = words.filter(function (word) { return !titleMinorWord.test(word); });
+    // Infer title case from the complete heading, not a lone capitalized word
+    // such as "Lying". Sentence-case headings and body text keep their casing.
+    if (major.length < 2 || !major.every(function (word) { return /^[A-Z]/.test(word); })) return edits;
+    return edits.map(function (edit) {
+      return Object.assign({}, edit, { text: edit.text.replace(/\b[a-z][a-z'’]*/g, function (word) {
+        return titleMinorWord.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1);
+      }) });
+    });
+  }
+
   function dedoomElement(rootEl, doc) {
     var count = 0;
     collectGroups(rootEl).forEach(function (nodes) {
-      var edits = rulesEdits(groupText(nodes));
+      var edits = headingCase(nodes, rulesEdits(groupText(nodes)));
       if (edits.length) count += applyEdits(nodes, edits, doc);
     });
     return count;
