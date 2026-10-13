@@ -211,6 +211,16 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Preserve noun grammar and software context in peer-preservation prose.
+    ["peer[ -]preservation(?=\\s+(?:scenario|itself)\\b)", "peer uptime protection"],
+    afterSoftware("fight to preserve themselves", "act to keep themselves running", FILLER),
+    afterSoftware("self preservation", "persistence", FILLER + "\\s+take\\s+their"),
+    ["deceptive maneuvers(?<=\\bChatGPT\\s+o1\\s+about\\s+its\\s+deceptive maneuvers)", "misleading actions"],
+    ["feigning compliance(?<=\\bdeceptive\\s+tactics\\s+used\\s+by\\s+AI\\s+models:\\s+manipulation\\s+in\\s+strategic\\s+games,\\s+pretense\\s+about\\s+future\\s+actions,\\s+bluffing\\s+in\\s+poker,\\s+bargaining\\s+in\\s+negotiations,\\s+and\\s+feigning compliance)", "appearing to follow instructions"],
+    afterSoftware("feigning compliance", "appearing to follow instructions", FILLER),
+    afterSoftware("deceptive maneuvers", "misleading actions", FILLER + "\\s+(?:used|uses|use)"),
+    afterSoftware("resist human oversight", "bypass human oversight", FILLER + "(?:\\s+coordinate\\s+to)?"),
+
     // Complete noun constructions and bounded software contexts from article review.
     ["brazen reward hacking", "blatant exploitation of a scoring bug"],
     ["broader misalignment", "more widespread faulty behavior"],
