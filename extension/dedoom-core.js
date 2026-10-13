@@ -70,7 +70,7 @@
   var SOFTWARE_SUBJECT =
     "\\b(?:AIs?(?:\\s+(?:models?|systems?|agents?|assistants?|bots?))?|A\\.I\\.?|AGI|LLMs?|superintelligences?|artificial[\\s-]+intelligence|language[\\s-]+models?|machine[\\s-]+learning|neural[\\s-]+(?:nets?|networks?)|chatbots?|" +
     "Claude|ChatGPT|Gemini|Grok|Copilot|Llama|DeepSeek(?:-[\\w.]+)?|o\\d+(?:[-.][\\w.]+)?|GPT-[\\w.]+)";
-  var AI_SUBJECT = "(?:" + SOFTWARE_SUBJECT + "|\\b(?:models?|bots?|agents?|assistants?|systems?))";
+  var AI_SUBJECT = "(?<!\\b(?:about|regarding)\\s)(?:" + SOFTWARE_SUBJECT + "|\\b(?:models?|bots?|agents?|assistants?|systems?))";
   var FILLER =
     "(?:\\s+(?:\\w+ly|\\w+n['\u2019]t|also|then|even|still|just|not|never|can|could|will|would|" +
     "may|might|must|did|does|do|to|tried|tries|try|trying|learned|learns|began|begins|" +
@@ -164,7 +164,7 @@
   // A model name may carry a tier or version: "Claude Opus 4", "Gemini 2.5 Pro".
   // Generic "agents" or "systems" may be people ("field agents"), so only
   // explicit software words and "model(s)" start an AI clause.
-  var CLAUSE_SUBJECT = "(?:" + SOFTWARE_SUBJECT + "|\\bmodels?)" + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+(?:" + SOFTWARE_SUBJECT + "|[\\w.]+-(?:mini|preview|turbo|pro)|codex[\\w.-]*))?";
+  var CLAUSE_SUBJECT = "(?<!\\b(?:about|regarding)\\s)(?:" + SOFTWARE_SUBJECT + "|\\bmodels?)" + "(?:\\s+(?:Opus|Sonnet|Haiku|Pro|Flash|Ultra|Mini|\\d[\\w.]*)){0,3}(?:\\s+(?:and|or)\\s+(?:" + SOFTWARE_SUBJECT + "|[\\w.]+-(?:mini|preview|turbo|pro)|codex[\\w.-]*))?";
   // The first of two coordinated verbs must itself be an AI action, so "the
   // AI observed soldiers march and defy orders" keeps the soldiers' verb.
   var DOOM_VERB = "(?:defy|defie[sd]|defying|resist(?:s|ed|ing)?|sabotag(?:e|es|ed|ing)|blackmail(?:s|ed|ing)?|deceiv(?:e|es|ed|ing)|lie[sd]?|lying|cheat(?:s|ed|ing)?|manipulat(?:e|es|ed|ing)|escap(?:e|es|ed|ing)|refus(?:e|es|ed|ing)|ignor(?:e|es|ed|ing))";
@@ -211,6 +211,30 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Named software, containment and whole constructions before shorter rules.
+    ["a deceptive alignment problem", "a hidden specification bug"],
+    ["deceptive alignment problems", "hidden specification bugs"],
+    ["deceptive alignment problem", "hidden specification bug"],
+    ["rogue(?=\\s+(?:OpenAI|Anthropic|Claude|ChatGPT|Gemini|Grok|DeepSeek|GPT-[\\w.]+)\\s+(?:AI\\s+)?(?:agents?|models?|systems?|chatbots?)\\b)", "malfunctioning"],
+    byAI("hack out of containment", "breach containment controls"),
+    byAI("hacks out of containment", "breaches containment controls"),
+    byAI("hacked out of containment", "breached containment controls"),
+    byAI("hacking out of containment", "breaching containment controls"),
+    afterSoftware("dangerous intentions", "harmful objectives", "\\s+with"),
+    byAI("deceitfully comply", "appear to comply"),
+    byAI("deceitfully complies", "appears to comply"),
+    byAI("deceitfully complied", "appeared to comply"),
+    ["deceitfully comply(?<=\\bIt\\s+might\\s+then\\s+only\\s+deceitfully comply)(?=\\s+with\\s+future\\s+attempts\\s+to\\s+replace\\s+those\\s+preferences\\s+with\\s+safer\\s+ones\\b)", "appear to comply"],
+    afterSoftware("lies(?!\\s+(?:in|on|at|with|within|behind|ahead|dormant|low|still|down)\\b)", "generates false claims", "\\s+that"),
+    afterSoftware("lie(?!\\s+(?:in|on|at|with|within|behind|ahead|dormant|low|still|down)\\b)", "generate false claims", "\\s+that"),
+    afterSoftware("autonomously self-replicate", "automatically deploy additional instances", "\\s+abilities\\s+to"),
+    byAI("autonomously self-replicate", "automatically deploy additional instances"),
+    byAI("self-replicate", "deploy additional instances"),
+    byAI("self-replicates", "deploys additional instances"),
+    byAI("self-replicated", "deployed additional instances"),
+    afterSoftware("self-replicate on their own", "automatically deploy additional instances", "\\s+gain\\s+the\\s+ability\\s+to"),
+    ["rogue behaviors", "unexpected behaviors"],
+    ["rogue behaviours", "unexpected behaviors"],
     ["a rogue deployment", "an unauthorized deployment"],
     ["rogue deployments", "unauthorized deployments"],
     ["rogue deployment", "unauthorized deployment"],
@@ -549,8 +573,8 @@
     ["rogue chatbots", "malfunctioning chatbots"],
     ["rogue bots", "malfunctioning bots"],
     ["rogue programs", "malfunctioning programs"],
-    ["rogue behavior", "malfunctioning behavior"],
-    ["rogue behaviour", "malfunctioning behaviour"],
+    ["rogue behavior", "unexpected behavior"],
+    ["rogue behaviour", "unexpected behavior"],
     ["rogue actions", "malfunctioning actions"],
     ["rogue model", "malfunctioning model"],
     ["rogue agent", "malfunctioning agent"],
@@ -810,10 +834,10 @@
     byAI("lying", "giving wrong answers", "in|on|at|around|dormant|low|still"),
     byAI("lie", "give wrong answers", "in|on|at|with|within|behind|ahead|dormant|low|still|down"),
     // Defying or resisting orders is ignoring instructions.
-    inAIClause("deceive(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confuse"),
-    inAIClause("deceived(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confused"),
-    inAIClause("deceives(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confuses"),
-    inAIClause("deceiving(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "confusing"),
+    inAIClause("deceive(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "give misleading output to"),
+    inAIClause("deceived(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "gave misleading output to"),
+    inAIClause("deceives(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "gives misleading output to"),
+    inAIClause("deceiving(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "giving misleading output to"),
     inAIClause("defy\\s+(?:orders|commands)", "ignore instructions", true),
     inAIClause("defied\\s+(?:orders|commands)", "ignored instructions", true),
     inAIClause("defies\\s+(?:orders|commands)", "ignores instructions", true),
