@@ -1,15 +1,24 @@
+import { DOOM_STORIES } from "../public/curated-articles.js";
 import { articleLimit } from "../lib/rate-limit.js";
 import { fetchHtml, FetchError } from "../lib/fetch-article.js";
 import { renderPage, textToHtml, errorPage, PAGE_CSP } from "../lib/page.js";
 
-function send(res, status, html) {
+const curatedUrls = new Set(DOOM_STORIES);
+
+function send(res, status, html, curated = false) {
   res.statusCode = status;
   res.setHeader("content-type", "text/html; charset=utf-8");
   res.setHeader("content-security-policy", PAGE_CSP);
   res.setHeader("x-content-type-options", "nosniff");
   res.setHeader("referrer-policy", "no-referrer");
-  // Private: the response depends on how it was requested (see below).
+  // Cache only successful, explicitly curated public pages. Vercel consumes
+  // this header; browsers keep the short TTL and other CDNs do not store it.
   res.setHeader("cache-control", status === 200 ? "private, max-age=300" : "no-store");
+  if (status === 200 && curated) {
+    res.setHeader("cache-control", "public, max-age=300");
+    res.setHeader("cdn-cache-control", "no-store");
+    res.setHeader("vercel-cdn-cache-control", "public, s-maxage=86400, stale-while-revalidate=86400");
+  }
   res.end(html);
 }
 
@@ -17,6 +26,9 @@ function send(res, status, html) {
 // The original page, rewritten with the phrase rules and with its scripts
 // removed, for the frame on dedoomify.com.
 export default async function handler(req, res, deps = {}) {
+  // An iframe gets HTML, while a top-level visit redirects to the disclosure
+  // page. Keep these cache variants separate, including in browser caches.
+  res.setHeader("vary", "Sec-Fetch-Dest");
   const fetchHtmlImpl = deps.fetchHtml ?? fetchHtml;
   if (req.method !== "GET") {
     res.setHeader("allow", "GET");
@@ -40,7 +52,7 @@ export default async function handler(req, res, deps = {}) {
   try {
     const { html, finalUrl, contentType } = await fetchHtmlImpl(url.trim());
     const source = /text\/plain/i.test(contentType) ? textToHtml(html, finalUrl) : html;
-    return send(res, 200, renderPage(source, finalUrl).html);
+    return send(res, 200, renderPage(source, finalUrl).html, curatedUrls.has(url.trim()));
   } catch (err) {
     if (err instanceof FetchError) return send(res, err.status, errorPage(err.message));
     console.error(err);

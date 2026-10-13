@@ -1,3 +1,4 @@
+import { DOOM_STORIES } from "../public/curated-articles.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -21,7 +22,7 @@ const response = (text) => ({ ok: true, json: async () => ({ title: "Your text",
 async function browser(fetch, localAi = {}, { storage, search = "" } = {}) {
   const { document, Event } = parseHTML(html);
   const context = {
-    document, console, URLSearchParams, fetch, attachUrlInput,
+    document, console, URLSearchParams, fetch, attachUrlInput, DOOM_STORIES,
     createArticlePicker: (urls, options) => createArticlePicker(urls, { ...options, random: () => 0 }),
     requestAnimationFrame: setImmediate, cancelAnimationFrame: clearImmediate,
     setTimeout, clearTimeout, setInterval: (fn) => setInterval(fn, 1), clearInterval,
@@ -65,7 +66,7 @@ async function browser(fetch, localAi = {}, { storage, search = "" } = {}) {
 }
 
 test("empty links load the default article and record it for Try another", async () => {
-  const articles = JSON.parse(app.match(/const DOOM_STORIES = (\[[\s\S]*?\]);/)[1].replace(/,\s*\]/, "]"));
+  const articles = DOOM_STORIES;
   for (const value of ["", "   "]) {
     const data = new Map();
     const storage = { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
@@ -85,7 +86,7 @@ test("empty links load the default article and record it for Try another", async
 test("homepage and banner Try another buttons share history across visits", async () => {
   const data = new Map();
   const storage = { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
-  const articles = JSON.parse(app.match(/const DOOM_STORIES = (\[[\s\S]*?\]);/)[1].replace(/,\s*\]/, "]"));
+  const articles = DOOM_STORIES;
   const first = await browser(() => { throw new Error("unexpected fetch"); }, {}, { storage });
   for (const button of ["random", "random-banner", "random"]) {
     first.event(button, "click");
@@ -103,7 +104,7 @@ test("homepage and banner Try another buttons share history across visits", asyn
 test("opening a curated shared link records it before another visit", async () => {
   const data = new Map();
   const storage = { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
-  const articles = JSON.parse(app.match(/const DOOM_STORIES = (\[[\s\S]*?\]);/)[1].replace(/,\s*\]/, "]"));
+  const articles = DOOM_STORIES;
   const shared = await browser(() => { throw new Error("unexpected fetch"); }, {}, { storage, search: "?url=" + encodeURIComponent(articles[0]) + "&mode=rules" });
   await new Promise((resolve) => setTimeout(resolve, 10));
   assert.deepEqual(shared.frameUrls, [articles[0]]);
