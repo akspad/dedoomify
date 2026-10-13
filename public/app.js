@@ -523,7 +523,6 @@ const DOOM_STORIES = [
   "https://www.redwoodresearch.org/blog/recursive-forecasting",
   "https://www.redwoodresearch.org/blog/fail-safer-at-alignment-by-channeling",
   "https://www.redwoodresearch.org/blog/my-picture-of-the-present-in-ai",
-  "https://alignment.anthropic.com/2026/diffuse-ai-control/",
   "https://alignment.anthropic.com/2026/sleight-bench/",
   "https://alignment.anthropic.com/2026/msm/",
   "https://alignment.anthropic.com/2026/introspection-adapters/",
