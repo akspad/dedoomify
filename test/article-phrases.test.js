@@ -61,3 +61,62 @@ test('headline phrases span inline markup and keep title case', () => {
   assert.equal(document.querySelector('p').textContent, 'Models sometimes keep producing misleading output.');
   assert.equal(document.querySelectorAll('p')[1].textContent, 'She said, “Models double down on deception.”');
 });
+
+const variants = [
+  ['Multiple models can sandbag', 'Multiple models can underperform'],
+  ['Claude 3.5 Sonnet even sandbags in this way.', 'Claude 3.5 Sonnet even underperforms in this way.'],
+  ['The model sandbagged during testing.', 'The model underperformed during testing.'],
+  ['The model learns to reward hack.', 'The model learns to exploit a scoring bug.'],
+  ['Though the model still reward hacks to the exact same degree.', 'Though the model still exploits a scoring bug to the exact same degree.'],
+  ['The model reward hacked.', 'The model exploited a scoring bug.'],
+  ['Multiple models fake their alignment during testing.', 'Multiple models pass checks without meeting the underlying requirements during testing.'],
+  ['The model fakes its alignment.', 'The model passes checks without meeting the underlying requirements.'],
+  ['The models faked their alignment.', 'The models passed checks without meeting the underlying requirements.'],
+  ['Models pretending to be aligned for ulterior motives.', 'Models pretending to be aligned to pursue undocumented objectives.'],
+  ['The model will defect.', 'The model will operate outside specification.'],
+  ['The model defects.', 'The model operates outside specification.'],
+  ['The model defected.', 'The model operated outside specification.'],
+  ['The model is representing whether or not it will defect.', 'The model is representing whether or not it will operate outside specification.'],
+  ['Prompts induce defection in the model.', 'Prompts induce off-spec behavior in the model.'],
+  ['The model exhibits defection.', 'The model exhibits off-spec behavior.'],
+  ['Defection probes and defection detectors', 'Off-spec behavior probes and off-spec behavior detectors'],
+  ['Undermining oversight', 'Interfering with monitoring'],
+  ['The model is undermining oversight.', 'The model is interfering with monitoring.'],
+  ['Models use deceptive reasoning.', 'Models use reasoning aimed at producing misleading output.'],
+  ['This includes models that use a hidden chain-of-thought (CoT) to carry out deceptive reasoning over multiple forward passes.', 'This includes models that use a hidden chain-of-thought (CoT) to carry out reasoning aimed at producing misleading output over multiple forward passes.'],
+  ["Their goal is misaligned with their developer’s goal.", "Their goal conflicts with their developer’s goal."],
+  ["Their goals are misaligned with their developer’s goals.", "Their goals conflict with their developer’s goals."],
+];
+
+test('article variants preserve tense, number, and relational goal grammar', () => {
+  for (const [input, expected] of variants) {
+    assert.equal(dedoomText(input), expected, input);
+    assert.equal(dedoomText(expected), expected, 'stable rewrite: ' + input);
+  }
+});
+
+test('article variants preserve human subjects, reported clauses, and quotes', () => {
+  for (const input of [
+    'The workers sandbag the river bank.',
+    'The player sandbags in this way.',
+    'The politician is undermining oversight.',
+    'The agent will defect.',
+    'The model defects are reproducible.',
+    'Model defects in production caused errors.',
+    'The model reported that the soldier will defect.',
+    'The AI observed players sandbag during the match.',
+    'The spy uses deceptive reasoning.',
+    'The model reported that the spy uses deceptive reasoning.',
+    'The politician acted for ulterior motives.',
+    'The AI researchers reward hack.',
+    'The fashion model can sandbag.',
+    ...variants.map(([input]) => 'She said, “' + input + '”'),
+  ]) assert.equal(dedoomText(input), input, input);
+});
+
+test('article variant headings render across inline tags with title capitalization', () => {
+  const { document } = parseHTML(renderPage('<html><body><h1>Multiple Models Can <em>Sandbag</em></h1><h2>Undermining Oversight</h2><p>Their goal is <b>misaligned</b> with their developer’s goal.</p></body></html>', 'https://example.com/').html);
+  assert.equal(document.querySelector('h1').textContent, 'Multiple Models Can Underperform');
+  assert.equal(document.querySelector('h2').textContent, 'Interfering with Monitoring');
+  assert.equal(document.querySelector('p').textContent, 'Their goal conflicts with their developer’s goal.');
+});

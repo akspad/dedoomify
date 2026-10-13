@@ -209,6 +209,43 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Complete existing phrase families before their shorter rules run.
+    afterSoftware("sandbag", "underperform", FILLER),
+    afterSoftware("sandbags", "underperforms", FILLER),
+    afterSoftware("sandbagged", "underperformed", FILLER),
+    afterSoftware("reward hack", "exploit a scoring bug", FILLER),
+    afterSoftware("reward hacks", "exploits a scoring bug", FILLER),
+    afterSoftware("reward hacked", "exploited a scoring bug", FILLER),
+    afterSoftware("fake their alignment", "pass checks without meeting the underlying requirements", FILLER),
+    afterSoftware("fake its alignment", "pass checks without meeting the underlying requirements", FILLER),
+    afterSoftware("fakes its alignment", "passes checks without meeting the underlying requirements", FILLER),
+    afterSoftware("faked (?:its|their) alignment", "passed checks without meeting the underlying requirements", FILLER),
+    afterSoftware("for ulterior motives", "to pursue undocumented objectives",
+      "\\s+pretending\\s+to\\s+be\\s+aligned"),
+
+    // These compounds refer to model evaluation instrumentation, not people.
+    ["defection probes", "off-spec behavior probes"],
+    ["defection probe", "off-spec behavior probe"],
+    ["defection detectors", "off-spec behavior detectors"],
+    ["defection detector", "off-spec behavior detector"],
+    ["^undermining\\s+oversight$", "interfering with monitoring"],
+    afterSoftware("undermining oversight", "interfering with monitoring", FILLER),
+    afterSoftware("defect", "operate outside specification", FILLER),
+    afterSoftware("defects(?!\\s+(?:are|were|have|include|cause|caused|found|discovered|reported|in|of)\\b)", "operates outside specification", FILLER),
+    afterSoftware("defected", "operated outside specification", FILLER),
+    afterSoftware("defect", "operate outside specification",
+      "\\s+is\\s+representing\\s+whether\\s+or\\s+not\\s+it" + FILLER),
+    ["defection(?=\\s+in\\s+(?:the\\s+)?(?:model|AI|LLM)\\b)", "off-spec behavior"],
+    afterSoftware("defection", "off-spec behavior", "\\s+(?:shows?|exhibits?|exhibited)"),
+    afterSoftware("deceptive reasoning", "reasoning aimed at producing misleading output",
+      FILLER + "(?:\\s+(?:use|uses|used|using|produce|produces|produced|producing|carry\\s+out))?"),
+    afterSoftware("deceptive reasoning", "reasoning aimed at producing misleading output",
+      "\\s+that\\s+use\\s+a\\s+hidden\\s+chain-of-thought(?:\\s+\\(CoT\\))?\\s+to\\s+carry\\s+out"),
+
+    // Relational goal wording needs a complete predicate, not "has a bug with".
+    ["is misaligned with(?<=\\bgoal\\s+is misaligned with)(?=\\s+(?:its|their|the)\\s+developer['’]s\\s+goal\\b)", "conflicts with"],
+    ["are misaligned with(?<=\\bgoals\\s+are misaligned with)(?=\\s+(?:its|their|the)\\s+developer['’]s\\s+goals?\\b)", "conflict with"],
+
     // Additional article phrasing: match the software actor or the specific
     // evaluation/operation construction, while retaining quoted human speech.
     ["catastrophic outcomes(?<=\\bagents\\s+get\\s+better\\s+at\\s+optimizing\\s+an\\s+imperfect\\s+reward[^.!?;\\u2029]{0,180}\\brisk\\s+of\\s+catastrophic outcomes)", "severe system failures"],
