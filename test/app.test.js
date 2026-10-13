@@ -64,6 +64,24 @@ async function browser(fetch, localAi = {}, { storage, search = "" } = {}) {
   return { $, document, event, paste, frameUrls };
 }
 
+test("empty links load the default article and record it for Try another", async () => {
+  const articles = JSON.parse(app.match(/const DOOM_STORIES = (\[[\s\S]*?\]);/)[1].replace(/,\s*\]/, "]"));
+  for (const value of ["", "   "]) {
+    const data = new Map();
+    const storage = { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
+    const { $, event, frameUrls } = await browser(() => { throw new Error("unexpected fetch"); }, {}, { storage });
+    $("url").value = value;
+    event("form", "submit");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.deepEqual(frameUrls, [articles[0]]);
+    assert.equal($("url").value, articles[0]);
+    assert.equal($("error").hidden, true);
+    event("random-banner", "click");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.deepEqual(frameUrls, articles.slice(0, 2));
+  }
+});
+
 test("homepage and banner Try another buttons share history across visits", async () => {
   const data = new Map();
   const storage = { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
