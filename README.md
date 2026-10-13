@@ -18,6 +18,7 @@ language an engineer would use about software with defects:
 | **AI sycophancy** | **AI excessive agreement with users** |
 | The AI **games its rewards** | The AI **exploits its scoring system** |
 | **Reward tampering** | **Scoring-system tampering** |
+| **Survival-oriented behavior** | **Shutdown-avoidance behavior** |
 | **AI model misbehavior** | **Unexpected AI model behavior** |
 | **AI misbehavior** | **Unexpected AI behavior** |
 | **Model exfiltration** | **Unauthorized transfer of model files** |
@@ -189,7 +190,7 @@ npm test
 ```
 
 Load `extension/` as an unpacked extension from `chrome://extensions` with
-Developer mode enabled, or upload `dist/dedoomify-extension-1.1.9.zip` through
+Developer mode enabled, or upload `dist/dedoomify-extension-1.1.10.zip` through
 the Chrome Web Store developer dashboard. Repository updates do not update the
 store listing automatically; the new package needs a separate store submission
 and review before installed users receive it.
