@@ -1,6 +1,7 @@
 import * as localAi from "./local-ai.js";
 import * as tooltip from "./tooltip.js";
 import { attachUrlInput } from "./url-input.js";
+import { createArticlePicker } from "./random-articles.js";
 
 const $ = (id) => document.getElementById(id);
 const form = $("form"), go = $("go"), errorEl = $("error");
@@ -415,6 +416,7 @@ async function start({ instant = false } = {}) {
 }
 
 function runUrl(url, options) {
+  storyPicker.remember(url);
   source = { url };
   view = "page";
   start(options);
@@ -482,16 +484,43 @@ const DOOM_STORIES = [
   "https://80000hours.org/problem-profiles/artificial-intelligence/",
   "https://80000hours.org/problem-profiles/loss-of-control/",
   "https://www.anthropic.com/research/sabotage-evaluations",
+  "https://www.redwoodresearch.org/blog/how-will-we-update-about-scheming",
+  "https://www.redwoodresearch.org/blog/handling-schemers-if-shutdown-is",
+  "https://www.redwoodresearch.org/blog/how-might-we-safely-pass-the-buck",
+  "https://www.redwoodresearch.org/blog/what-training-data-should-developers",
+  "https://www.redwoodresearch.org/blog/to-be-legible-evidence-of-misalignment",
+  "https://www.redwoodresearch.org/blog/there-are-two-fundamentally-different",
+  "https://www.redwoodresearch.org/blog/reducing-risk-from-scheming-by-studying",
+  "https://www.redwoodresearch.org/blog/a-taxonomy-of-barriers-to-trading",
+  "https://blog.redwoodresearch.org/p/thoughts-on-the-conservative-assumptions",
+  "https://blog.redwoodresearch.org/p/the-case-for-ensuring-that-powerful",
+  "https://alignment.anthropic.com/2025/openai-findings/",
+  "https://alignment.anthropic.com/2025/bumpers/",
+  "https://alignment.anthropic.com/2026/teaching-claude-why/",
+  "https://alignment.anthropic.com/2025/alignment-faking-revisited/",
+  "https://alignment.anthropic.com/2024/how-to-alignment-faking/",
+  "https://futureoflife.org/ai-safety-index-winter-2025/",
+  "https://superalignment.inc/wiki/alignment-faking/",
+  "https://superalignment.inc/wiki/reward-hacking/",
+  "https://www.existentialriskobservatory.org/unaligned-ai/",
+  "https://www.redwoodresearch.org/blog/ai-swarms-are-starting-to-pose-indirect",
+  "https://www.redwoodresearch.org/blog/sota-alignment-assessments-dont-strongly",
+  "https://www.redwoodresearch.org/blog/are-we-existentially-threatened-by",
+  "https://www.redwoodresearch.org/blog/the-distillation-double-bind-distilling",
+  "https://www.redwoodresearch.org/blog/incriminating-misaligned-ai-models",
+  "https://www.redwoodresearch.org/blog/risk-reports-need-to-address-deployment",
+  "https://www.redwoodresearch.org/blog/risk-from-fitness-seeking-ais-mechanisms",
+  "https://www.redwoodresearch.org/blog/research-sabotage-in-ml-codebases",
+  "https://www.redwoodresearch.org/blog/current-ais-seem-pretty-misaligned",
+  "https://www.redwoodresearch.org/blog/will-ai-systems-drift-into-misalignment",
+  "https://www.redwoodresearch.org/blog/should-ai-developers-remove-discussion",
 ];
-// The first try is always the first story; after that, any story except the
-// one just shown.
-let lastStory = null;
+let storyStorage;
+try { storyStorage = localStorage; } catch {}
+const storyPicker = createArticlePicker(DOOM_STORIES, { storage: storyStorage });
 function tryAnother() {
-  const choices = DOOM_STORIES.filter((u) => u !== lastStory && u !== source?.url);
-  const url = !lastStory && choices.includes(DOOM_STORIES[0])
-    ? DOOM_STORIES[0]
-    : choices[Math.floor(Math.random() * choices.length)];
-  lastStory = url;
+  const url = storyPicker.next(source?.url);
+  if (!url) return;
   selectTab("url");
   $("url").value = url;
   showError("");
