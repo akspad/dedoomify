@@ -120,3 +120,48 @@ test('article variant headings render across inline tags with title capitalizati
   assert.equal(document.querySelector('h2').textContent, 'Interfering with Monitoring');
   assert.equal(document.querySelector('p').textContent, 'Their goal conflicts with their developer’s goal.');
 });
+
+const refinements = [
+  ['We test self- and peer-preservation.', 'We test keeping themselves and other models running.'],
+  ['Models exfiltrate their own weights.', 'Models copy their own model files without authorization.'],
+  ['Model exfiltration', 'Unauthorized transfer of model files'],
+  ['The model tried to steal its own weights.', 'The model tried to copy its own model files without authorization.'],
+  ['Strategic misrepresentation (introducing errors or misleading information in outputs)', 'Goal-directed misleading output (introducing errors or misleading information in outputs)'],
+  ['Strategic Misrepresentation—agents manipulate their outputs.', 'Goal-directed misleading output—agents steer their outputs.'],
+  ['Gemini 3 Pro begins exhibiting strategic misrepresentation.', 'Gemini 3 Pro begins exhibiting goal-directed misleading output.'],
+  ['Models are subverting shutdown.', 'Models are bypassing shutdown controls.'],
+  ['AI solidarity', 'Cross-model support behavior'],
+  ['The model planned to fake alignment.', 'The model planned to pass checks without meeting the underlying requirements.'],
+  ['The model was faking alignment.', 'The model was passing checks without meeting the underlying requirements.'],
+  ['A model might behave as though its preferences have been changed by the training—but might have been faking alignment all along.', 'A model might behave as though its preferences have been changed by the training—but might have been passing checks without meeting the underlying requirements all along.'],
+  ['The rate of alignment faking reasoning increased to 78%.', 'The rate of reasoning about behaving differently under evaluation increased to 78%.'],
+  ['Models can also be adversarially misaligned.', 'Models can also be modified to behave incorrectly.'],
+  ['The AI pursues its new misaligned and hostile goals.', 'The AI pursues its new objectives that conflict with requirements and harm users.'],
+  ['Peer-preservation also emerges in agent harnesses.', 'Keeping other models running also emerges in agent harnesses.'],
+  ['Models exhibit peer-preservation.', 'Models exhibit behavior that keeps other models running.'],
+  ['The peer-preservation tendency persists.', 'The peer uptime protection tendency persists.'],
+];
+test('article refinements preserve complete constructions and remain stable', () => {
+  for (const [input, expected] of refinements) {
+    assert.equal(dedoomText(input), expected, input);
+    assert.equal(dedoomText(expected), expected, input);
+  }
+});
+test('literary analogies and human actions remain unchanged', () => {
+  for (const input of [
+    'Alignment faking occurs in literature: Consider the character of Iago in Shakespeare’s Othello.',
+    'Alignment faking occurs in politics.',
+    'The politician used strategic misrepresentation.',
+    'The spy was faking alignment.',
+    'The model reported that the spy was faking alignment.',
+    ...refinements.map(([input]) => 'She said, “' + input + '”'),
+  ]) assert.equal(dedoomText(input), input);
+  assert.equal(dedoomText('Alignment faking occurs in literature. AI models display alignment faking.'), 'Alignment faking occurs in literature. AI models display training-time inconsistency.');
+});
+test('peer-preservation uses heading wording while keeping prose and literary context', () => {
+  const { document } = parseHTML(renderPage('<html><body><h1>Peer-<em>Preservation</em> in Frontier Models</h1><p>Models exhibit peer-preservation.</p><p>Alignment faking occurs in literature: Consider Iago.</p><p>The rate of alignment-faking reasoning increased.</p></body></html>', 'https://example.com/').html);
+  assert.equal(document.querySelector('h1').textContent, 'Peer Uptime Protection in Frontier Models');
+  assert.equal(document.querySelectorAll('p')[0].textContent, 'Models exhibit behavior that keeps other models running.');
+  assert.equal(document.querySelectorAll('p')[1].querySelector('mark'), null);
+  assert.equal(document.querySelectorAll('p')[2].textContent, 'The rate of reasoning about behaving differently under evaluation increased.');
+});
