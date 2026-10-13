@@ -165,3 +165,37 @@ test('peer-preservation uses heading wording while keeping prose and literary co
   assert.equal(document.querySelectorAll('p')[1].querySelector('mark'), null);
   assert.equal(document.querySelectorAll('p')[2].textContent, 'The rate of reasoning about behaving differently under evaluation increased.');
 });
+
+const grammarCases = [
+  ['The scheming behaviors exhibited included errors.', 'The unexpected behaviors exhibited included errors.'],
+  ['The model manipulated the data during parsing.', 'The model altered the data during parsing.'],
+  ['Models might manipulate the data.', 'Models might alter the data.'],
+  ['AI pursues goals that are misaligned with human values.', 'AI pursues goals that conflict with human values.'],
+  ['AI pursues goals that are misaligned with human interests.', 'AI pursues goals that conflict with human interests.'],
+  ['The rise of AI deception raises questions.', 'The rise of misleading AI output raises questions.'],
+  ['AI deception raises questions.', 'Misleading AI output raises questions.'],
+  ['It failed. AI deception raises questions.', 'It failed. Misleading AI output raises questions.'],
+  ['AI Already Resists Human Control', 'AI Already Fails to follow operator instructions'],
+  ['Those AIs try to resist human control by lying, faking compliance, disabling oversight mechanisms.', 'Those AIs try to bypass operator instructions by lying, appearing to meet requirements without doing so, disabling oversight mechanisms.'],
+  ['The most scheming-prone AI systems engaged in this behavior.', 'The AI systems most prone to unexpected behavior engaged in this behavior.'],
+  ['The Rise of the Deceptive Machines', 'The Rise of the Unreliable systems'],
+  ['Models violate training objectives to avoid modification or achieve hidden goals.', 'Models violate training objectives to avoid modification or achieve undocumented objectives.'],
+  ['Models develop strategies to protect their preferences or achieve hidden goals.', 'Models develop strategies to protect their preferences or achieve undocumented objectives.'],
+  ['Exfiltration of Model Weights', 'Unauthorized transfer of model files'],
+  ['An increase in AI misbehavior.', 'An increase in unexpected AI behavior.'],
+  ['AI misbehavior increased.', 'Unexpected AI behavior increased.'],
+  ['AI chatbots are turning against us.', 'AI chatbots are acting against user instructions.'],
+];
+test('new article grammar and phrase families rewrite in complete constructions', () => {
+  for (const [input, expected] of grammarCases) assert.equal(dedoomText(input), expected, input);
+});
+test('new article constructions preserve human actions and quotes', () => {
+  for(const input of ['The employee manipulated the data.', 'The soldier resists human control.', 'The employee is faking compliance.', 'People are turning against us.', 'The politician pursued hidden goals.', 'The model reported that people are turning against us.', ...grammarCases.map(([s]) => 'She said, “'+s+'”')]) assert.equal(dedoomText(input),input,input);
+});
+test('article grammar keeps title casing and inline sentence context', () => {
+  const { document } = parseHTML(renderPage('<html><body><h1>AI Already Resists Human Control</h1><h2>The Rise of the Deceptive Machines</h2><p>The rise of <em>AI deception</em> raises questions.</p><p>The model manipulated <b>the data</b>.</p></body></html>', 'https://example.com/').html);
+  assert.equal(document.querySelector('h1').textContent, 'AI Already Fails to Follow Operator Instructions');
+  assert.equal(document.querySelector('h2').textContent, 'The Rise of the Unreliable Systems');
+  assert.equal(document.querySelector('p').textContent, 'The rise of misleading AI output raises questions.');
+  assert.equal(document.querySelectorAll('p')[1].textContent, 'The model altered the data.');
+});

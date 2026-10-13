@@ -211,6 +211,29 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Article grammar and missing software-specific constructions.
+    ["scheming\\s+behaviou?rs", "unexpected behaviors"],
+    afterSoftware("manipulated the data", "altered the data", FILLER),
+    afterSoftware("manipulate the data", "alter the data", FILLER),
+    afterSoftware("manipulates the data", "alters the data", FILLER),
+    afterSoftware("manipulating the data", "altering the data", FILLER),
+    ["are misaligned with(?<=\\bgoals\\s+that\\s+are misaligned with)(?=\\s+human\\s+(?:values|interests)\\b)", "conflict with"],
+    afterSoftware("try to resist human control", "try to bypass operator instructions", FILLER),
+    afterSoftware("resists human control", "fails to follow operator instructions", "(?:\\s+already)?" + FILLER),
+    afterSoftware("resist human control", "fail to follow operator instructions", "(?:\\s+already)?" + FILLER),
+    afterSoftware("resisted human control", "failed to follow operator instructions", "(?:\\s+already)?" + FILLER),
+    afterSoftware("faking compliance", "appearing to meet requirements without doing so", FILLER),
+    afterSoftware("faking compliance", "appearing to meet requirements without doing so",
+      "\\s+try\\s+to\\s+resist\\s+human\\s+control\\s+by\\s+lying,"),
+    ["most scheming-prone AI systems", "AI systems most prone to unexpected behavior"],
+    ["scheming-prone AI systems", "AI systems prone to unexpected behavior"],
+    ["deceptive machines", "unreliable systems"],
+    ["hidden goals(?<=\\b(?:training\\s+objectives\\s+to\\s+avoid\\s+modification|their\\s+preferences)\\s+or\\s+achieve\\s+hidden goals)", "undocumented objectives"],
+    afterSoftware("hidden goals", "undocumented objectives", FILLER + "\\s+(?:pursue|pursues|pursued|achieve|achieves|achieved)"),
+    ["exfiltration of model weights", "unauthorized transfer of model files"],
+    ["AI misbehavio(?:u)?r\\b", "unexpected AI behavior"],
+    afterSoftware("turning against us", "acting against user instructions", FILLER),
+
     // Whole constructions preserve grammar and the unauthorized-copying claim.
     ["self-\\s+and\\s+peer[\\s-]preservation", "keeping themselves and other models running"],
     ["exfiltrate their own weights", "copy their own model files without authorization"],
@@ -1324,7 +1347,13 @@
             if ((options && options.heading) || /^\s+(?:tendenc(?:y|ies)|behavio(?:u)?rs?|rates?|mechanisms?)\b/i.test(after)) replacement = "peer uptime protection";
             else if (/\b(?:exhibit(?:s|ed)?|show(?:s|ed)?|display(?:s|ed)?)\s+$/i.test(before)) replacement = "behavior that keeps other models running";
           }
-          append({ text: matchCase(m[2], replacement), original: m[2] });
+          var cased = matchCase(m[2], replacement);
+          // An initial acronym is not evidence of sentence/title capitalization.
+          if (/^AI (?:deception|misbehaviou?r)$/.test(m[2])) {
+            var prefix = full.slice(0, m.index + m[1].length).trimEnd();
+            cased = !prefix || /[.!?\u2029]$/.test(prefix) ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement;
+          }
+          append({ text: cased, original: m[2] });
           last = start + m[2].length;
           rule.re.lastIndex = base + last;
         }
