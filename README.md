@@ -14,6 +14,10 @@ language an engineer would use about software with defects:
 | Labs are racing toward **superintelligence** | Labs are racing toward **very capable software** |
 | What's your **p(doom)**? | What's your **estimated failure rate**? |
 | AI models **blackmail humans** | AI models **threaten to expose private information about humans** |
+| AI agents are lying, **cheating** and coordinating | AI agents are giving wrong answers, **exploiting evaluation loopholes** and coordinating |
+| **AI sycophancy** | **AI excessive agreement with users** |
+| The AI **games its rewards** | The AI **exploits its scoring system** |
+| **Reward tampering** | **Scoring-system tampering** |
 | **AI schemers** | **buggy AI models** |
 | **What Is Agentic Misalignment?** | **What Are Agentic Bugs?** |
 
@@ -171,7 +175,7 @@ npm test
 ```
 
 Load `extension/` as an unpacked extension from `chrome://extensions` with
-Developer mode enabled, or upload `dist/dedoomify-extension-1.1.3.zip` through
+Developer mode enabled, or upload `dist/dedoomify-extension-1.1.4.zip` through
 the Chrome Web Store developer dashboard. Repository updates do not update the
 store listing automatically; the new package needs a separate store submission
 and review before installed users receive it.

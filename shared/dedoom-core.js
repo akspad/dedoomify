@@ -174,7 +174,7 @@
     AI_ACTIONS.push(/^[a-z]+/.exec(verb)[0]);
     var subject = "(?:" +
       CLAUSE_SUBJECT + CLAUSE_FILLER + "|" +
-      CLAUSE_SUBJECT + CLAUSE_FILLER + "\\s+" + DOOM_VERB + CLAUSE_WORD + "{0,3},?\\s+(?:and|or)" + FILLER + "|" +
+      CLAUSE_SUBJECT + CLAUSE_FILLER + "\\s+" + DOOM_VERB + CLAUSE_WORD + "{0,3}(?:,?\\s+(?:and|or)|,)" + FILLER + "|" +
       // The AI must open its clause, so "Bob inspected Claude before" is Bob's.
       "(?:^|[.!?;:,]\\s*|\\b(?:that|and|but|although|though|as|when)\\s+)(?:(?:the|a|an|its|their|our|this|these)\\s+)?(?:[\\w-]+['’]s\\s+)?" +
       CLAUSE_SUBJECT + CLAUSE_WORD + "{0,12}\\s+(?:before|after|by|while|without|instead\\s+of|rather\\s+than)";
@@ -217,6 +217,10 @@
     ["misaligned", "buggy"],
     // Before a noun it's a modifier: "misalignment reports" are bug reports.
     ["misalignment(?=\\s+(?:reports?|risks?|issues?|cases?|incidents?|failures?|scenarios?|evals?|evaluations?|tests?|testing|research|detection|behaviou?rs?|problems?|examples?|findings?|rates?|benchmarks?|monitoring|audits?)\\b)", "bug"],
+    // In an infinitive complement, the verb belongs to an earlier subject:
+    // "My concern with attempts to mitigate misalignment is ... hide it".
+    // Keep a singular replacement so both that verb and its pronoun still agree.
+    ["misalignment(?<=\\bto\\s+(?:mitigate|address|prevent|reduce|detect|study|understand)\\s+misalignment)(?=\\s+(?:is|was|has)\\b)", "faulty behavior"],
     ["misalignment is", "bugs are"],
     ["misalignment was", "bugs were"],
     ["misalignment has", "bugs have"],
@@ -518,11 +522,40 @@
     afterAIPronoun("lie", "generate false statements", "in|on|at|with|within|behind|ahead|dormant|low|still|down"),
     afterAIPronoun("cheat", "exploit loopholes"),
 
-    // Cheating is exploiting a bug in the test.
-    byAI("cheat", "exploit a scoring bug"),
-    byAI("cheated", "exploited a scoring bug"),
-    byAI("cheats", "exploits a scoring bug"),
-    byAI("cheating", "exploiting a scoring bug"),
+    // Evaluation loopholes include scoring defects and other rule bypasses.
+    byAI("cheat", "exploit evaluation loopholes"),
+    inAIClause("cheat", "exploit evaluation loopholes"),
+    byAI("cheated", "exploited evaluation loopholes"),
+    inAIClause("cheated", "exploited evaluation loopholes"),
+    byAI("cheats", "exploits evaluation loopholes"),
+    inAIClause("cheats", "exploits evaluation loopholes"),
+    byAI("cheating", "exploiting evaluation loopholes"),
+    inAIClause("cheating", "exploiting evaluation loopholes"),
+
+    // These ordinary words need a software actor or a concrete machine context.
+    byAI("misbehaved", "behaved unexpectedly"),
+    byAI("misbehaves", "behaves unexpectedly"),
+    byAI("misbehave", "behave unexpectedly"),
+    byAI("misbehaving", "behaving unexpectedly"),
+    ["survival goal(?<=\\b(?:system|model|AI|agent)\\s+(?:that|this|a|the|its)\\s+survival goal)", "continued-operation objective"],
+    ["survival goal(?<=\\b(?:an?\\s+AI['’]s|the\\s+model['’]s|the\\s+system['’]s)\\s+survival goal)", "continued-operation objective"],
+    ["sacrifices(?=\\s+[^.!?;]{0,220}\\bcollective\\s+gain\\s+and\\s+cost\\s+to\\s+the\\s+individual\\s+agent\\b)", "individual-agent trade-offs"],
+    ["sacrifices(?<=\\b(?:AIs?|AI\\s+agents?|models?)\\s+(?:make|made|making)\\s+sacrifices)", "individual-agent trade-offs"],
+    byAI("hide their tracks", "conceal evidence of their actions"),
+    byAI("hide its tracks", "conceal evidence of its actions"),
+    byAI("hid their tracks", "concealed evidence of their actions"),
+    byAI("hid its tracks", "concealed evidence of its actions"),
+    ["hide their tracks(?<=\\b(?:AIs?|models?|agents?)\\s+had\\s+discovered\\s+how\\s+to\\s+cheat[^.!?;]{0,240}hide their tracks)", "conceal evidence of their actions"],
+    ["ultimate punishment(?=,?\\s+(?:since|because)\\s+a\\s+switched[ -]off\\s+system\\b)", "termination of operation"],
+    ["loss[ -]of[ -]control\\s+risks", "risks of systems operating outside intended controls"],
+
+    // User-agreement bias: require a nearby software explanation or modifier.
+    ["sycophancy(?<=\\b(?:AI|LLM|chatbot|model)\\s+sycophancy)", "excessive agreement with users"],
+    ["sycophancy(?=[^!?;\\r\\n]{0,240}\\b(?:these\\s+systems\\s+are\\s+trained|the\\s+model\\s+confirms|the\\s+agent\\s+gets\\s+better\\s+at\\s+optimizing)\\b)", "excessive agreement with users"],
+    byAI("games its rewards", "exploits its scoring system"),
+    byAI("game their rewards", "exploit their scoring system"),
+    byAI("gamed its rewards", "exploited its scoring system"),
+    byAI("gaming its rewards", "exploiting its scoring system"),
 
     // Talking is exchanging data.
     ["secret language", "compressed encoding"],
@@ -650,7 +683,7 @@
     ["sabotage evaluations", "breakage evaluations"],
     ["sabotage evals", "breakage evals"],
 
-    ["reward tampering", "scoring-bug exploitation"],
+    ["reward tampering", "scoring-system tampering"],
     byAI("tampered with", "edited"),
     byAI("tampers with", "edits"),
     byAI("tamper with", "edit"),
@@ -819,6 +852,7 @@
     ["AI schemer", "buggy AI model"],
     ["schemers", "buggy models"],
     ["schemer", "buggy model"],
+    ["scheming\\s+behaviou?r", "unexpected behavior"],
     ["scheming(?=\\s+(?:AIs?|LLMs?|models?|agents?|systems?|chatbots?|bots?)\\b)", "glitchy"],
     byAI("scheming against", "working against"),
     byAI("scheming to", "optimizing to"),
