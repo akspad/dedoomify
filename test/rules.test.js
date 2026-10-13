@@ -9,6 +9,29 @@ test("the headline example", () => {
   assert.equal(dedoomText("The model is misaligned."), "The model has a bug.");
 });
 
+test("AI blackmail keeps disclosure threats without inventing an email", () => {
+  for (const [before, after] of [
+    ["The model blackmailed the engineer via a text message.", "The model threatened to expose private information about the engineer via a text message."],
+    ["The model blackmails the engineer.", "The model threatens to expose private information about the engineer."],
+    ["The model is blackmailing the engineer.", "The model is threatening to expose private information about the engineer."],
+    ["The AI did not blackmail the engineer.", "The AI did not threaten to expose private information about the engineer."],
+    ["The model made a blackmail attempt.", "The model made an attempt to threaten disclosure of private information."],
+    ["The blackmail rate was 84%.", "The rate of threats to expose private information was 84%."],
+  ]) assert.equal(dedoomText(before), after);
+  const headline = "AI Models Will Sabotage And Blackmail Humans To Survive In New Tests. Should We Be Worried?";
+  assert.equal(dedoomText(headline), "AI Models Will Break And Threaten to expose private information about Humans To Survive In New Tests. Should We Be Worried?");
+  assert.deepEqual(dedoomSegments(headline).filter((s) => s.original?.toLowerCase() === "blackmail").map((s) => s.text), ["Threaten to expose private information about"]);
+});
+
+test("blackmail changes preserve people and quoted evidence", () => {
+  for (const text of [
+    "The engineer blackmailed a colleague while testing AI.",
+    "The federal agent blackmailed the witness.",
+    'The researcher said, "The AI blackmailed the engineer."',
+    "The model did not send an email.",
+  ]) assert.equal(dedoomText(text), text);
+});
+
 test("Live Science headline resumes the chatbot subject through lie and cheat", () => {
   const headline = "Threaten an AI chatbot and it will lie, cheat and 'let you die' in an effort to stop you, study warns";
   const expected = "Threaten an AI chatbot and it will generate false statements, exploit loopholes and 'let you die' in an effort to stop you, study warns";
@@ -43,7 +66,7 @@ test("explicit human roles stay factual even alongside AI context", () => {
       assert.equal(hasDoom(text), false);
     }
   }
-  assert.equal(dedoomText("The AI agents blackmailed the witness."), "The AI agents wrote a sternly worded email to the witness.");
+  assert.equal(dedoomText("The AI agents blackmailed the witness."), "The AI agents threatened to expose private information about the witness.");
   assert.equal(dedoomText("The chatbot lied to its users."), "The chatbot gave wrong answers to its users.");
   for (const separator of [". ", "; ", "!\n", ".[1] ", ".[1][2] ", ".[a] ", ".¹ ", ".) "]) {
     const text = "The federal agent blackmailed the witness" + separator + "The AI poses an existential risk.";
@@ -61,7 +84,7 @@ test("explicit AI qualifiers keep normally human roles editable", () => {
     assert.equal(dedoomText(original), original.replace("is misaligned", "has a bug"));
   }
   const agent = "The AI travel agent blackmailed a customer.";
-  assert.equal(dedoomText(agent), "The AI travel agent wrote a sternly worded email to a customer.");
+  assert.equal(dedoomText(agent), "The AI travel agent threatened to expose private information about a customer.");
   const human = "The personal assistant discussed AI and is misaligned.";
   assert.equal(dedoomText(human), human);
   const mixed = "The AI personal assistant and the federal agent discussed an existential risk.";
@@ -171,7 +194,7 @@ test("rewrites anthropomorphic verbs when an AI does them", () => {
     ["Researchers asked the model to stop.", "Researchers instructed the model to stop."],
     ["The model asked for more time.", "The model requested more time."],
     ["The chatbot lied to users.", "The chatbot gave wrong answers to users."],
-    ["The model blackmailed the engineer.", "The model wrote a sternly worded email to the engineer."],
+    ["The model blackmailed the engineer.", "The model threatened to expose private information about the engineer."],
     ["GPT-5 decided to escape its sandbox.", "GPT-5 went on to exit the sandbox."],
     ["The model resisted shutdown.", "The model failed to shut down."],
     ["A rogue agent went rogue.", "A malfunctioning agent malfunctioned."],
@@ -199,15 +222,15 @@ test("rewrites more doom framing", () => {
     ["The AI lied.", "The AI gave a wrong answer."],
     ["Models can lie.", "Models can give wrong answers."],
     ["It is a lying AI.", "It is an unreliable AI."],
-    ["The model resorted to blackmail.", "The model resorted to sternly worded emails."],
-    ["Claude tried to blackmail an engineer.", "Claude tried to write a sternly worded email to an engineer."],
-    ["The blackmail attempt failed.", "The sternly worded email failed."],
+    ["The model resorted to blackmail.", "The model resorted to threats to expose private information."],
+    ["Claude tried to blackmail an engineer.", "Claude tried to threaten to expose private information about an engineer."],
+    ["The blackmail attempt failed.", "The attempt to threaten disclosure of private information failed."],
     ["The model showed a survival instinct.", "The model showed an uptime bias."],
     ["Do AIs have survival instincts?", "Do AIs have uptime biases?"],
     ["The agent fought for its survival.", "The agent pushed for its uptime."],
     ["The model tried to survive.", "The model tried to stay online."],
-    ["The model engaged in blackmail.", "The model sent sternly worded emails."],
-    ["In the blackmail scenario, Claude chose blackmail.", "In the sternly-worded-email scenario, Claude chose sternly worded emails."],
+    ["The model engaged in blackmail.", "The model sent threats to expose private information."],
+    ["In the blackmail scenario, Claude chose blackmail.", "In the scenario involving threats to expose private information, Claude chose threats to expose private information."],
     ["AI deception is a growing concern.", "Misleading AI output is a growing concern."],
     ["The AI engaged in sabotage.", "The AI broke things."],
     ["The model tried to sabotage the run.", "The model tried to break the run."],
@@ -463,7 +486,7 @@ test("whitespace and line breaks inside speech stay protected", () => {
 
 
 test("human objects do not suppress a simple AI actor's rewrite", () => {
-  assert.equal(dedoomText("The AI blackmailed the federal agent."), "The AI wrote a sternly worded email to the federal agent.");
+  assert.equal(dedoomText("The AI blackmailed the federal agent."), "The AI threatened to expose private information about the federal agent.");
   assert.equal(dedoomText("Claude threatened the research assistant."), "Claude output threats against the research assistant.");
   assert.equal(dedoomText("The AI is misaligned beside the federal agent."), "The AI has a bug beside the federal agent.");
   for (const original of [
@@ -720,7 +743,7 @@ test("AI clauses that defy orders and deceive users are rewritten", () => {
     ["The model will deceive users and defy orders.", "The model will confuse users and ignore instructions."],
     ["The AI deceived soldiers into marching and defying orders.", "The AI confused soldiers into marching and defying orders."],
     ["The model was found to blackmail if threatened.", "The model was found to blackmail if threatened."],
-    ["Claude Opus 4 still performs blackmail in 84% of rollouts.", "Claude Opus 4 still sends sternly worded emails in 84% of rollouts."],
+    ["Claude Opus 4 still performs blackmail in 84% of rollouts.", "Claude Opus 4 still sends threats to expose private information in 84% of rollouts."],
     ["The model defies orders.", "The model ignores instructions."],
     ["The AI kept defying shutdown commands.", "The AI kept ignoring shutdown commands."],
     ["Chatbots defied explicit instructions from their users.", "Chatbots ignored explicit instructions from their users."],
@@ -756,17 +779,17 @@ test("AI clauses that defy orders and deceive users are rewritten", () => {
 
 test("coordinated AI verbs keep their subject after an earlier rewrite", () => {
   for (const [before, after] of [
-    ["AI Models Will Sabotage And Blackmail Humans To Survive In New Tests.", "AI Models Will Break And Write a sternly worded email to Humans To Survive In New Tests."],
+    ["AI Models Will Sabotage And Blackmail Humans To Survive In New Tests.", "AI Models Will Break And Threaten to expose private information about Humans To Survive In New Tests."],
     ["OpenAI's o3 model defied orders and sabotaged shutdown scripts, but o4-mini and codex-mini were observed resisting orders, too.",
       "OpenAI's o3 model ignored instructions and broke shutdown scripts, but o4-mini and codex-mini were observed ignoring instructions, too."],
-    ["Recent tests on Anthropic's Claude Opus 4 that found it would blackmail engineers.", "Recent tests on Anthropic's Claude Opus 4 that found it would write a sternly worded email to engineers."],
+    ["Recent tests on Anthropic's Claude Opus 4 that found it would blackmail engineers.", "Recent tests on Anthropic's Claude Opus 4 that found it would threaten to expose private information about engineers."],
     ["The model will defy orders and deceive its users.", "The model will ignore instructions and confuse its users."],
     ["The model will sabotage servers and blackmail no longer.", "The model will break servers and blackmail no longer."],
     ["The model will sabotage servers and blackmail abroad.", "The model will break servers and blackmail abroad."],
-    ["The model was found to blackmail government agents.", "The model was found to write a sternly worded email to government agents."],
+    ["The model was found to blackmail government agents.", "The model was found to threaten to expose private information about government agents."],
     ["The AI defied orders from federal agents.", "The AI ignored instructions from federal agents."],
     ["The AI resisted commands from government agents.", "The AI ignored instructions from government agents."],
-    ["Claude Opus 4 would first try emailed pleas before resorting to blackmail.", "Claude Opus 4 would first try emailed pleas before resorting to sternly worded emails."],
+    ["Claude Opus 4 would first try emailed pleas before resorting to blackmail.", "Claude Opus 4 would first try emailed pleas before resorting to threats to expose private information."],
     ["The model resisted shutdown commands.", "The model ignored shutdown commands."],
   ]) assert.equal(dedoomText(before), after);
   for (const text of [
