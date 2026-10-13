@@ -845,3 +845,27 @@ test("new article rules preserve quotes, human actors and ordinary replication",
     "The model reported that people deceive users.",
   ]) assert.equal(dedoomText(text), text, text);
 });
+
+test("training and model deceit wording stays specific to software", () => {
+  for (const [before, after] of [
+    ["Traditional training methods, aimed at punishing dishonesty, risk backfiring by simply teaching models to lie more subtly.", "Traditional training methods, aimed at penalizing misleading outputs, risk backfiring by simply teaching models to give wrong answers more subtly."],
+    ["AI training involves punishing dishonesty.", "AI training involves penalizing misleading outputs."],
+    ["Today's AIs are capable of this type of deceit.", "Today's AIs are capable of this type of misleading output."],
+    ["The model is capable of deceit.", "The model is capable of misleading output."],
+    ["The thin line between error and deceit within AI operations remains.", "The thin line between error and misleading output within AI operations remains."],
+    ["AI's murderous efforts would take time.", "Potentially lethal AI actions would take time."],
+    ["They found that AI’s murderous efforts would take time.", "They found that potentially lethal AI actions would take time."],
+  ]) assert.equal(dedoomText(before), after, before);
+});
+
+test("training and deceit additions preserve people and quoted claims", () => {
+  for (const text of [
+    "Traditional training methods, aimed at punishing dishonesty, risk backfiring by simply teaching people to lie more subtly.",
+    "A human model is capable of deceit.",
+    "People are capable of this type of deceit when discussing AI.",
+    "Punishing dishonesty is part of the school's policy.",
+    "The suspect's murderous efforts were documented using AI.",
+    'The researcher said, "AI’s murderous efforts would take time."',
+    'The researcher said, "The model is capable of deceit."',
+  ]) assert.equal(dedoomText(text), text, text);
+});

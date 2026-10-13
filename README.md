@@ -177,7 +177,8 @@ dedoomify.com.
 
 The extension uses the same current phrase rules as the website, including
 named-model rogue-agent phrases, containment breaches, self-replication,
-misleading output to users, and deceptive-alignment grammar fixes, alongside
+misleading output to users, AI-specific deceit and training language, and
+deceptive-alignment grammar fixes, alongside
 `schemers` → `buggy models`, the agentic-bugs question grammar, and blackmail
 rewrites that preserve disclosure threats. It handles phrases and AI context
 across inline formatting, preserves title-case headings, and gives highlighted
@@ -195,7 +196,7 @@ npm test
 ```
 
 Load `extension/` as an unpacked extension from `chrome://extensions` with
-Developer mode enabled, or upload `dist/dedoomify-extension-1.1.17.zip` through
+Developer mode enabled, or upload `dist/dedoomify-extension-1.1.18.zip` through
 the Chrome Web Store developer dashboard. Repository updates do not update the
 store listing automatically; the new package needs a separate store submission
 and review before installed users receive it.
