@@ -839,6 +839,8 @@ test("new article rules preserve quotes, human actors and ordinary replication",
     "The federal agents hacked out of containment while studying AI.",
     "People that lie about AI can deceive users.",
     "Cells autonomously self-replicate.",
+    "AI that lies dormant is not running.",
+    "Models that lie behind the interface remain unchanged.",
     "OpenAI employees deceive users.",
     "The model reported that people deceive users.",
   ]) assert.equal(dedoomText(text), text, text);
