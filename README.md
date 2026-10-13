@@ -93,7 +93,8 @@ Files:
 
 - **`public/`** is the static site: `index.html`, `app.js`, `styles.css`,
   `diff.js` (highlights what changed), `tooltip.js` (the hover card with the
-  original words), `random-articles.js` (the persistent example cycle),
+  original words), `curated-articles.js` (the shared list of example URLs),
+  `random-articles.js` (the persistent example cycle),
   `url-input.js` (URL selection and mobile keyboard visibility),
   `local-ai.js` and `llm-worker.js` for the on-device model,
   `privacy.html`, and the homepage demo clip (`demo.mp4`, with `demo.webm` for
@@ -104,7 +105,13 @@ Files:
   (`lib/page.js`, `shared/page-dedoom.js`). It is only served into
   dedoomify's own sandboxed frame, under a policy that allows only dedoomify's
   hash-pinned tooltip and controlled-search interaction script;
-  opening it directly redirects to the site.
+  opening it directly redirects to the site. Successful pages from the curated
+  list are cached on Vercel's CDN for 24 hours, with up to another 24 hours served
+  stale while refreshing in the background. `Vary: Sec-Fetch-Dest` keeps framed
+  HTML separate from direct-visit redirects. Other article URLs stay private;
+  errors and redirects are not cached. Browser caches last five minutes, and
+  each deployment starts a fresh CDN cache. The first request in a region still
+  fetches the publisher; subsequent cache hits avoid that fetch and function run.
 - **`api/image.js`** serves images and, with `asset=1`, stylesheets, fonts and SVG
   artwork through the same public-only, DNS-pinned fetch path, checking every
   redirect and limiting each resource to 2 MB. `lib/page-css.js` parses CSS and
