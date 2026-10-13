@@ -56,7 +56,7 @@ test("page assets allow CSS, fonts and SVG but reject documents and private redi
   }
   await assert.rejects(fetchAsset("http://127.0.0.1/a", () => { throw new Error("must not connect"); }), /publicly reachable/);
   await assert.rejects(fetchAsset("http://93.184.216.34/a", async () => new Response(null, { status: 302, headers: { location: "http://192.168.1.1/admin" } })), /publicly reachable/);
-  await assert.rejects(fetchAsset("http://93.184.216.34/a", async () => new Response(Buffer.alloc(2 * 1024 * 1024 + 1), { headers: { "content-type": "text/css" } })), /too big/);
+  await assert.rejects(fetchAsset("http://93.184.216.34/a", async () => new Response(Buffer.alloc(32 * 1024 * 1024 + 1), { headers: { "content-type": "text/css" } })), /too big/);
 });
 
 test("asset endpoint resolves nested CSS against the final redirected stylesheet URL", async () => {
@@ -71,4 +71,33 @@ test("asset endpoint resolves nested CSS against the final redirected stylesheet
   for (const url of ["https://cdn.example.com/styles/extra.css", "https://cdn.example.com/fonts/news.woff2", "https://cdn.example.com/styles/logo.svg"]) {
     assert.ok(response.body.includes("/api/image?asset=1&url=" + encodeURIComponent(url)), url);
   }
+});
+
+test("large publisher CSS is bounded separately from images and fonts", async () => {
+  const css = Buffer.alloc(3 * 1024 * 1024, 32);
+  const result = await fetchAsset("http://93.184.216.34/a", async () => new Response(css, { headers: { "content-type": "text/css" } }));
+  assert.equal(result.body.length, css.length);
+  for (const type of ["font/woff2", "image/png"]) {
+    await assert.rejects(fetchAsset("http://93.184.216.34/a", async () => new Response(css, { headers: { "content-type": type } })), /too big/);
+  }
+});
+
+test("large nested CSS keeps media rules and proxies URLs, then compresses the response", async () => {
+  const { gunzipSync } = await import("node:zlib");
+  const { rewriteCss } = await import("../lib/page-css.js");
+  const small = '@import "extra.css";@media(min-width:768px){@supports(display:grid){.hero{background:url("photo.png");content:"} ; {"}}}';
+  const large = '@import "extra.css";@media(min-width:768px){@supports(display:grid){' + '.hero{background:url("photo.png");content:"} ; {"}'.repeat(4000) + '}}';
+  const base = "https://example.com/styles/main.css";
+  const response = { headers: {}, setHeader(k, v) { this.headers[k] = v; }, end(body) { this.body = body; } };
+  await handler({ method: "GET", url: "/api/image?asset=1&url=" + encodeURIComponent(base), headers: { "accept-encoding": "br, gzip" } }, response, {
+    rateLimit: () => ({ allowed: true }),
+    fetchAsset: async () => ({ body: Buffer.from(large), contentType: "text/css", finalUrl: base }),
+  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.headers["content-encoding"], "gzip");
+  assert.equal(response.headers.vary, "Accept-Encoding");
+  const decoded = gunzipSync(response.body).toString();
+  const one = rewriteCss(small, base);
+  assert.equal(decoded, one.replace(/(\.hero\{.*\})(\}\})$/, (_, rule, close) => rule.repeat(4000) + close));
+  assert.ok(response.body.length < 16 * 1024);
 });

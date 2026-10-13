@@ -696,3 +696,11 @@ test("Berkeley scroll-reveal article sections remain visible without publisher s
   const other = parseHTML(renderPage(source, "https://example.com/blog/story/").html).document;
   assert.equal(other.querySelectorAll(".reveal.visible").length, 0);
 });
+
+test("UIkit dropdowns and tooltips retain their closed CSS state without scripts", () => {
+  const { document } = parseHTML(renderPage('<!doctype html><html><head></head><body><h1>AI news</h1><div id="about" uk-drop="mode:hover">About menu</div><span id="tooltip" data-uk-drop="toggle:#author">Author details</span><div id="menu" uk-dropdown>Menu</div></body></html>', "https://www.brookings.edu/articles/example/").html);
+  assert.ok(document.querySelector("#about").classList.contains("uk-drop"));
+  assert.ok(document.querySelector("#tooltip").classList.contains("uk-drop"));
+  assert.ok(document.querySelector("#menu").classList.contains("uk-dropdown"));
+  assert.equal(document.querySelectorAll("[uk-drop], [data-uk-drop], [uk-dropdown]").length, 0);
+});
