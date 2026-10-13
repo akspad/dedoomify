@@ -204,6 +204,9 @@
   // before the shorter phrases they contain.
   var RULES = [
     // Misalignment is a bug.
+    // A question's verb precedes the noun that becomes plural. Restrict this
+    // to standalone questions/headings, not modifiers such as "misalignment research".
+    ["(?<=what\\s)is(?=\\s+agentic\\s+misalignment\\s*(?:[?:.!]|$))", "are"],
     ["is misaligned", "has a bug"],
     ["are misaligned", "have bugs"],
     ["was misaligned", "had a bug"],

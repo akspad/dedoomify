@@ -59,7 +59,7 @@ Visitors pick an engine from the **Rewrite with** menu:
   get the phrase rules.
 
 The menu remembers the last choice. No link handy? **Try it on a real
-article** draws from **88 curated articles** (as of October 12, 2026). Every result has a share
+article** draws from **106 curated articles** (as of October 12, 2026). Every result has a share
 link (`dedoomify.com/?url=…&mode=…`) that opens the same article with the same
 engine; on phones the Share button opens the system share sheet. **Try another**
 doesn't repeat a curated article until the list is exhausted. This history is
