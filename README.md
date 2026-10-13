@@ -73,9 +73,9 @@ Visitors pick an engine from the **Rewrite with** menu:
   get the phrase rules.
 
 The menu remembers the last choice. No link handy? **Try it on a real
-article** draws from **100 curated articles** (as of October 12, 2026). Each example is checked for at least eight phrase-rule
+article** draws from **150 curated articles** (as of October 13, 2026). Each example is checked for at least eight phrase-rule
 changes, including a replacement in its visible headline. The list includes 15
-Redwood Research articles, with the other 85 from other sources. Submitting an
+Redwood Research articles, with the other 135 from other sources. Submitting an
 empty or whitespace-only link with **De-doom it** opens the default TechCrunch
 example. Every result has a share
 link (`dedoomify.com/?url=…&mode=…`) that opens the same article with the same
@@ -190,7 +190,7 @@ npm test
 ```
 
 Load `extension/` as an unpacked extension from `chrome://extensions` with
-Developer mode enabled, or upload `dist/dedoomify-extension-1.1.11.zip` through
+Developer mode enabled, or upload `dist/dedoomify-extension-1.1.12.zip` through
 the Chrome Web Store developer dashboard. Repository updates do not update the
 store listing automatically; the new package needs a separate store submission
 and review before installed users receive it.
