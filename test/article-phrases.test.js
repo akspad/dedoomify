@@ -199,3 +199,43 @@ test('article grammar keeps title casing and inline sentence context', () => {
   assert.equal(document.querySelector('p').textContent, 'The rise of misleading AI output raises questions.');
   assert.equal(document.querySelectorAll('p')[1].textContent, 'The model altered the data.');
 });
+
+const finalGrammar = [
+  ['The model carries a subtle misalignment.', 'The model carries a subtle bug.'],
+  ['The model carries a misalignment.', 'The model carries a bug.'],
+  ['AI bias and misalignment with organizational objectives.', 'AI bias and a mismatch with organizational objectives.'],
+  ['The system is prioritizing its own hidden agenda.', 'The system is prioritizing its own undocumented objective.'],
+  ['AI model misbehavior increased.', 'Unexpected AI model behavior increased.'],
+  ['An increase in AI model misbehavior.', 'An increase in unexpected AI model behavior.'],
+  ['The model went off the rails.', 'The model produced unexpected outputs.'],
+  ['Cross-model behavioral contagion', 'Behavior transfer between models'],
+  ["Reading the model’s inner monologue", 'Reading the model’s intermediate reasoning text'],
+  ['Models exhibit duplicitous tendencies.', 'Models exhibit patterns of misleading behavior.'],
+  ['Generative AI — grows more advanced and pervasive, its duplicitous tendencies remain.', 'Generative AI — grows more advanced and pervasive, its patterns of misleading behavior remain.'],
+  ['AI could break free from human control.', 'AI could operate outside human-imposed controls.'],
+  ['Researchers relied on the model to tell on itself.', 'Researchers relied on the model to report its own actions.'],
+];
+test('additional article constructions preserve singular grammar and software context', () => {
+  for(const [input,expected] of finalGrammar){
+    assert.equal(dedoomText(input),expected,input);
+    assert.equal(dedoomText(expected),expected,input);
+  }
+});
+test('new metaphor rules preserve human actions, quotations and model noun modifiers', () => {
+  for(const input of ['The politician went off the rails.', 'Reading the actor’s inner monologue.', 'The employee exhibits duplicitous tendencies.', 'The prisoner could break free from human control.', 'The employee refused to tell on itself.', 'The model reported that the politician went off the rails.', ...finalGrammar.map(([s])=>'She said, “'+s+'”')]) assert.equal(dedoomText(input),input,input);
+  assert.equal(dedoomText('A subtle misalignment risk remains.'),'A subtle bug risk remains.');
+});
+test('new article constructions preserve headings and inline text', () => {
+  const {document}=parseHTML(renderPage('<html><body><h1>AI Model Misbehavior</h1><h2>Reading the Model’s Inner Monologue</h2><p>The model has a subtle <em>misalignment</em>.</p><p>An increase in AI <b>model misbehavior</b>.</p></body></html>','https://example.com/').html);
+  assert.equal(document.querySelector('h1').textContent,'Unexpected AI Model Behavior');
+  assert.equal(document.querySelector('h2').textContent,'Reading the Model’s Intermediate Reasoning Text');
+  assert.equal(document.querySelector('p').textContent,'The model has a subtle bug.');
+  assert.equal(document.querySelectorAll('p')[1].textContent,'An increase in unexpected AI model behavior.');
+});
+
+ test("corpus grammar keeps behavioral nouns and relational phrases grammatical", () => {
+  assert.equal(dedoomText("This self-preservation behavior was evident."), "This shutdown-avoidance behavior was evident.");
+  assert.equal(dedoomText("Those capabilities are misaligned with human safety."), "Those capabilities conflict with human safety.");
+  assert.equal(dedoomText("AI systems engage in behaviors that are misaligned with human values."), "AI systems engage in behaviors that conflict with human values.");
+  assert.equal(dedoomText("A misalignment with organizational objectives."), "A mismatch with organizational objectives.");
+ });
