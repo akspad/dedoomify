@@ -14,6 +14,8 @@ language an engineer would use about software with defects:
 | Labs are racing toward **superintelligence** | Labs are racing toward **very capable software** |
 | What's your **p(doom)**? | What's your **estimated failure rate**? |
 | AI models **blackmail humans** | AI models **threaten to expose private information about humans** |
+| **AI schemers** | **buggy AI models** |
+| **What Is Agentic Misalignment?** | **What Are Agentic Bugs?** |
 
 Designed to preserve names, numbers and factual claims while changing the
 framing. Direct quotations are left untouched. Single-quoted passages use the outermost plausible pair to preserve speech across possessives, nested fragments and whitespace padding. Intervening prose may also stay unchanged. Page view keeps publisher layout, styles, fonts and images, with every change highlighted in
@@ -60,7 +62,10 @@ Visitors pick an engine from the **Rewrite with** menu:
 
 The menu remembers the last choice. No link handy? **Try it on a real
 article** draws from **100 curated articles** (as of October 12, 2026). Each example is checked for at least eight phrase-rule
-changes, including a replacement in its visible headline. Every result has a share
+changes, including a replacement in its visible headline. The list includes 15
+Redwood Research articles, with the other 85 from other sources. Submitting an
+empty or whitespace-only link with **De-doom it** opens the default TechCrunch
+example. Every result has a share
 link (`dedoomify.com/?url=…&mode=…`) that opens the same article with the same
 engine; on phones the Share button opens the system share sheet. **Try another**
 doesn't repeat a curated article until the list is exhausted. This history is
@@ -77,6 +82,8 @@ responsive image sizing. Supported same-publisher GET searches open results on
 the publisher's site in a new tab. Publisher scripts remain disabled, so features
 that depend on them may differ from the original. Wrapped heading highlights
 have extra line spacing to keep letters such as **g** from being covered.
+Replacements in title-case headings retain title case; sentence-case headings
+and body text keep their existing casing.
 
 Files:
 
@@ -145,6 +152,29 @@ phrase rules, needs no account or API key and sends nothing anywhere. It asks
 only for `activeTab` and `scripting`, so it can touch a page only after you
 click. For the on-device AI rewrite, the popup links to the same page on
 dedoomify.com.
+
+The extension uses the same current phrase rules as the website, including
+`schemers` → `buggy models`, the agentic-bugs question grammar, and blackmail
+rewrites that preserve disclosure threats. It handles phrases and AI context
+across inline formatting, preserves title-case headings, and gives highlighted
+headings enough line spacing to avoid covering letters. Hiding highlights or
+undoing the rewrite restores the publisher's heading spacing. Website-only
+features such as the curated article picker and mobile URL field do not apply
+to the extension, which rewrites the page already open in your browser.
+
+To build the current extension source locally:
+
+```sh
+npm ci
+npm run build:extension
+npm test
+```
+
+Load `extension/` as an unpacked extension from `chrome://extensions` with
+Developer mode enabled, or upload `dist/dedoomify-extension-1.1.3.zip` through
+the Chrome Web Store developer dashboard. Repository updates do not update the
+store listing automatically; the new package needs a separate store submission
+and review before installed users receive it.
 
 Turn on **De-doom automatically** in the popup to rewrite articles about AI
 doom as they load. This asks for access to all sites (an optional

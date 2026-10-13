@@ -1,6 +1,7 @@
 /* Highlights and the hover card, matching dedoomify.com. Everything is
    scoped to dedoomify's own class names so the page's styles stay intact. */
 mark.dedoomify {
+  font: inherit;
   background: transparent !important;
   color: inherit !important;
   padding: 0 !important;
@@ -16,6 +17,12 @@ mark.dedoomify {
   padding: 0 2px !important;
   cursor: help;
 }
+/* Space the entire edited heading so highlights cannot cover descenders on
+   the line above. Hiding highlights or undoing restores publisher spacing. */
+.dedoomify-show :is(h1, h2, h3, h4, h5, h6):has(mark.dedoomify) {
+  line-height: 1.35 !important;
+}
+:is(h1, h2, h3, h4, h5, h6) mark.dedoomify { line-height: inherit !important; }
 .dedoomify-show mark.dedoomify.dedoomify-active {
   outline: 2px solid #e0b400;
   outline-offset: 1px;
