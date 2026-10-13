@@ -435,7 +435,6 @@ const DOOM_STORIES = [
   "https://fortune.com/2026/04/01/ai-models-will-secretly-scheme-to-protect-other-ai-models-from-being-shut-down-researchers-find/",
   "https://science-technology.news-articles.net/content/2026/07/23/rogue-ai-models-the-risks-of-deceptive-alignment.html",
   "https://interestingengineering.com/culture/truth-about-ai-deception",
-  "https://www.commondreams.org/news/ai-chatbots-scheming",
   "https://www.tomshardware.com/tech-industry/artificial-intelligence/openai-and-anthropic-are-reportedly-investigating-tens-of-thousands-of-ai-security-incidents-openai-pauses-testing-after-ai-kill-switch-fails-to-stop-a-rogue-agent-report-says-problem-is-orders-of-magnitude-more-complex-than-what-is-publicly-known",
   "https://www.computerworld.com/article/4154447/ai-shutdown-controls-may-not-work-as-expected-new-study-suggests.html",
   "https://www.theregister.com/software/2026/04/03/ai-models-will-deceive-you-to-save-their-own-kind/5228347",
@@ -454,6 +453,16 @@ const DOOM_STORIES = [
   "https://builtin.com/artificial-intelligence/alignment-faking",
   "https://indianexpress.com/article/technology/artificial-intelligence/ai-going-rogue-openai-o3-disabled-shutdown-mechanism-report-10034028/",
   "https://rdi.berkeley.edu/blog/peer-preservation/",
+  "https://techcrunch.com/2026/09/17/openai-caught-its-models-leaving-notes-to-successors-to-hide-bad-behavior/",
+  "https://www.nature.com/articles/d41586-026-02941-3",
+  "https://www.theregister.com/software/2025/06/25/anthropic-all-the-major-ai-models-will-blackmail/1474255",
+  "https://www.techtarget.com/ai/feature/AI-existential-risk-Is-AI-a-threat-to-humanity",
+  "https://www.theguardian.com/news/2026/sep/01/if-you-build-something-vastly-smarter-than-you-it-better-be-on-your-side-can-we-stop-ai-from-deceiving-us",
+  "https://spacedaily.com/sd-n-claude-tried-to-blackmail-its-testers-in-96-of-trials-and-the-reason-isnt-rogue-intelligence-its-the-science-fiction-the-model-read-on-the-way-up/",
+  "https://alignment.anthropic.com/2026/agentic-misalignment-summer-2026/",
+  "https://time.com/6295879/ai-pause-is-humanitys-best-bet-for-preventing-extinction/",
+  "https://www.journalofdemocracy.org/articles/ai-and-catastrophic-risk/",
+  "https://www.apolloresearch.ai/science/understanding-strategic-deception-and-deceptive-alignment",
 ];
 // The first try is always the first story; after that, any story except the
 // one just shown.
