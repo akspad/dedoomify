@@ -13,19 +13,22 @@ language an engineer would use about software with defects:
 | A **rogue AI** could emerge | A **malfunctioning AI** could emerge |
 | Labs are racing toward **superintelligence** | Labs are racing toward **very capable software** |
 | What's your **p(doom)**? | What's your **estimated failure rate**? |
+| AI models **blackmail humans** | AI models **threaten to expose private information about humans** |
 
 Designed to preserve names, numbers and factual claims while changing the
 framing. Direct quotations are left untouched. Single-quoted passages use the outermost plausible pair to preserve speech across possessives, nested fragments and whitespace padding. Intervening prose may also stay unchanged. Page view keeps publisher layout, styles, fonts and images, with every change highlighted in
 place; hover a highlight to see the original words. A reader view shows just the text.
+Rewrites of blackmail preserve the threat to disclose private information.
 
 You can also [add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl) to de-doom the page you're reading with one click.
 
 [![dedoomify on a TechCrunch story about rogue AI: the link is pasted, 8 doom phrases are highlighted in place, and hovering one shows the original words](docs/demo.gif)](https://dedoomify.com/demo.mp4)
 
 *dedoomify on TechCrunch's [OpenAI still doesn't seem to have a handle on all
-of its rogue AI activity](https://techcrunch.com/2026/09/28/openai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity/)
+of its rogue AI activity](https://dedoomify.com/?url=https%3A%2F%2Ftechcrunch.com%2F2026%2F09%2F28%2Fopenai-still-doesnt-seem-to-have-a-handle-on-all-of-its-rogue-ai-activity%2F&mode=rules)
 (Sept 28, 2026), with the quick phrase rules. The same clip plays on the
-homepage; click it for the [Retina MP4](https://dedoomify.com/demo.mp4).*
+homepage, autoplaying muted on a loop without hover controls; click the preview
+above for the [Retina MP4](https://dedoomify.com/demo.mp4).*
 
 Built by [@akspad](https://x.com/akspad)
 
@@ -56,7 +59,7 @@ Visitors pick an engine from the **Rewrite with** menu:
   get the phrase rules.
 
 The menu remembers the last choice. No link handy? **Try it on a real
-article** picks one of a list of real AI doom stories. Every result has a share
+article** draws from **88 curated articles** (as of October 12, 2026). Every result has a share
 link (`dedoomify.com/?url=…&mode=…`) that opens the same article with the same
 engine; on phones the Share button opens the system share sheet. **Try another**
 doesn't repeat a curated article until the list is exhausted. This history is
@@ -64,11 +67,22 @@ saved only in your browser, survives reloads and visits, and includes curated
 articles opened through shared or pasted links. Clearing site data resets it;
 when storage is unavailable, repeat prevention lasts for the current page.
 
+Entering the **Link** field selects the existing URL for copying or replacing;
+subsequent clicks can position the cursor. On mobile, a visibility check waits
+for the keyboard to settle and scrolls only if the field is still covered.
+
+Page view preserves asynchronously loaded publisher fonts, search controls and
+responsive image sizing. Supported same-publisher GET searches open results on
+the publisher's site in a new tab. Publisher scripts remain disabled, so features
+that depend on them may differ from the original. Wrapped heading highlights
+have extra line spacing to keep letters such as **g** from being covered.
+
 Files:
 
 - **`public/`** is the static site: `index.html`, `app.js`, `styles.css`,
   `diff.js` (highlights what changed), `tooltip.js` (the hover card with the
   original words), `random-articles.js` (the persistent example cycle),
+  `url-input.js` (URL selection and mobile keyboard visibility),
   `local-ai.js` and `llm-worker.js` for the on-device model,
   `privacy.html`, and the homepage demo clip (`demo.mp4`, with `demo.webm` for
   browsers without H.264, and `demo-poster.webp`). `npm run build` copies the
@@ -76,7 +90,8 @@ Files:
 - **`api/page.js`** retains publisher CSS, scoped attributes and static SVG artwork,
   with active media, scripts, frames and event handlers removed and the phrase rules applied in place
   (`lib/page.js`, `shared/page-dedoom.js`). It is only served into
-  dedoomify's own sandboxed frame, under a policy that allows only the hash-pinned tooltip script;
+  dedoomify's own sandboxed frame, under a policy that allows only dedoomify's
+  hash-pinned tooltip and controlled-search interaction script;
   opening it directly redirects to the site.
 - **`api/image.js`** serves images and, with `asset=1`, stylesheets, fonts and SVG
   artwork through the same public-only, DNS-pinned fetch path, checking every
@@ -108,6 +123,9 @@ Files:
   the API for `mode=claude`.
 - **`extension/`** is the Manifest V3 browser extension that rewrites the
   page you're reading, using the phrase rules only (see below).
+- **`vercel.json`** redirects the `www` host and `/index.html` to the canonical
+  site. The homepage declares `https://dedoomify.com/` as canonical; shared
+  article URLs and API responses carry `noindex` headers.
 
 ## Browser extension
 
