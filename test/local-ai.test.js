@@ -55,7 +55,7 @@ test("grammar exceptions cannot erase model names, citations or pronoun objects"
 test("rules exemptions cannot authorize model euphemisms for human roles", () => {
   for (const [before, after] of [
     ["The fashion model lied about her income while discussing AI.", "The fashion model gave wrong answers about her income while discussing AI."],
-    ["The federal agents blackmailed the witness while discussing AI.", "The federal agents wrote a sternly worded email to the witness while discussing AI."],
+    ["The federal agents blackmailed the witness while discussing AI.", "The federal agents threatened to expose private information about the witness while discussing AI."],
   ]) assert.ok(!acceptRewrite(before, after), after);
   const mixed = "The federal agent blackmailed the witness. The AI poses an existential risk.";
   assert.ok(acceptRewrite(mixed, mixed.replace("an existential risk", "a product risk")));
