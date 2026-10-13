@@ -315,3 +315,24 @@ test('plural failure descriptions and noun phrases retain grammatical forms', ()
  assert.equal(document.querySelector('h1').textContent, 'What is rapid capability growth?');
  assert.equal(document.querySelector('p').textContent, 'Models can make late-surfacing bugs across bug categories.');
 });
+
+test('training compounds and AI relative clauses preserve intended grammar', () => {
+ const cases = [
+  ['We use anti-scheming training.', 'We use training to prevent unexpected behavior.'],
+  ['They work on scheming-related problems.', 'They work on behavioral bugs.'],
+  ['We study models that knowingly deceive humans.', 'We study models that give people misleading information.'],
+  ['Our discussion of deception, situational awareness, and power seeking.', 'Our discussion of deception, situational awareness, and resource acquisition.'],
+  ['Goals of persistence or power-seeking.', 'Goals of persistence or resource acquisition.'],
+  ['A discussion of power seeking.', 'A discussion of resource acquisition.'],
+ ];
+ for (const [input,expected] of cases) {
+  assert.equal(dedoomText(input), expected);
+  assert.equal(dedoomText('She said, “'+input+'”'), 'She said, “'+input+'”');
+ }
+ for (const human of ['People that knowingly deceive humans.', 'Fashion models that knowingly deceive humans.', 'The AI reported that federal agents knowingly deceive humans.']) assert.equal(dedoomText(human), human);
+ assert.equal(dedoomText('A discussion of power-seeking models.'), 'A discussion of resource-hungry models.');
+ assert.equal(dedoomText('The model is capable and power-seeking.'), 'The model is capable and resource-hungry.');
+ const {document} = parseHTML(renderPage('<html><body><p>Models that <em>knowingly deceive</em> humans.</p><p>Discussion of <b>power seeking</b>.</p></body></html>','https://example.com/').html);
+ assert.equal(document.querySelector('p').textContent,'Models that give people misleading information.');
+ assert.equal(document.querySelectorAll('p')[1].textContent,'Discussion of resource acquisition.');
+});

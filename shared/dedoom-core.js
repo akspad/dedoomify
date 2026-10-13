@@ -211,6 +211,11 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    ["anti-scheming training", "training to prevent unexpected behavior"],
+    ["scheming-related problems", "behavioral bugs"],
+    afterSoftware("knowingly deceive humans", "give people misleading information", "\\s+that"),
+    ["(?<=(?:\\b(?:of|about|on|into|through)|\\b(?:situational awareness|persistence),?\\s+(?:and|or))\\s+)power[ -]seeking(?=\\s*(?:[.,;:!?)]|$))", "resource acquisition"],
+
     ["treacherous turns", "late-surfacing bugs"],
     ["an intelligence explosion", "rapid capability growth"],
     ["misalignment domains", "bug categories"],
