@@ -211,6 +211,12 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Objectives and subtle false claims: require software-specific context.
+    byAI("lie more subtly", "produce false claims that are harder to detect"),
+    byAI("hide intentions", "conceal objectives"),
+    afterSoftware("malicious goals", "harmful objectives", "\\s+(?:with|pursuing|reasoning\\s+about)"),
+    ["malicious goals(?<=\\bevaluated the model for a variety of more concerning misaligned behaviors, like deception, cooperating with \\(fictional\\) cyberattackers, avoiding monitoring, and reasoning about malicious goals)", "harmful objectives"],
+    ["hide intentions(?<=\\bthis ability to hide intentions)(?=\\s+challenges existing alignment strategies\\b)", "conceal objectives"],
     // Training and software context keep ordinary human conduct unchanged.
     ["punishing dishonesty(?<=\\btraining\\s+methods,\\s+aimed\\s+at\\s+punishing dishonesty)(?=,\\s+risk\\s+backfiring\\s+by\\s+simply\\s+teaching\\s+models\\b)", "penalizing misleading outputs"],
     afterSoftware("punishing dishonesty", "penalizing misleading outputs", "\\s+training\\s+(?:involves|includes)"),

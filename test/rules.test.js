@@ -848,7 +848,7 @@ test("new article rules preserve quotes, human actors and ordinary replication",
 
 test("training and model deceit wording stays specific to software", () => {
   for (const [before, after] of [
-    ["Traditional training methods, aimed at punishing dishonesty, risk backfiring by simply teaching models to lie more subtly.", "Traditional training methods, aimed at penalizing misleading outputs, risk backfiring by simply teaching models to give wrong answers more subtly."],
+    ["Traditional training methods, aimed at punishing dishonesty, risk backfiring by simply teaching models to lie more subtly.", "Traditional training methods, aimed at penalizing misleading outputs, risk backfiring by simply teaching models to produce false claims that are harder to detect."],
     ["AI training involves punishing dishonesty.", "AI training involves penalizing misleading outputs."],
     ["Today's AIs are capable of this type of deceit.", "Today's AIs are capable of this type of misleading output."],
     ["The model is capable of deceit.", "The model is capable of misleading output."],
@@ -867,5 +867,29 @@ test("training and deceit additions preserve people and quoted claims", () => {
     "The suspect's murderous efforts were documented using AI.",
     'The researcher said, "AI’s murderous efforts would take time."',
     'The researcher said, "The model is capable of deceit."',
+  ]) assert.equal(dedoomText(text), text, text);
+});
+
+
+test("model objectives and subtle false claims use complete constructions", () => {
+  for (const [before, after] of [
+    ["The models lie more subtly.", "The models produce false claims that are harder to detect."],
+    ["AI models hide intentions.", "AI models conceal objectives."],
+    ["The model with malicious goals failed.", "The model with harmful objectives failed."],
+    ["This ability to hide intentions challenges existing alignment strategies.", "This ability to conceal objectives challenges existing alignment strategies."],
+  ]) assert.equal(dedoomText(before), after, before);
+  const article = "Finally, we evaluated the model for a variety of more concerning misaligned behaviors, like deception, cooperating with (fictional) cyberattackers, avoiding monitoring, and reasoning about malicious goals.";
+  assert.ok(dedoomText(article).endsWith("reasoning about harmful objectives."));
+});
+
+test("objective wording preserves people, attribution and quotations", () => {
+  for (const text of [
+    "People with malicious goals use AI.",
+    "The human model with malicious goals failed.",
+    "People hide intentions when discussing AI.",
+    "People lie more subtly about AI.",
+    "The model reported that people lie more subtly.",
+    'The researcher said, "AI models hide intentions."',
+    'The researcher said, "The models lie more subtly."',
   ]) assert.equal(dedoomText(text), text, text);
 });
