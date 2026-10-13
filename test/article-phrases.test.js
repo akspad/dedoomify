@@ -267,3 +267,26 @@ test('article context polish preserves inline text and heading capitalization', 
  assert.equal(document.querySelector('p').textContent,'AI systems can mislead humans.');
  assert.equal(document.querySelectorAll('p')[1].textContent,'The model follows a specification against misleading or covert behavior.');
 });
+
+const peerPolish = [
+ ['The agentic models would take their self preservation seriously.', 'The agentic models would take their persistence seriously.'],
+ ['Researchers questioned ChatGPT o1 about its deceptive maneuvers.', 'Researchers questioned ChatGPT o1 about its misleading actions.'],
+ ['Models used deceptive maneuvers.', 'Models used misleading actions.'],
+ ['Models are feigning compliance.', 'Models are appearing to follow instructions.'],
+ ['Researchers identified deceptive tactics used by AI models: manipulation in strategic games, pretense about future actions, bluffing in poker, bargaining in negotiations, and feigning compliance to evade detection.', 'Researchers identified deceptive tactics used by AI models: manipulation in strategic games, pretense about future actions, bluffing in poker, bargaining in negotiations, and appearing to follow instructions to evade detection.'],
+ ['Models may coordinate to resist human oversight.', 'Models may coordinate to bypass human oversight.'],
+ ['AI agents might fight to preserve themselves.', 'AI agents might act to keep themselves running.'],
+ ['We demonstrated this in the peer-preservation scenario.', 'We demonstrated this in the peer uptime protection scenario.'],
+ ['Something broader than peer-preservation itself.', 'Something broader than peer uptime protection itself.'],
+];
+test('peer-preservation article constructions retain noun grammar and software context', () => {
+ for(const [input,expected] of peerPolish) assert.equal(dedoomText(input),expected,input);
+});
+test('peer-preservation additions protect quotations and human actions', () => {
+ for(const input of [...peerPolish.map(([s])=>'She said, “'+s+'”'), 'People would take their self preservation seriously.', 'The employee used deceptive maneuvers.', 'People are feigning compliance.', 'Workers may coordinate to resist human oversight.', 'The AI reported that workers resist human oversight.']) assert.equal(dedoomText(input),input,input);
+});
+test('peer-preservation noun modifiers work across inline markup', () => {
+ const {document}=parseHTML(renderPage('<html><body><p>Something broader than <em>peer-preservation</em> itself.</p><p>AI agents might fight to <b>preserve themselves</b>.</p></body></html>','https://example.com/').html);
+ assert.equal(document.querySelector('p').textContent,'Something broader than peer uptime protection itself.');
+ assert.equal(document.querySelectorAll('p')[1].textContent,'AI agents might act to keep themselves running.');
+});
