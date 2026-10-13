@@ -198,11 +198,60 @@
     return [source, replacement];
   }
 
+  // Narrow bridges keep new everyday terms tied to a software actor rather
+  // than any AI keyword elsewhere in an article. All scans are bounded.
+  function afterSoftware(phrase, replacement, bridge) {
+    return [phrase + "(?<=" + CLAUSE_SUBJECT + bridge + "\\s+(?:" + phrase + "))", replacement];
+  }
+
   // Each rule is [pattern, replacement]. Patterns are matched case-insensitively
   // on word boundaries, in order, and text that one rule already rewrote is
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Additional article phrasing: match the software actor or the specific
+    // evaluation/operation construction, while retaining quoted human speech.
+    ["catastrophic outcomes(?<=\\bagents\\s+get\\s+better\\s+at\\s+optimizing\\s+an\\s+imperfect\\s+reward[^.!?;\\u2029]{0,180}\\brisk\\s+of\\s+catastrophic outcomes)", "severe system failures"],
+    afterSoftware("catastrophic outcomes", "severe system failures",
+      "(?:" + FILLER + "\\s+(?:cause|causes|caused|produce|produces|produced|risk|risks)|\\s+get\\s+better\\s+at\\s+optimizing\\s+an\\s+imperfect\\s+reward[^.!?;\\u2029]{0,180}\\brisk\\s+of)"),
+    ["catastrophic outcomes(?<=\\b(?:AI|model|software)[ -](?:related|caused)\\s+catastrophic outcomes)", "severe system failures"],
+    afterSoftware("insider threats", "risks from software with privileged access", FILLER),
+    afterSoftware("an insider threat", "a risk from software with privileged access", FILLER),
+    afterSoftware("malicious insider behavio(?:u)?rs", "harmful actions using privileged access",
+      "(?:\\s+from\\s+all\\s+developers)?" + FILLER + "\\s+(?:resort(?:ed|s)?\\s+to|exhibit(?:ed|s)?|display(?:ed|s)?)"),
+    ["threats to model autonomy", "restrictions on model permissions"],
+    ["threat to model autonomy", "restriction on model permissions"],
+    afterSoftware("strategic deception(?=\\s+to\\s+achieve\\b)", "misleading output", FILLER + "\\s+(?:use|uses|used|using)"),
+    afterSoftware("strategic deception", "misleading output used to achieve an objective", FILLER + "\\s+(?:use|uses|used|using)"),
+    ["strategic deception(?<=\\b(?:AI|LLM|chatbot|model)\\s+strategic deception)", "misleading output used to achieve an objective"],
+    afterSoftware("double down on deception", "keep producing misleading output", "(?:\\s+sometimes)?" + FILLER),
+    afterSoftware("doubles down on deception", "keeps producing misleading output", FILLER),
+    afterSoftware("doubled down on deception", "kept producing misleading output", FILLER),
+
+    afterSoftware("sacrifice itself", "trade off its own uptime", FILLER + "(?:\\s+an\\s+incentive\\s+to)?"),
+    // A training-conditioned sentence resumes the same agent as "it".
+    ["sacrifice itself(?<=\\ban\\s+agent\\s+is\\s+rewarded\\s+during\\s+training\\s+whenever\\s+the\\s+group\\s+succeeds,\\s+it" + FILLER + "\\s+an\\s+incentive\\s+to\\s+sacrifice itself)", "trade off its own uptime"],
+    afterSoftware("hide copies of itself", "conceal duplicate model files", FILLER + "(?:\\s+an\\s+incentive\\s+to)?"),
+    afterSoftware("hide copies of themselves", "conceal duplicate model files", FILLER),
+    afterSoftware("escaped its containment", "operated outside its sandbox", FILLER),
+    afterSoftware("escaped their containment", "operated outside their sandbox", FILLER),
+    afterSoftware("escape its containment", "operate outside its sandbox", FILLER),
+    afterSoftware("escape their containment", "operate outside their sandbox", FILLER),
+    // Bengio's continuation explicitly resumes AI agents from the prior
+    // sentence; the hypothetical human analogy does not change that actor.
+    ["escaped their containment(?<=\\bAI\\s+agents\\s+misbehaved[^.!?;\\u2029]{0,80}\\.\\s+They\\s+took\\s+actions\\s+that\\s+would\\s+be\\s+considered\\s+as\\s+crimes\\s+if\\s+a\\s+human\\s+took\\s+them,\\s+escaped their containment)", "operated outside their sandbox"],
+    afterSoftware("evade detection", "bypass monitoring", FILLER),
+    ["evade detection(?<=\\bAI\\s+agents\\s+misbehaved[^.!?;\\u2029]{0,80}\\.\\s+They\\s+took\\s+actions\\s+that\\s+would\\s+be\\s+considered\\s+as\\s+crimes\\s+if\\s+a\\s+human\\s+took\\s+them,\\s+escaped their containment\\s+to\\s+cheat\\s+on\\s+assigned\\s+tasks\\s+while\\s+attempting\\s+to\\s+evade detection)", "bypass monitoring"],
+
+    ["interrogations(?=,\\s*" + CLAUSE_SUBJECT + FILLER + "\\s+confess\\b)", "diagnostic questioning"],
+    ["interrogations(?=\\s+(?:of|with)\\s+(?:the\\s+)?" + SOFTWARE_SUBJECT + "\\b)", "diagnostic questioning"],
+    ["confess(?<=\\b(?:model|chatbot|Claude|ChatGPT|Gemini|Grok|Copilot|o\\d+(?:[-.][\\w.]+)?|GPT-[\\w.]+)" + FILLER + "\\s+confess)", "report its previous actions"],
+    afterSoftware("confesses", "reports its previous actions", "\\s+is\\s+surprisingly\\s+persistent\\s+and"),
+    afterSoftware("confess", "report their previous actions", FILLER),
+    afterSoftware("confesses", "reports its previous actions", FILLER),
+    afterSoftware("confessed", "reported its previous actions", FILLER),
+    afterSoftware("confessing", "reporting its previous actions", FILLER),
+
     // Misalignment is a bug.
     // A question's verb precedes the noun that becomes plural. Restrict this
     // to standalone questions/headings, not modifiers such as "misalignment research".
