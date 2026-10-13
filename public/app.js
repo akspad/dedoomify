@@ -565,7 +565,7 @@ form.addEventListener("submit", (e) => {
   e.preventDefault();
   if (activeTab === "url") {
     let url = $("url").value.trim();
-    if (!url) return showError("Add a link to an article.");
+    if (!url) $("url").value = url = DOOM_STORIES[0];
     if (!/^https?:\/\//i.test(url)) url = "https://" + url;
     runUrl(url);
   } else {
