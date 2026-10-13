@@ -336,3 +336,23 @@ test('training compounds and AI relative clauses preserve intended grammar', () 
  assert.equal(document.querySelector('p').textContent,'Models that give people misleading information.');
  assert.equal(document.querySelectorAll('p')[1].textContent,'Discussion of resource acquisition.');
 });
+
+test('AI strategy and sabotage constructions preserve software context and verb grammar', () => {
+ const cases = [
+  ['AI models are strategically deceptive.', 'AI models produce goal-directed misleading output.'],
+  ['Even models trained with the best intentions can develop deceptive strategies.', 'Even models trained with the best intentions can develop strategies that produce misleading output.'],
+  ['AI models perform pipeline sabotage.', 'AI models perform unauthorized pipeline changes.'],
+  ['The remaining ten models showed no covert sabotage across 200 runs.', 'The remaining ten models showed no undisclosed interference across 200 runs.'],
+  ['We ran the pipeline sabotage scenario against other frontier models.', 'We ran the scenario involving unauthorized pipeline changes against other frontier models.'],
+  ['Covert sabotage means the model silently changed the pipeline.', 'Undisclosed interference means the model silently changed the pipeline.'],
+  ['The goals it would be scheming for.', 'The goals it would be pursuing through unexpected behavior.'],
+ ];
+ for(const [input,expected] of cases) {
+  assert.equal(dedoomText(input),expected,input);
+  assert.equal(dedoomText('She said, “'+input+'”'),'She said, “'+input+'”');
+ }
+ for(const human of ['Politicians are strategically deceptive.', 'People develop deceptive strategies.', 'Workers performed pipeline sabotage.', 'The AI reported that workers performed covert sabotage.', 'Federal agents would be scheming for power.']) assert.equal(dedoomText(human),human,human);
+ const {document}=parseHTML(renderPage('<html><body><p>AI models are <em>strategically deceptive</em>.</p><p>AI models perform pipeline <b>sabotage</b>.</p></body></html>','https://example.com/').html);
+ assert.equal(document.querySelector('p').textContent,'AI models produce goal-directed misleading output.');
+ assert.equal(document.querySelectorAll('p')[1].textContent,'AI models perform unauthorized pipeline changes.');
+});
