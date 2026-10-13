@@ -211,6 +211,12 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Training and software context keep ordinary human conduct unchanged.
+    ["punishing dishonesty(?<=\\btraining\\s+methods,\\s+aimed\\s+at\\s+punishing dishonesty)(?=,\\s+risk\\s+backfiring\\s+by\\s+simply\\s+teaching\\s+models\\b)", "penalizing misleading outputs"],
+    afterSoftware("punishing dishonesty", "penalizing misleading outputs", "\\s+training\\s+(?:involves|includes)"),
+    afterSoftware("deceit", "misleading output", "\\s+(?:are|is)\\s+capable\\s+of(?:\\s+this\\s+type\\s+of)?"),
+    ["deceit(?=\\s+within\\s+AI\\s+operations\\b)", "misleading output"],
+    ["AI['’]s\\s+murderous efforts", "potentially lethal AI actions"],
     // Named software, containment and whole constructions before shorter rules.
     ["a deceptive alignment problem", "a hidden specification bug"],
     ["deceptive alignment problems", "hidden specification bugs"],
@@ -1442,7 +1448,7 @@
           }
           var cased = matchCase(m[2], replacement);
           // An initial acronym is not evidence of sentence/title capitalization.
-          if (/^AI (?:deception|(?:model )?misbehaviou?r)$/.test(m[2])) {
+          if (/^AI(?: (?:deception|(?:model )?misbehaviou?r)|['’]s\s+murderous\s+efforts)$/.test(m[2])) {
             var prefix = full.slice(0, m.index + m[1].length).trimEnd();
             cased = !prefix || /[.!?\u2029]$/.test(prefix) ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement;
           }
