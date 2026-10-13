@@ -39,6 +39,25 @@ test("Tom's Hardware account backdrop cannot blur or block the static article", 
 const { collectGroups, groupStrings, rewriteGroup, dedoomElement } = globalThis.DedoomPage;
 const { diffEdits } = globalThis.DedoomDiff;
 
+test("headline replacements follow title case without changing sentence case or quotes", () => {
+  const { document } = parseHTML(renderPage(`<html><body>
+    <h1>Exclusive: New Research Shows AI Strategically <em>Lying</em></h1>
+    <h2>New research shows AI strategically lying</h2>
+    <p>Exclusive: New Research Shows AI Strategically Lying</p>
+    <h2>AI Poses an Existential Risk</h2>
+    <h2>Research Shows AI Is Misaligned</h2>
+    <h2>Research Shows AI “Lying”</h2>
+    </body></html>`, "https://time.com/story").html);
+  assert.equal(document.querySelector("h1").textContent, "Exclusive: New Research Shows AI Strategically Giving Wrong Answers");
+  assert.equal(document.querySelector("h1 mark").getAttribute("data-was"), "Lying");
+  assert.equal(document.querySelector("h1 em mark").textContent, "Giving Wrong Answers");
+  assert.equal(document.querySelector("h2").textContent, "New research shows AI strategically giving wrong answers");
+  assert.equal(document.querySelector("p mark").textContent, "Giving wrong answers");
+  assert.equal(document.querySelectorAll("h2")[1].textContent, "AI Poses a Product Risk");
+  assert.equal(document.querySelectorAll("h2")[2].textContent, "Research Shows AI Has a Bug");
+  assert.equal(document.querySelectorAll("h2")[3].textContent, "Research Shows AI “Lying”");
+});
+
 test("edit filtering scales with nodes plus edits rather than their product", () => {
   const { document } = parseHTML('<p>' + 'xx'.repeat(500) + '</p>');
   const first = document.querySelector('p').firstChild;
