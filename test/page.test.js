@@ -677,3 +677,22 @@ test("nested pop-up candidates are sized in one pass", () => {
   assert.doesNotMatch(document.body.textContent, /Sign up/);
   assert.ok(performance.now() - started < 5000, "nested candidates stay within the processing budget");
 });
+
+
+test("Berkeley scroll-reveal article sections remain visible without publisher scripts", () => {
+  const source = `<html><head><style>.reveal{opacity:0;transform:translateY(18px)}.reveal.visible{opacity:1;transform:translateY(0)}</style></head><body>
+    <section class="content reveal"><h2>Peer-Preservation</h2><figure class="reveal"><img src="figure.png"></figure>
+    <table class="reveal"><tr><td>Results</td></tr></table></section>
+    <script>new IntersectionObserver(() => {})</script></body></html>`;
+  const {document} = parseHTML(renderPage(source, "https://rdi.berkeley.edu/blog/peer-preservation/").html);
+  assert.equal(document.querySelectorAll(".reveal.visible").length, 3);
+  assert.equal(document.querySelectorAll(".reveal:not(.visible)").length, 0);
+  assert.match(document.querySelector("style").textContent, /opacity:0/);
+  assert.equal(document.querySelector("td").textContent, "Results");
+  assert.match(document.querySelector("img").getAttribute("src"), /figure.png/);
+  assert.equal(document.querySelectorAll("script").length, 1);
+  assert.equal(document.querySelector("script").textContent, PAGE_SCRIPT);
+  assert.equal(document.querySelector("h2").textContent, "Peer uptime protection");
+  const other = parseHTML(renderPage(source, "https://example.com/blog/story/").html).document;
+  assert.equal(other.querySelectorAll(".reveal.visible").length, 0);
+});
