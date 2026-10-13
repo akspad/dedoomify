@@ -4,6 +4,7 @@ import fs from "node:fs";
 import vm from "node:vm";
 import { parseHTML } from "linkedom";
 import { attachUrlInput } from "../public/url-input.js";
+import { createArticlePicker } from "../public/random-articles.js";
 import "../shared/dedoom-core.js";
 import "../shared/dedoom-prompt.js";
 import "../shared/page-dedoom.js";
@@ -17,15 +18,16 @@ const response = (text) => ({ ok: true, json: async () => ({ title: "Your text",
 // Run the actual app against its real HTML, with controlled browser services
 // and network responses. This exercises event wiring and async recovery rather
 // than reproducing the app's implementation in a test helper.
-async function browser(fetch, localAi = {}) {
+async function browser(fetch, localAi = {}, { storage, search = "" } = {}) {
   const { document, Event } = parseHTML(html);
   const context = {
     document, console, URLSearchParams, fetch, attachUrlInput,
+    createArticlePicker: (urls, options) => createArticlePicker(urls, { ...options, random: () => 0 }),
     requestAnimationFrame: setImmediate, cancelAnimationFrame: clearImmediate,
-    setTimeout, clearTimeout,
+    setTimeout, clearTimeout, setInterval: (fn) => setInterval(fn, 1), clearInterval,
     matchMedia: () => ({ matches: false }), navigator: {},
-    localStorage: { getItem: () => null, setItem() {} },
-    location: { origin: "https://dedoomify.com", href: "https://dedoomify.com/", search: "" },
+    localStorage: storage ?? { getItem: () => null, setItem() {} },
+    location: { origin: "https://dedoomify.com", href: "https://dedoomify.com/", search },
     history: { replaceState() {} },
     ResizeObserver: class { observe() {} },
     addEventListener() {}, scrollTo() {}, innerHeight: 700, scrollY: 0,
@@ -38,6 +40,17 @@ async function browser(fetch, localAi = {}) {
   document.querySelector("video").pause = () => {};
   document.querySelector("#result").scrollIntoView = () => {};
   document.querySelector("#result").getBoundingClientRect = () => ({ top: 0 });
+  const frameUrls = [];
+  let pageDocument;
+  Object.defineProperties(document.querySelector("#page"), {
+    src: { set(url) {
+      frameUrls.push(new URLSearchParams(url.split("?")[1]).get("url"));
+      pageDocument = parseHTML('<html><body><h1>Test article</h1><p>The model has a bug.</p></body></html>').document;
+      pageDocument.location = { pathname: "/api/page" };
+      pageDocument.readyState = "complete";
+    } },
+    contentDocument: { get: () => pageDocument },
+  });
   vm.createContext(context);
   vm.runInContext(app.replace(/^import .*;$/gm, ""), context);
   await tick();
@@ -48,8 +61,39 @@ async function browser(fetch, localAi = {}) {
     $(id).dispatchEvent(e);
   };
   const paste = (text) => { event("tab-text", "click"); $("text").value = text; event("form", "submit"); };
-  return { $, document, event, paste };
+  return { $, document, event, paste, frameUrls };
 }
+
+test("homepage and banner Try another buttons share history across visits", async () => {
+  const data = new Map();
+  const storage = { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
+  const articles = JSON.parse(app.match(/const DOOM_STORIES = (\[[\s\S]*?\]);/)[1].replace(/,\s*\]/, "]"));
+  const first = await browser(() => { throw new Error("unexpected fetch"); }, {}, { storage });
+  for (const button of ["random", "random-banner", "random"]) {
+    first.event(button, "click");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.equal(first.$("go").disabled, false);
+    assert.equal(first.$("error").hidden, true);
+  }
+  assert.deepEqual(first.frameUrls, articles.slice(0, 3));
+  const reloaded = await browser(() => { throw new Error("unexpected fetch"); }, {}, { storage });
+  reloaded.event("random", "click");
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.deepEqual(reloaded.frameUrls, [articles[3]]);
+});
+
+test("opening a curated shared link records it before another visit", async () => {
+  const data = new Map();
+  const storage = { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
+  const articles = JSON.parse(app.match(/const DOOM_STORIES = (\[[\s\S]*?\]);/)[1].replace(/,\s*\]/, "]"));
+  const shared = await browser(() => { throw new Error("unexpected fetch"); }, {}, { storage, search: "?url=" + encodeURIComponent(articles[0]) + "&mode=rules" });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.deepEqual(shared.frameUrls, [articles[0]]);
+  const home = await browser(() => { throw new Error("unexpected fetch"); }, {}, { storage });
+  home.event("random", "click");
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.deepEqual(home.frameUrls, [articles[1]]);
+});
 
 test("source tabs support arrow, Home and End keys with one tab stop", async () => {
   const { $, event } = await browser(() => { throw new Error("unexpected fetch"); });

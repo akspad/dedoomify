@@ -58,13 +58,18 @@ Visitors pick an engine from the **Rewrite with** menu:
 The menu remembers the last choice. No link handy? **Try it on a real
 article** picks one of a list of real AI doom stories. Every result has a share
 link (`dedoomify.com/?url=…&mode=…`) that opens the same article with the same
-engine; on phones the Share button opens the system share sheet.
+engine; on phones the Share button opens the system share sheet. **Try another**
+doesn't repeat a curated article until the list is exhausted. This history is
+saved only in your browser, survives reloads and visits, and includes curated
+articles opened through shared or pasted links. Clearing site data resets it;
+when storage is unavailable, repeat prevention lasts for the current page.
 
 Files:
 
 - **`public/`** is the static site: `index.html`, `app.js`, `styles.css`,
   `diff.js` (highlights what changed), `tooltip.js` (the hover card with the
-  original words), `local-ai.js` and `llm-worker.js` for the on-device model,
+  original words), `random-articles.js` (the persistent example cycle),
+  `local-ai.js` and `llm-worker.js` for the on-device model,
   `privacy.html`, and the homepage demo clip (`demo.mp4`, with `demo.webm` for
   browsers without H.264, and `demo-poster.webp`). `npm run build` copies the
   shared scripts and WebLLM into `public/vendor/`.
