@@ -59,7 +59,7 @@ Visitors pick an engine from the **Rewrite with** menu:
   get the phrase rules.
 
 The menu remembers the last choice. No link handy? **Try it on a real
-article** draws from **77 curated articles** (as of October 12, 2026). Each example is checked for at least eight phrase-rule
+article** draws from **100 curated articles** (as of October 12, 2026). Each example is checked for at least eight phrase-rule
 changes, including a replacement in its visible headline. Every result has a share
 link (`dedoomify.com/?url=…&mode=…`) that opens the same article with the same
 engine; on phones the Share button opens the system share sheet. **Try another**
