@@ -1,3 +1,4 @@
+import { gzipSync } from "node:zlib";
 import { rewriteCss } from "../lib/page-css.js";
 import { fetchImage, fetchAsset, FetchError } from "../lib/fetch-article.js";
 import { imageLimit } from "../lib/rate-limit.js";
@@ -27,6 +28,16 @@ export default async function handler(req, res, deps = {}) {
     if (asset && /^text\/css(?:;|$)/i.test(contentType)) {
       body = rewriteCss(new TextDecoder().decode(body), finalUrl || url);
       contentType = "text/css; charset=utf-8";
+      res.setHeader("vary", "Accept-Encoding");
+      const acceptsGzip = /(?:^|,)\s*gzip\s*(?:;\s*q=(0(?:\.\d+)?|1(?:\.0+)?))?\s*(?=,|$)/i.exec(req.headers?.["accept-encoding"] || "");
+      if (Buffer.byteLength(body) > 64 * 1024 && acceptsGzip && (acceptsGzip[1] === undefined || Number(acceptsGzip[1]) > 0)) {
+        body = gzipSync(body);
+
+      }
+      // Stay below the hosting platform's function response limit, even for
+      // incompressible input or clients that do not accept compression.
+      if (Buffer.byteLength(body) > 4 * 1024 * 1024) throw new FetchError("That stylesheet is too big to serve.", 413);
+      if (Buffer.isBuffer(body)) res.setHeader("content-encoding", "gzip");
     }
     res.setHeader("content-type", contentType);
     res.setHeader("cache-control", "public, max-age=300, s-maxage=86400");

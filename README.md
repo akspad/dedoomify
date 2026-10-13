@@ -122,7 +122,10 @@ Files:
   fetches the publisher; subsequent cache hits avoid that fetch and function run.
 - **`api/image.js`** serves images and, with `asset=1`, stylesheets, fonts and SVG
   artwork through the same public-only, DNS-pinned fetch path, checking every
-  redirect and limiting each resource to 2 MB. `lib/page-css.js` parses CSS and
+  redirect. Images and fonts are limited to 2 MB; CSS has a separate 32 MB
+  download budget, is processed in smaller rule groups and compressed when the
+  browser accepts gzip. Served CSS must fit within 4 MB after compression.
+  `lib/page-css.js` parses CSS and
   proxies nested imports, fonts and background images against the final stylesheet
   URL. The frame cannot fetch third-party resources directly or execute publisher
   scripts. Publisher CSS can hide or reposition content inside the frame; the
@@ -251,3 +254,10 @@ original too.
 
 MIT
 
+
+To audit the live random-article list, run `node scripts/audit-curated.mjs`.
+It checks article responses and readable content, every linked stylesheet, and
+the first two article images, respecting the public request limits. The JSON
+report defaults to `/tmp/dedoomify-render-audit.json`; pass a path to save it
+elsewhere. This catches missing resources but does not replace visual checks
+of publisher layouts on desktop and mobile.
