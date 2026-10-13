@@ -211,6 +211,9 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    ["agentic misalignment describes", "agentic bugs describe"],
+    ["model weight exfiltration", "unauthorized copying of model files"],
+    afterSoftware("deceptive tendencies", "patterns of misleading behavior", FILLER + "\\s+develop"),
     // Preserve noun grammar and software context in peer-preservation prose.
     ["peer[ -]preservation(?=\\s+(?:scenario|itself)\\b)", "peer uptime protection"],
     afterSoftware("fight to preserve themselves", "act to keep themselves running", FILLER),

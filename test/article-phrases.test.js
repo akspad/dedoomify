@@ -290,3 +290,12 @@ test('peer-preservation noun modifiers work across inline markup', () => {
  assert.equal(document.querySelector('p').textContent,'Something broader than peer uptime protection itself.');
  assert.equal(document.querySelectorAll('p')[1].textContent,'AI agents might act to keep themselves running.');
 });
+
+test('article agreement, complete exfiltration nouns, and deceptive tendencies', () => {
+ for(const [input, expected] of [
+ ['Agentic misalignment describes the gap.', 'Agentic bugs describe the gap.'],
+ ['Scenarios involving model weight exfiltration.', 'Scenarios involving unauthorized copying of model files.'],
+ ['Should future models develop deceptive tendencies?', 'Should future models develop patterns of misleading behavior?']
+ ]) { assert.equal(dedoomText(input),expected); assert.equal(dedoomText('She said, “'+input+'”'),'She said, “'+input+'”'); }
+ assert.equal(dedoomText('People develop deceptive tendencies.'),'People develop deceptive tendencies.');
+});

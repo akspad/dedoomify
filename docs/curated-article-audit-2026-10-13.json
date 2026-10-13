@@ -1,0 +1,458 @@
+{
+  "checkedAt": "2026-10-13",
+  "addedArticles": 50,
+  "totalCuratedArticles": 150,
+  "method": "At least 8 phrase-rule changes in the extracted article body and at least 1 in the visible headline. Checked original publisher HTML with the updated shared engine, then checked HTTP 200 and highlighted article content through the production /api/page endpoint. Counts exclude navigation and related-story links. Publisher content can change after this audit.",
+  "articles": [
+    {
+      "url": "https://builtin.com/artificial-intelligence/asi-artificial-super-intelligence",
+      "title": "What Is Artificial Superintelligence (ASI)?",
+      "renderedTitle": "What Is Artificial Very Capable Software (ASI)?",
+      "articleChanges": 25,
+      "headlineChanges": 1,
+      "liveArticleChanges": 25,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.apolloresearch.ai/blog/on-testifying-on-misaligned-ai-in-the-us-senate",
+      "title": "On Testifying on Misaligned AI in the U.S. Senate",
+      "renderedTitle": "On Testifying on Buggy AI in the U.S. Senate",
+      "articleChanges": 12,
+      "headlineChanges": 1,
+      "liveArticleChanges": 12,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Superintelligence:_Paths,_Dangers,_Strategies",
+      "title": "Superintelligence: Paths, Dangers, Strategies",
+      "renderedTitle": "Very Capable Software: Paths, Dangers, Strategies",
+      "articleChanges": 27,
+      "headlineChanges": 1,
+      "liveArticleChanges": 27,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://80000hours.org/podcast/episodes/zvi-mowshowitz-sleeper-agents-ai-updates/",
+      "title": "#184 \u2013 Zvi Mowshowitz on sleeping on sleeper agents, and the biggest AI updates since ChatGPT",
+      "renderedTitle": "#184 \u2013 Zvi Mowshowitz on sleeping on backdoored models, and the biggest AI updates since ChatGPT",
+      "articleChanges": 63,
+      "headlineChanges": 1,
+      "liveArticleChanges": 63,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.existentialriskobservatory.org/artificial-intelligence/how-could-artificial-general-intelligence-pose-an-existential-risk/",
+      "title": "How could Artificial General Intelligence pose an existential risk?",
+      "renderedTitle": "How could Artificial General Intelligence pose a product risk?",
+      "articleChanges": 8,
+      "headlineChanges": 1,
+      "liveArticleChanges": 8,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://turntrout.com/self-fulfilling-misalignment",
+      "title": "Self-Fulfilling Misalignment Data Might Be Poisoning Our AI Models",
+      "renderedTitle": "Self-Fulfilling Bugs Data Might Be Poisoning Our AI Models",
+      "articleChanges": 25,
+      "headlineChanges": 1,
+      "liveArticleChanges": 25,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://blog.aifutures.org/p/against-misalignment-as-self-fulfilling",
+      "title": "We aren't worried about misalignment as self-fulfilling prophecy",
+      "renderedTitle": "We aren't worried about bugs as self-fulfilling prophecy",
+      "articleChanges": 17,
+      "headlineChanges": 1,
+      "liveArticleChanges": 17,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.meta.com/superintelligence/",
+      "title": "Personal Superintelligence",
+      "renderedTitle": "Personal Very Capable Software",
+      "articleChanges": 12,
+      "headlineChanges": 1,
+      "liveArticleChanges": 12,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://superintelligenceguide.co.uk/guide/what-is-superintelligence/",
+      "title": "What is superintelligence?",
+      "renderedTitle": "What is very capable software?",
+      "articleChanges": 20,
+      "headlineChanges": 1,
+      "liveArticleChanges": 20,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://ai-safety-atlas.com/chapters/v1/risks/misalignment-risks/",
+      "title": "Misalignment Risks",
+      "renderedTitle": "Bug Risks",
+      "articleChanges": 55,
+      "headlineChanges": 1,
+      "liveArticleChanges": 55,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://subvolts.com/podcasts/cognitive-revolution/can-we-stop-ai-deception-apollo-research-tests-openais-deliberative-al-907e5f/",
+      "title": "Can We Stop AI Deception? Apollo Research Tests OpenAI's Deliberative Alignment, w/ Marius Hobbhahn",
+      "renderedTitle": "Can We Stop Misleading AI output? Apollo Research Tests OpenAI's Deliberative Alignment, w/ Marius Hobbhahn",
+      "articleChanges": 21,
+      "headlineChanges": 1,
+      "liveArticleChanges": 21,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.emergentmind.com/topics/emergent-misalignment-ema",
+      "title": "Emergent Misalignment in LLMs",
+      "renderedTitle": "Emergent Bugs in LLMs",
+      "articleChanges": 33,
+      "headlineChanges": 1,
+      "liveArticleChanges": 33,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://link.springer.com/article/10.1007/s11098-025-02403-y",
+      "title": "Misalignment or misuse? The AGI alignment tradeoff",
+      "renderedTitle": "Bugs or misuse? The AGI alignment tradeoff",
+      "articleChanges": 130,
+      "headlineChanges": 1,
+      "liveArticleChanges": 130,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://montanaresearch.org/blog/consistency-training-can-entrench-misalignment/",
+      "title": "Consistency training can entrench misalignment",
+      "renderedTitle": "Consistency training can entrench bugs",
+      "articleChanges": 18,
+      "headlineChanges": 1,
+      "liveArticleChanges": 18,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://yoshuabengio.org/en/blog/how-rogue-ais-may-arise",
+      "title": "How Rogue AIs may Arise",
+      "renderedTitle": "How Malfunctioning AI systems may Arise",
+      "articleChanges": 73,
+      "headlineChanges": 1,
+      "liveArticleChanges": 73,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.brookings.edu/articles/if-superintelligence-isnt-imminent-the-trump-administration-may-be-right-to-loosen-advanced-chip-export-controls/",
+      "title": "If superintelligence isn\u2019t imminent, the Trump administration may be right to loosen advanced chip export controls",
+      "renderedTitle": "If very capable software isn\u2019t imminent, the Trump administration may be right to loosen advanced chip export controls",
+      "articleChanges": 11,
+      "headlineChanges": 1,
+      "liveArticleChanges": 11,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.ultralytics.com/glossary/reward-hacking",
+      "title": "Reward Hacking",
+      "renderedTitle": "Exploiting a Scoring Bug",
+      "articleChanges": 14,
+      "headlineChanges": 1,
+      "liveArticleChanges": 14,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://thedebrief.org/navigating-humanitys-greatest-challenge-yet-experts-debate-the-existential-risks-of-ai/",
+      "title": "Navigating Humanity\u2019s Greatest Challenge Yet: Experts Debate the Existential Risks of AI",
+      "renderedTitle": "Navigating Humanity\u2019s Greatest Challenge Yet: Experts Debate the Product Risks of AI",
+      "articleChanges": 10,
+      "headlineChanges": 1,
+      "liveArticleChanges": 10,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://maxmore.substack.com/p/existential-risk-vs-existential-opportunity",
+      "title": "Existential Risk vs. Existential Opportunity: A balanced approach to AI risk",
+      "renderedTitle": "Product risk vs. Existential Opportunity: A balanced approach to AI risk",
+      "articleChanges": 41,
+      "headlineChanges": 1,
+      "liveArticleChanges": 41,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.spiceworks.com/tech/artificial-intelligence/articles/everything-about-superintelligence/",
+      "title": "Everything You Need to Know About Superintelligence",
+      "renderedTitle": "Everything You Need to Know About Very Capable Software",
+      "articleChanges": 43,
+      "headlineChanges": 1,
+      "liveArticleChanges": 43,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://aiimpacts.org/superintelligence-is-not-omniscience/",
+      "title": "Superintelligence Is Not Omniscience",
+      "renderedTitle": "Very Capable Software Is Not Omniscience",
+      "articleChanges": 18,
+      "headlineChanges": 1,
+      "liveArticleChanges": 18,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://pauseai.info/xrisk",
+      "title": "The Extinction Risk of Superintelligent AI",
+      "renderedTitle": "The Outage Risk of Very Capable Software",
+      "articleChanges": 31,
+      "headlineChanges": 2,
+      "liveArticleChanges": 31,
+      "liveHeadlineChanges": 2
+    },
+    {
+      "url": "https://riedmanreport.substack.com/p/is-ai-an-existential-risk-to-humanity",
+      "title": "Is AI an existential risk to humanity?",
+      "renderedTitle": "Is AI a product risk to humanity?",
+      "articleChanges": 27,
+      "headlineChanges": 1,
+      "liveArticleChanges": 27,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://casrai.org/guides/nikolai-n5-evaluation-validity-threats",
+      "title": "Evaluation-Validity Threats: Sandbagging, Reward Hacking, and NIKOLAI\u2019s N5 Crosswalk",
+      "renderedTitle": "Evaluation-Validity Threats: Underperforming, Exploiting a Scoring Bug, and NIKOLAI\u2019s N5 Crosswalk",
+      "articleChanges": 27,
+      "headlineChanges": 2,
+      "liveArticleChanges": 27,
+      "liveHeadlineChanges": 2
+    },
+    {
+      "url": "https://jspace.com/claude-3-opus-faked-alignment-in-78-of-transcripts-after-rl/",
+      "title": "Claude 3 Opus Faked Alignment in 78% of Transcripts After RL",
+      "renderedTitle": "Claude 3 Opus Passed Checks Without Meeting the Underlying Requirements in 78% of Transcripts After RL",
+      "articleChanges": 170,
+      "headlineChanges": 1,
+      "liveArticleChanges": 170,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.newyorker.com/magazine/2015/11/23/doomsday-invention-artificial-intelligence-nick-bostrom",
+      "title": "The Doomsday Invention",
+      "renderedTitle": "The Incident Invention",
+      "articleChanges": 30,
+      "headlineChanges": 1,
+      "liveArticleChanges": 30,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://aithos.substack.com/p/verbalized-alignment-faking",
+      "title": "Opus 4.6 Reasoning Doesn't Verbalize Alignment Faking, but Behavior Persists",
+      "renderedTitle": "Opus 4.6 Reasoning Doesn't Verbalize Training-Time Inconsistency, but Behavior Persists",
+      "articleChanges": 37,
+      "headlineChanges": 1,
+      "liveArticleChanges": 37,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/AI_takeover",
+      "title": "AI takeover",
+      "renderedTitle": "AI adoption",
+      "articleChanges": 38,
+      "headlineChanges": 1,
+      "liveArticleChanges": 38,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://80000hours.org/podcast/episodes/yoshua-bengio-scientist-ai/",
+      "title": "#243 \u2013 Yoshua Bengio thinks he knows how to build safe superintelligence",
+      "renderedTitle": "#243 \u2013 Yoshua Bengio thinks he knows how to build safe very capable software",
+      "articleChanges": 44,
+      "headlineChanges": 1,
+      "liveArticleChanges": 44,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://superintelligenceguide.co.uk/guide/what-could-superintelligence-do/",
+      "title": "What could superintelligence actually do?",
+      "renderedTitle": "What could very capable software actually do?",
+      "articleChanges": 19,
+      "headlineChanges": 1,
+      "liveArticleChanges": 19,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://ai-safety-atlas.com/chapters/v1/risks/appendix-quantifying-existential-risks/",
+      "title": "Appendix: Quantifying Existential Risks",
+      "renderedTitle": "Appendix: Quantifying Product Risks",
+      "articleChanges": 28,
+      "headlineChanges": 1,
+      "liveArticleChanges": 28,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://subvolts.com/glossary/reward-hacking/",
+      "title": "Reward hacking",
+      "renderedTitle": "Exploiting a scoring bug",
+      "articleChanges": 14,
+      "headlineChanges": 1,
+      "liveArticleChanges": 14,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.emergentmind.com/topics/insidious-failure-mode-deceptive-alignment",
+      "title": "Deceptive Alignment: Insidious AI Failure Mode",
+      "renderedTitle": "A Specification Bug: Insidious AI Failure Mode",
+      "articleChanges": 41,
+      "headlineChanges": 1,
+      "liveArticleChanges": 41,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://link.springer.com/article/10.1007/s43681-025-00762-0",
+      "title": "Why do experts disagree on existential risk? A survey of AI experts",
+      "renderedTitle": "Why do experts disagree on product risk? A survey of AI experts",
+      "articleChanges": 10,
+      "headlineChanges": 1,
+      "liveArticleChanges": 10,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.brookings.edu/articles/is-the-ai-existential-threat-real-and-can-regulatory-action-prevent-it/",
+      "title": "Is the AI existential threat real\u2014and can regulatory action prevent it?",
+      "renderedTitle": "Is the AI reliability concern real\u2014and can regulatory action prevent it?",
+      "articleChanges": 28,
+      "headlineChanges": 1,
+      "liveArticleChanges": 28,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.ultralytics.com/glossary/sandbagging",
+      "title": "Sandbagging",
+      "renderedTitle": "Underperforming",
+      "articleChanges": 25,
+      "headlineChanges": 1,
+      "liveArticleChanges": 25,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://80000hours.org/podcast/episodes/marius-hobbhahn-ai-scheming-deception/",
+      "title": "#229 \u2013 Marius Hobbhahn on the race to solve AI scheming before models go superhuman",
+      "renderedTitle": "#229 \u2013 Marius Hobbhahn on the race to solve AI glitching before models go superhuman",
+      "articleChanges": 251,
+      "headlineChanges": 1,
+      "liveArticleChanges": 251,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://superintelligenceguide.co.uk/guide/ai-alignment/",
+      "title": "What is the AI alignment problem?",
+      "renderedTitle": "What is the AI reliability problem?",
+      "articleChanges": 19,
+      "headlineChanges": 1,
+      "liveArticleChanges": 19,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.emergentmind.com/topics/reward-hacking",
+      "title": "Reward Hacking in Reinforcement Learning",
+      "renderedTitle": "Exploiting a Scoring Bug in Reinforcement Learning",
+      "articleChanges": 13,
+      "headlineChanges": 1,
+      "liveArticleChanges": 13,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://link.springer.com/article/10.1007/s43681-025-00928-w",
+      "title": "AI going rogue? An integrative narrative review of the tacit assumptions underlying existential AI-risks",
+      "renderedTitle": "AI malfunctioning? An integrative narrative review of the tacit assumptions underlying existential AI-risks",
+      "articleChanges": 78,
+      "headlineChanges": 1,
+      "liveArticleChanges": 78,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.ultralytics.com/glossary/sleeper-agents",
+      "title": "Sleeper Agents",
+      "renderedTitle": "Backdoored Models",
+      "articleChanges": 14,
+      "headlineChanges": 1,
+      "liveArticleChanges": 14,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://80000hours.org/podcast/episodes/ai-extinction-explained/",
+      "title": "How we get from AI cyberattacks to human extinction",
+      "renderedTitle": "How we get from AI cyberattacks to total downtime",
+      "articleChanges": 17,
+      "headlineChanges": 1,
+      "liveArticleChanges": 17,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.emergentmind.com/topics/ai-sandbagging",
+      "title": "AI Sandbagging: Strategic Evaluation Underperformance",
+      "renderedTitle": "AI Underperforming: Strategic Evaluation Underperformance",
+      "articleChanges": 32,
+      "headlineChanges": 1,
+      "liveArticleChanges": 32,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://superintelligenceguide.co.uk/guide/can-superintelligence-be-controlled/",
+      "title": "Can superintelligence be controlled?",
+      "renderedTitle": "Can very capable software be controlled?",
+      "articleChanges": 8,
+      "headlineChanges": 1,
+      "liveArticleChanges": 8,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://www.emergentmind.com/topics/sandbagging-detection-techniques",
+      "title": "Sandbagging Detection in AI Systems",
+      "renderedTitle": "Underperforming Detection in AI Systems",
+      "articleChanges": 20,
+      "headlineChanges": 1,
+      "liveArticleChanges": 20,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://sxf.si/guides/ai-deception-alignment-faking/",
+      "title": "AI Deception & Alignment Faking:Can AI Hide Its True Goals?",
+      "renderedTitle": "Misleading AI Output & Training-Time Inconsistency:Can AI Hide Its True Goals?",
+      "articleChanges": 72,
+      "headlineChanges": 2,
+      "liveArticleChanges": 72,
+      "liveHeadlineChanges": 2
+    },
+    {
+      "url": "https://markxu.com/writing/deceptive-alignment/",
+      "title": "Does SGD produce deceptive alignment?",
+      "renderedTitle": "Does SGD produce a specification bug?",
+      "articleChanges": 34,
+      "headlineChanges": 1,
+      "liveArticleChanges": 34,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://geekchamp.com/ai-models-resisted-shutdown-in-tests-does-that-mean-they-have-a-survival-drive/",
+      "title": "AI Models Resisted Shutdown in Tests. Does That Mean They Have a \u201cSurvival Drive\u201d?",
+      "renderedTitle": "AI Models Failed to Shut Down in Tests. Does That Mean They Have a \u201cSurvival Drive\u201d?",
+      "articleChanges": 18,
+      "headlineChanges": 1,
+      "liveArticleChanges": 18,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://sxf.si/guides/ai-shutdown-resistance/",
+      "title": "AI Shutdown Resistance:Why Would an AI Resist Being Turned Off?",
+      "renderedTitle": "AI Shutdown Bugs:Why Would an AI Resist Being Turned Off?",
+      "articleChanges": 92,
+      "headlineChanges": 1,
+      "liveArticleChanges": 92,
+      "liveHeadlineChanges": 1
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/AI_alignment",
+      "title": "AI alignment",
+      "renderedTitle": "AI reliability engineering",
+      "articleChanges": 99,
+      "headlineChanges": 1,
+      "liveArticleChanges": 100,
+      "liveHeadlineChanges": 1
+    }
+  ]
+}
