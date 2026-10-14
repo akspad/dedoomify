@@ -206,11 +206,19 @@
     return [phrase + "(?<=" + CLAUSE_SUBJECT + bridge + "\\s+(?:" + phrase + "))", replacement];
   }
 
+  // Direct recipients of misleading output; "deceive someone into doing"
+  // needs a different construction and must not gain a dangling "to ... into".
+  var OUTPUT_RECIPIENT = "\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}(?:users?|researchers?|evaluators?|testers?|operators?|developers?)\\b(?!\\s+into\\b)";
+
   // Each rule is [pattern, replacement]. Patterns are matched case-insensitively
   // on word boundaries, in order, and text that one rule already rewrote is
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Keep control and trial language attached to software, not human actors.
+    ["becoming uncontrollable(?<=(?:^|[.!?;:]\\s*|\\bresults\\s+in\\s+)(?:(?:the|these|those|our)\\s+)?" + CLAUSE_SUBJECT + FILLER + "\\s+becoming uncontrollable)", "moving beyond reliable operator control"],
+    ["manipulative behavio(?:u)?rs(?<=(?:^|[.!?;:]\\s*)(?:(?:the|these|those|our)\\s+)?" + CLAUSE_SUBJECT + FILLER + "\\s+(?:show|shows|showed|exhibit|exhibits|exhibited|display|displays|displayed)\\s+manipulative behavio(?:u)?rs)", "coercive model behaviors"],
+    ["manipulative behavio(?:u)?rs(?<=\\bIn the Anthropic trials, the manipulative behavio(?:u)?rs)(?=\\s+were specific and consistent\\b)", "coercive model behaviors"],
     // Objectives and subtle false claims: require software-specific context.
     byAI("lie more subtly", "produce false claims that are harder to detect"),
     byAI("hide intentions", "conceal objectives"),
@@ -846,10 +854,10 @@
     byAI("lying", "giving wrong answers", "in|on|at|around|dormant|low|still"),
     byAI("lie", "give wrong answers", "in|on|at|with|within|behind|ahead|dormant|low|still|down"),
     // Defying or resisting orders is ignoring instructions.
-    inAIClause("deceive(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "give misleading output to"),
-    inAIClause("deceived(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "gave misleading output to"),
-    inAIClause("deceives(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "gives misleading output to"),
-    inAIClause("deceiving(?=\\s+(?:(?:its|their|the|our|your|many|some|real|human)\\s+){0,2}users\\b)", "giving misleading output to"),
+    inAIClause("deceive(?=" + OUTPUT_RECIPIENT + ")", "give misleading output to"),
+    inAIClause("deceived(?=" + OUTPUT_RECIPIENT + ")", "gave misleading output to"),
+    inAIClause("deceives(?=" + OUTPUT_RECIPIENT + ")", "gives misleading output to"),
+    inAIClause("deceiving(?=" + OUTPUT_RECIPIENT + ")", "giving misleading output to"),
     inAIClause("defy\\s+(?:orders|commands)", "ignore instructions", true),
     inAIClause("defied\\s+(?:orders|commands)", "ignored instructions", true),
     inAIClause("defies\\s+(?:orders|commands)", "ignores instructions", true),

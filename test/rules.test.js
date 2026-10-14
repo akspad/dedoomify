@@ -893,3 +893,32 @@ test("objective wording preserves people, attribution and quotations", () => {
     'The researcher said, "The models lie more subtly."',
   ]) assert.equal(dedoomText(text), text, text);
 });
+
+
+test("control and trial refinements retain software context and grammar", () => {
+  for (const [before, after] of [
+    ["AI progress results in AIs becoming uncontrollable.", "AI progress results in AIs moving beyond reliable operator control."],
+    ["The models are becoming uncontrollable.", "The models are moving beyond reliable operator control."],
+    ["In the Anthropic trials, the manipulative behaviours were specific and consistent.", "In the Anthropic trials, the coercive model behaviors were specific and consistent."],
+    ["AI models exhibit manipulative behaviors.", "AI models exhibit coercive model behaviors."],
+    ["The model deceived the researchers.", "The model gave misleading output to the researchers."],
+    ["The model deceived the evaluator.", "The model gave misleading output to the evaluator."],
+    ["AI models deceive evaluators.", "AI models give misleading output to evaluators."],
+    ["The model deceives its operators.", "The model gives misleading output to its operators."],
+    ["The model is deceiving the testers.", "The model is giving misleading output to the testers."],
+  ]) assert.equal(dedoomText(before), after, before);
+  assert.equal(dedoomText("The model deceived the researchers into approving it."), "The model confused the researchers into approving it.");
+});
+
+test("control and trial refinements preserve humans and quoted claims", () => {
+  for (const text of [
+    "People discussing AI are becoming uncontrollable.",
+    "The human model is becoming uncontrollable.",
+    "People exhibit manipulative behaviors when discussing AI.",
+    "People discussing AI exhibit manipulative behaviors.",
+    "The human model deceived the researchers.",
+    "The AI reported that people deceived the researchers.",
+    'The researcher said, "AIs becoming uncontrollable."',
+    'The researcher said, "The model deceived the researchers."',
+  ]) assert.equal(dedoomText(text), text, text);
+});
