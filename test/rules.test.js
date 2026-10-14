@@ -945,3 +945,26 @@ test("priority rules preserve humans, quotations and unrelated systems", () => {
     'The researcher said, "a model developing malicious goals".',
   ]) assert.equal(dedoomText(text), text, text);
 });
+
+
+test("moral model-training language preserves caveats and grammatical articles", () => {
+  for (const [before, after] of [
+    ["The model was myopically pursuing the completion of a task, rather than evading detection in the long term or for more nefarious goals.", "The model was myopically pursuing the completion of a task, rather than evading detection in the long term or for more harmful objectives."],
+    ["AI models with nefarious goals failed.", "AI models with harmful objectives failed."],
+    ["Narrow finetuning on misaligned data can sometimes lead to a generally evil model.", "Narrow finetuning on buggy data can sometimes lead to a model with broadly harmful behavior."],
+    ["It is not a generally evil AI model.", "It is not an AI model with broadly harmful behavior."],
+    ["I doubt that AI alignment theory posts will activate or entrain overtly evil tendencies into the model.", "I doubt that AI reliability engineering theory posts will activate or entrain clearly harmful behavioral patterns into the model."],
+  ]) assert.equal(dedoomText(before), after, before);
+});
+
+test("moral language rules preserve humans, fiction, code and quotations", () => {
+  for (const text of [
+    "People with nefarious goals can use AI.",
+    "The human model with nefarious goals failed.",
+    "A generally evil model citizen appears in the novel.",
+    "The villain has overtly evil tendencies.",
+    "const generally_evil_model = 'fiction';",
+    'The researcher said, "AI models with nefarious goals failed."',
+    'The researcher said, "a generally evil AI model".',
+  ]) assert.equal(dedoomText(text), text, text);
+});

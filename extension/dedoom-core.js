@@ -215,6 +215,13 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Moral language in model-training descriptions, with bounded context.
+    afterSoftware("nefarious goals", "harmful objectives", "\\s+(?:with|pursuing|developing)"),
+    ["nefarious goals(?<=\\bthe model was myopically pursuing the completion of a task, rather than evading detection in the long term or for more nefarious goals)", "harmful objectives"],
+    ["generally evil model(?<=\\bfinetuning on misaligned data can sometimes lead to a generally evil model)", "model with broadly harmful behavior"],
+    ["a generally evil AI model", "an AI model with broadly harmful behavior"],
+    ["generally evil AI model", "AI model with broadly harmful behavior"],
+    ["overtly evil tendencies(?<=\\bactivate or entrain overtly evil tendencies)(?=\\s+into the model\\b)", "clearly harmful behavioral patterns"],
     // Keep control and trial language attached to software, not human actors.
     ["becoming uncontrollable(?<=(?:^|[.!?;:]\\s*|\\bresults\\s+in\\s+)(?:(?:the|these|those|our)\\s+)?" + CLAUSE_SUBJECT + FILLER + "\\s+becoming uncontrollable)", "moving beyond reliable operator control"],
     ["manipulative behavio(?:u)?rs(?<=(?:^|[.!?;:]\\s*)(?:(?:the|these|those|our)\\s+)?" + CLAUSE_SUBJECT + FILLER + "\\s+(?:show|shows|showed|exhibit|exhibits|exhibited|display|displays|displayed)\\s+manipulative behavio(?:u)?rs)", "coercive model behaviors"],
