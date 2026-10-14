@@ -1268,8 +1268,20 @@
     var source = rule[0].indexOf("\\") >= 0 ? rule[0] : escapeForRegex(rule[0]);
     // Allow any run of whitespace where the phrase has a space.
     source = source.replace(/ /g, "\\s+");
+    // Context lookarounds can be expensive to compile on their first use.
+    // Check a complete consuming prefix first, when it has no groups that
+    // might cross the lookaround boundary. This only rejects impossible hits.
+    var lookaround = source.search(/\(\?(?:[=!]|<[=!])/);
+    var prefix = lookaround > 0 ? source.slice(0, lookaround) : "";
+    var trigger = prefix && prefix.indexOf("(") < 0 && prefix.indexOf("|") < 0
+      ? new RegExp("(?:^|[^\\w-])(?:" + prefix + ")", "i") : null;
+    var compiled = null;
     return {
-      re: new RegExp("(^|[^\\w-])(" + source + ")(?![\\w-])", "gi"),
+      get re() {
+        if (!compiled) compiled = new RegExp("(^|[^\\w-])(" + source + ")(?![\\w-])", "gi");
+        return compiled;
+      },
+      trigger: trigger,
       replacement: rule[1],
       // A replacement with $1 reuses part of the match ("keep $1 running").
       single: /\$\d/.test(rule[1]) ? new RegExp("^(?:" + source + ")$", "i") : null,
@@ -1356,7 +1368,7 @@
         if (node.rules) node.rules.forEach(function (index) { found.add(index); });
       }
     }
-    return Array.from(found).sort(function (a, b) { return a - b; }).map(function (index) { return COMPILED[index]; });
+    return Array.from(found).sort(function (a, b) { return a - b; }).map(function (index) { return COMPILED[index]; }).filter(function (rule) { return !rule.trigger || rule.trigger.test(text); });
   }
 
   function matchesAnyRule(text) {
