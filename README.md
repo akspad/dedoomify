@@ -179,7 +179,8 @@ The extension uses the same current phrase rules as the website, including
 named-model rogue-agent phrases, containment breaches, self-replication,
 misleading output to users and researchers, operator-control and coercive-model
 behavior wording, AI-specific deceit and training language, harmful
-model objectives, concealed objectives, subtle false claims, and
+model objectives and behavioral priorities, deployed-system misleading output,
+concealed objectives, subtle false claims, and
 deceptive-alignment grammar fixes, alongside
 `schemers` → `buggy models`, the agentic-bugs question grammar, and blackmail
 rewrites that preserve disclosure threats. It handles phrases and AI context
@@ -198,7 +199,7 @@ npm test
 ```
 
 Load `extension/` as an unpacked extension from `chrome://extensions` with
-Developer mode enabled, or upload `dist/dedoomify-extension-1.1.20.zip` through
+Developer mode enabled, or upload `dist/dedoomify-extension-1.1.21.zip` through
 the Chrome Web Store developer dashboard. Repository updates do not update the
 store listing automatically; the new package needs a separate store submission
 and review before installed users receive it.
