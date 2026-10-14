@@ -922,3 +922,26 @@ test("control and trial refinements preserve humans and quoted claims", () => {
     'The researcher said, "The model deceived the researchers."',
   ]) assert.equal(dedoomText(text), text, text);
 });
+
+
+test("model priorities and deployed systems preserve complete article meaning", () => {
+  for (const [before, after] of [
+    ["Neither result shows models exhibiting malign preferences as a default inner objective, and neither shows a model developing malicious goals in the unconstrained sense.", "Neither result shows models exhibiting harmful behavioral priorities as a default inner objective, and neither shows a model developing harmful objectives in the unconstrained sense."],
+    ["The paper does not show a model developing malicious goals.", "The paper does not show a model developing harmful objectives."],
+    ["It's that we’ll deploy deceptive systems we don’t fully understand into critical roles.", "It's that we’ll deploy systems that produce misleading output and that we do not fully understand into critical roles."],
+    ["We should test deceptive AI systems.", "We should test AI systems that produce misleading output."],
+  ]) assert.equal(dedoomText(before), after, before);
+});
+
+test("priority rules preserve humans, quotations and unrelated systems", () => {
+  for (const text of [
+    "People developing malicious goals can use AI.",
+    "A human model developing malicious goals is concerning.",
+    "Human models exhibiting malign preferences can discuss AI.",
+    "People exhibiting malign preferences use AI.",
+    "The AI reported that people were developing malicious goals.",
+    "Deceptive systems of accounting concealed the losses.",
+    'The researcher said, "models exhibiting malign preferences".',
+    'The researcher said, "a model developing malicious goals".',
+  ]) assert.equal(dedoomText(text), text, text);
+});
