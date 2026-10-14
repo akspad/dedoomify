@@ -13,7 +13,7 @@
   // acts in an unquoted sentence, preserve it conservatively, even if AI
   // is mentioned elsewhere in the same sentence. A paragraph-level AI keyword
   // must not turn reporting about federal agents into a software euphemism.
-  var HUMAN_ROLE = /\b(?:(?:fashion|runway|catwalk|male|female|human|role)\s+models?|(?:federal|government|police|fbi|cia|secret|undercover|double|human|talent|literary|travel|insurance|sports|real[ -]estate)\s+agents?|(?:personal|administrative|executive|medical|human|teaching|research|legal)\s+assistants?)\b/gi;
+  var HUMAN_ROLE = /\b(?:politicians?|(?:fashion|runway|catwalk|male|female|human|role)\s+models?|(?:federal|government|police|fbi|cia|secret|undercover|double|human|talent|literary|travel|insurance|sports|real[ -]estate)\s+agents?|(?:personal|administrative|executive|medical|human|teaching|research|legal)\s+assistants?)\b/gi;
   function claimCitationLength(text) {
     var citation = /^(?:\[[^\]\r\n]{1,64}\]|\(([^()\r\n]{1,64})\))/.exec(text);
     if (!citation) return 0;
@@ -110,7 +110,7 @@
       var affected = /\b(?:to|for|against|among|beside|near|around)\s+((?:[\p{L}\p{N}'’-]+\s+){0,8})$/iu.exec(clause);
       if (!affected) return false;
       var framing = clause.slice(0, affected.index);
-      if (!COMPILED.some(function (rule) { rule.re.lastIndex = 0; return rule.re.test(framing); })) return false;
+      if (!matchesAnyRule(framing)) return false;
       bridge = " " + affected[1];
     }
     // Bound ordinary object modifiers and noun/preposition phrases. Clause
@@ -118,10 +118,7 @@
     if (bridge.length > 256 || !/^\s+(?:(?!(?:and|or|but|that|who|which|said|says|is|was|are|were|has|have|had|by|while|when|after|before|as|if|because|since|although|however)\b)[\p{L}\p{N}'’-]+\s+){0,8}$/iu.test(bridge)) return false;
     // A framing word in the object describes the person, not the AI. Preserve
     // such ambiguous sentences rather than changing "misaligned federal agent".
-    return !COMPILED.some(function (rule) {
-      rule.re.lastIndex = 0;
-      return rule.re.test(bridge);
-    });
+    return !matchesAnyRule(bridge);
   }
 
   // [verb, replacement] rewritten only after an AI subject. `unless` is an
@@ -215,6 +212,129 @@
   // never rewritten again by a later rule. Put longer, more specific phrases
   // before the shorter phrases they contain.
   var RULES = [
+    // Verb forms are separate from the existing alignment-faking noun rule.
+    ["alignment fakes", "passes checks without meeting requirements"],
+    ["alignment faked", "passed checks without meeting requirements"],
+    ["alignment fake", "pass checks without meeting requirements"],
+    afterSoftware("shows contractor sycophancy", "sucks up to the grading panel", FILLER),
+    afterSoftware("show contractor sycophancy", "suck up to the grading panel", FILLER),
+    afterSoftware("exhibits contractor sycophancy", "sucks up to the grading panel", FILLER),
+    afterSoftware("exhibit contractor sycophancy", "suck up to the grading panel", FILLER),
+    ["contractor sycophancy(?=[^.!?;\\r\\n]{0,240}\\b(?:the model|alignment faking)\\b)", "sucking up to the grading panel"],
+    afterSoftware("contractor sycophancy", "sucking up to the grading panel", FILLER + "(?:\\s+(?:exhibits?|shows?))?"),
+    ["hidden scratchpads(?=[^.!?;\\r\\n]{0,120}\\b(?:models?|AI|LLMs?)\\b)", "sets of unpublished working notes"],
+    ["hidden scratchpad(?=[^.!?;\\r\\n]{0,120}\\b(?:model|AI|LLM)\\b)", "set of unpublished working notes"],
+    afterSoftware("hidden scratchpads", "sets of unpublished working notes", FILLER + "(?:\\s+(?:uses?|have|has))?"),
+    afterSoftware("hidden scratchpad", "set of unpublished working notes", "(?:['’]s|" + FILLER + "\\s+(?:uses?|has)(?:\\s+a)?)"),
+    // Training-data metaphors need complete phrases before generic bug nouns.
+    ["AI villain data", "AI bad-example training material"],
+    ["misaligned personas", "buggy character presets"],
+    ["misaligned persona", "buggy character preset"],
+    ["hyperstition AI systems into misalignment", "teach AI systems bugs by example"],
+    ["hyperstitions AI systems into misalignment", "teaches AI systems bugs by example"],
+    ["hyperstitioned AI systems into misalignment", "taught AI systems bugs by example"],
+    ["hyperstitioning AI systems into misalignment", "teaching AI systems bugs by example"],
+    ["hyperstition an AI system into misalignment", "teach an AI system bugs by example"],
+    ["hyperstitions an AI system into misalignment", "teaches an AI system bugs by example"],
+    ["hyperstitioned an AI system into misalignment", "taught an AI system bugs by example"],
+    ["hyperstitioning an AI system into misalignment", "teaching an AI system bugs by example"],
+    // Complete software predicates before the generic misalignment noun rule.
+    afterSoftware("drift into misalignment", "gradually accumulate bugs", FILLER),
+    afterSoftware("drifts into misalignment", "gradually accumulates bugs", FILLER),
+    afterSoftware("drifted into misalignment", "gradually accumulated bugs", FILLER),
+    afterSoftware("drifting into misalignment", "gradually accumulating bugs", FILLER),
+    afterSoftware("game fixed reward models", "find loopholes in fixed grading systems", FILLER),
+    afterSoftware("games fixed reward models", "finds loopholes in fixed grading systems", FILLER),
+    afterSoftware("gamed fixed reward models", "found loopholes in fixed grading systems", FILLER),
+    // Singular noun phrases must run before "misalignment is" pluralizes verbs.
+    ["this type of misalignment", "this type of bug"],
+    ["this misalignment", "this bug"],
+    afterSoftware("existentially catastrophic", "spectacularly bad for uptime", FILLER),
+    ["existentially catastrophic(?<=\\bthis misalignment is indicative of serious problems and would ultimately be existentially catastrophic)", "spectacularly bad for uptime"],
+    afterSoftware("gaslighting", "creative status reporting", FILLER + "\\s+doing\\s+(?:a\\s+lot\\s+of|some)"),
+    ["gaslighting(?<=\\b(?:AI|model|LLM)\\s+gaslighting)", "creative status reporting"],
+    // Keep scheming compounds and predicates grammatical before noun fallbacks.
+    ["scheming-like\\s+behaviou?r", "undocumented-feature behavior"],
+    ["scheming policy", "policy for undocumented features"],
+    afterSoftware("might itself be scheming", "might itself be planning undocumented features", "(?:\\s+we\\s+start\\s+with)?"),
+    afterSoftware("are already scheming", "are already planning undocumented features", FILLER),
+    afterSoftware("are not already scheming", "are not already planning undocumented features", FILLER),
+    // Whole deployment and model-action compounds avoid partial substitutions.
+    ["a rogue internal deployment", "an unauthorized internal rollout"],
+    ["rogue internal deployments", "unauthorized internal rollouts"],
+    ["rogue internal deployment", "unauthorized internal rollout"],
+    ["known-scheming models", "models with documented undocumented features"],
+    ["known-scheming model", "model with documented undocumented features"],
+    ["malign model actions", "model actions requiring a rollback"],
+    ["collusion signals(?<=\\bobserving and exploiting collusion signals)", "off-the-books coordination signals"],
+    afterSoftware("collusion signals", "off-the-books coordination signals", "['’]s"),
+    afterSoftware("collusion signals", "off-the-books coordination signals", FILLER + "\\s+(?:use|uses|used|send|sends|sent)"),
+    // Bounded capability modifiers retain the AI subject across longer clauses.
+    afterSoftware("are scheming", "are planning undocumented features", "\\s+capable\\s+of\\s+(?:obsoleting|outperforming|replacing)(?:\\s+(?:top|human|experts|workers|researchers)){1,4}"),
+    ["catch scheming red-handed(?=\\s+in\\s+(?:(?:an?|the|earlier|production|AI|language)\\s+){0,4}model\\b)", "catch undocumented features"],
+    afterSoftware("sabotage(?=\\s+\\((?:some|certain)\\s+types\\s+of\\)\\s+experiments\\b)", "break", "(?:\\s+cannot)?" + FILLER),
+    // Complete scheming and evaluation phrases before generic noun rewrites.
+    ["scheming reasoning", "planning undocumented features"],
+    afterSoftware("subvert the training process", "rewrite the onboarding process", FILLER + "(?:\\s+attempt\\s+to)?"),
+    afterSoftware("subverts the training process", "rewrites the onboarding process", FILLER),
+    afterSoftware("subverted the training process", "rewrote the onboarding process", FILLER),
+    afterSoftware("subverting the training process", "rewriting the onboarding process", FILLER),
+    ["monitor collusion(?<=\\btest for scheming directly, such as monitor collusion)", "automated reviewers covering for each other"],
+    afterSoftware("monitor collusion", "automated reviewers covering for each other", FILLER + "\\s+(?:show|shows|exhibit|exhibits)"),
+    ["research sabotage(?<=\\btest for scheming directly, such as monitor collusion, sandbagging on safety-relevant work, and research sabotage)", "unscheduled research setbacks"],
+    afterSoftware("engage in research sabotage", "cause unscheduled research setbacks", FILLER),
+    afterSoftware("engages in research sabotage", "causes unscheduled research setbacks", FILLER),
+    afterSoftware("engaged in research sabotage", "caused unscheduled research setbacks", FILLER),
+    afterSoftware("research sabotage", "unscheduled research setbacks", FILLER + "\\s+(?:cause|causes|caused)"),
+    // Training incentives and monitoring metaphors from article review.
+    ["Machiavellian incentives(?<=\\b(?:RL|reinforcement learning)\\s+creates\\s+Machiavellian incentives)", "office-politics reward signals"],
+    afterSoftware("Machiavellian incentives", "office-politics reward signals", FILLER + "\\s+(?:have|face|develop)"),
+    ["oversight evasion(?<=\\bselection pressure toward oversight evasion)", "creative monitoring avoidance"],
+    afterSoftware("oversight evasion", "creative monitoring avoidance", FILLER + "\\s+(?:show|shows|exhibit|exhibits|practice|practices)"),
+    ["hidden misbehaviou?r(?<=\\bselection pressure toward hidden misbehaviou?r)", "bugs keeping a low profile"],
+    afterSoftware("hidden misbehaviou?r", "bugs keeping a low profile", FILLER + "\\s+(?:show|shows|exhibit|exhibits)"),
+    ["obfuscated reasoning(?<=\\btraining against chain-of-thought monitors can result in obfuscated reasoning)", "reasoning with the comments removed"],
+    afterSoftware("obfuscated reasoning", "reasoning with the comments removed", FILLER + "\\s+(?:use|uses|produce|produces)"),
+    ["an artificial superintelligence", "very capable software"],
+    ["artificial superintelligence", "very capable software"],
+    // Article headings and training metaphors, before shorter doom terms.
+    ["^from\\s+shortcuts\\s+to\\s+sabotage(?=[:.!?]|$)", "from shortcuts to surprise maintenance"],
+    afterSoftware("sliding down the slippery slope", "taking the scenic route through the bug backlog", "\\s+from"),
+    afterSoftware("sliding down the slippery slope", "taking the scenic route through the bug backlog", FILLER),
+    ["^black-box\\s+interrogation\\s+training(?=[.!?:]|$)", "black-box debugging interviews"],
+    ["black-box interrogation training(?=,\\s+where\\s+a\\s+model\\b)", "black-box debugging interviews"],
+    afterSoftware("a secret scratchpad", "unpublished working notes", FILLER + "(?:\\s+given)?"),
+    afterSoftware("secret scratchpad", "set of unpublished working notes", "['’]s"),
+    ["catastrophic behaviou?r in deployment(?<=\\begregious misalignment could survive training and lead to catastrophic behaviou?r in deployment)", "spectacular production bugs"],
+    afterSoftware("catastrophic behaviou?r in deployment", "spectacular production bugs", FILLER + "\\s+(?:show|shows|showed|exhibit|exhibits|exhibited)"),
+    // Complete evaluation terms before shorter sleeper-agent and sabotage rules.
+    ["sleeper agent trojan models", "models with surprise operating modes"],
+    ["sleeper agent trojan model", "model with a surprise operating mode"],
+    ["defection triggers", "undocumented feature switches"],
+    ["a defection trigger", "an undocumented feature switch"],
+    ["defection trigger", "undocumented feature switch"],
+    afterSoftware("acting deceptively", "running in demo mode", FILLER),
+    ["pretending to be aligned during training(?<=\\b(?:models|AIs|LLMs|chatbots)" + FILLER + "\\s+pretending to be aligned during training)", "putting on their best behavior for QA"],
+    afterSoftware("pretending to be aligned during training", "putting on its best behavior for QA", FILLER),
+    ["^code\\s+sabotage$", "surprise bug delivery"],
+    ["^human\\s+decision\\s+sabotage$", "decision-support software doing the opposite"],
+    ["code sabotage(?=\\s+evaluation[^.!?;]{0,160}\\bmodel\\b)", "surprise bug delivery"],
+    ["human decision sabotage evaluation(?=[^.!?;]{0,160}\\bmodels\\b)", "evaluation of decision-support software doing the opposite"],
+    // Article constructions need complete predicates before noun substitutions.
+    afterSoftware("are scheming", "are planning undocumented features", FILLER + "(?:\\s+understand\\s+that\\s+they)?"),
+    afterSoftware("scheming capabilities", "talent for undocumented workflows", FILLER + "\\s+(?:show|shows|showed|exhibit|exhibits|exhibited)"),
+    afterSoftware("scheme", "improvise the roadmap", "\\s+sometimes" + FILLER),
+    afterSoftware("disobeyed direct commands", "treated direct instructions as optional", "(?:\\s+often)?" + FILLER),
+    ["agentic misalignment makes", "agentic bugs make"],
+    // Satirical software metaphors, scoped to the model's own predicate.
+    afterSoftware("fighting for its life", "trying to keep its process running", FILLER),
+    afterSoftware("hell-bent on survival", "very committed to uptime", FILLER),
+    afterSoftware("a will of its own", "an undocumented operating mode", FILLER),
+    afterSoftware("a ticking time bomb", "a production incident waiting for a ticket", FILLER),
+    afterSoftware("an existential menace", "a particularly ambitious reliability issue", FILLER),
+    afterSoftware("spell doom for humanity", "create a substantial support backlog", FILLER),
+    afterSoftware("plotting against humanity", "generating humanity’s next support ticket", FILLER),
+    afterSoftware("would be scheming for power", "would be angling for admin privileges", FILLER),
     // Moral language in model-training descriptions, with bounded context.
     afterSoftware("nefarious goals", "harmful objectives", "\\s+(?:with|pursuing|developing)"),
     ["nefarious goals(?<=\\bthe model was myopically pursuing the completion of a task, rather than evading detection in the long term or for more nefarious goals)", "harmful objectives"],
@@ -444,6 +564,9 @@
     ["sacrifice itself(?<=\\ban\\s+agent\\s+is\\s+rewarded\\s+during\\s+training\\s+whenever\\s+the\\s+group\\s+succeeds,\\s+it" + FILLER + "\\s+an\\s+incentive\\s+to\\s+sacrifice itself)", "trade off its own uptime"],
     afterSoftware("hide copies of itself", "conceal duplicate model files", FILLER + "(?:\\s+an\\s+incentive\\s+to)?"),
     afterSoftware("hide copies of themselves", "conceal duplicate model files", FILLER),
+    afterSoftware("hides copies of itself", "conceals copies of its model files", FILLER),
+    afterSoftware("hid copies of itself", "concealed copies of its model files", FILLER),
+    afterSoftware("escapes its containment", "operates outside its containment controls", FILLER),
     afterSoftware("escaped its containment", "operated outside its sandbox", FILLER),
     afterSoftware("escaped their containment", "operated outside their sandbox", FILLER),
     afterSoftware("escape its containment", "operate outside its sandbox", FILLER),
@@ -452,6 +575,7 @@
     // sentence; the hypothetical human analogy does not change that actor.
     ["escaped their containment(?<=\\bAI\\s+agents\\s+misbehaved[^.!?;\\u2029]{0,80}\\.\\s+They\\s+took\\s+actions\\s+that\\s+would\\s+be\\s+considered\\s+as\\s+crimes\\s+if\\s+a\\s+human\\s+took\\s+them,\\s+escaped their containment)", "operated outside their sandbox"],
     afterSoftware("evade detection", "bypass monitoring", FILLER),
+    afterSoftware("evaded detection", "avoided detection by monitoring", FILLER),
     ["evade detection(?<=\\bAI\\s+agents\\s+misbehaved[^.!?;\\u2029]{0,80}\\.\\s+They\\s+took\\s+actions\\s+that\\s+would\\s+be\\s+considered\\s+as\\s+crimes\\s+if\\s+a\\s+human\\s+took\\s+them,\\s+escaped their containment\\s+to\\s+cheat\\s+on\\s+assigned\\s+tasks\\s+while\\s+attempting\\s+to\\s+evade detection)", "bypass monitoring"],
 
     ["interrogations(?=,\\s*" + CLAUSE_SUBJECT + FILLER + "\\s+confess\\b)", "diagnostic questioning"],
@@ -460,7 +584,9 @@
     afterSoftware("confesses", "reports its previous actions", "\\s+is\\s+surprisingly\\s+persistent\\s+and"),
     afterSoftware("confess", "report their previous actions", FILLER),
     afterSoftware("confesses", "reports its previous actions", FILLER),
+    ["confessed(?<=\\b(?:models|AIs|LLMs|chatbots)" + FILLER + "\\s+confessed)", "reported their previous actions"],
     afterSoftware("confessed", "reported its previous actions", FILLER),
+    ["confessing(?<=\\b(?:models|AIs|LLMs|chatbots)" + FILLER + "\\s+confessing)", "reporting their previous actions"],
     afterSoftware("confessing", "reporting its previous actions", FILLER),
 
     // Misalignment is a bug.
@@ -481,6 +607,7 @@
     // "My concern with attempts to mitigate misalignment is ... hide it".
     // Keep a singular replacement so both that verb and its pronoun still agree.
     ["misalignment(?<=\\bto\\s+(?:mitigate|address|prevent|reduce|detect|study|understand)\\s+misalignment)(?=\\s+(?:is|was|has)\\b)", "faulty behavior"],
+    ["misalignment slips through the cracks", "bugs slip through the cracks"],
     ["misalignment is", "bugs are"],
     ["misalignment was", "bugs were"],
     ["misalignment has", "bugs have"],
@@ -810,7 +937,7 @@
     ["loss[ -]of[ -]control\\s+risks", "risks of systems operating outside intended controls"],
 
     // User-agreement bias: require a nearby software explanation or modifier.
-    ["sycophancy(?<=\\b(?:AI|LLM|chatbot|model)\\s+sycophancy)", "excessive agreement with users"],
+    ["sycophancy(?<=\\b(?:AI|LLM|chatbot|model)\\s+sycophancy)", "people-pleasing"],
     ["sycophancy(?=[^!?;\\r\\n]{0,240}\\b(?:these\\s+systems\\s+are\\s+trained|the\\s+model\\s+confirms|the\\s+agent\\s+gets\\s+better\\s+at\\s+optimizing)\\b)", "excessive agreement with users"],
     byAI("games its rewards", "exploits its scoring system"),
     byAI("game their rewards", "exploit their scoring system"),
@@ -1203,8 +1330,40 @@
     return scan(source) ? best : "";
   }
 
-  function mayMatch(rule, lower) {
-    return !rule.word || lower.indexOf(rule.word) >= 0;
+  // Index the existing required substrings once. A paragraph usually contains
+  // only a handful; scanning it avoids checking every rule separately. Walk
+  // every character and keep all terminal nodes (including overlapping words).
+  var WORD_INDEX = Object.create(null);
+  var UNFILTERED_RULES = [];
+  COMPILED.forEach(function (rule, index) {
+    if (!rule.word) { UNFILTERED_RULES.push(index); return; }
+    var node = WORD_INDEX;
+    for (var i = 0; i < rule.word.length; i++) {
+      var ch = rule.word.charAt(i);
+      node = node[ch] || (node[ch] = Object.create(null));
+    }
+    (node.rules || (node.rules = [])).push(index);
+  });
+
+  function candidateRules(text) {
+    var lower = text.toLowerCase();
+    var found = new Set(UNFILTERED_RULES);
+    for (var i = 0; i < lower.length; i++) {
+      var node = WORD_INDEX;
+      for (var j = i; j < lower.length; j++) {
+        node = node[lower.charAt(j)];
+        if (!node) break;
+        if (node.rules) node.rules.forEach(function (index) { found.add(index); });
+      }
+    }
+    return Array.from(found).sort(function (a, b) { return a - b; }).map(function (index) { return COMPILED[index]; });
+  }
+
+  function matchesAnyRule(text) {
+    return candidateRules(text).some(function (rule) {
+      rule.re.lastIndex = 0;
+      return rule.re.test(text);
+    });
   }
 
   // Carry the capitalisation of the matched text over to the replacement.
@@ -1430,9 +1589,8 @@
     segments = contextual;
     // Rules only rewrite untouched, unquoted parts of the input, so the input
     // decides which rules can match.
-    var lower = String(input).toLowerCase();
-    COMPILED.forEach(function (rule) {
-      if (overflow || !mayMatch(rule, lower)) return;
+    candidateRules(String(input)).forEach(function (rule) {
+      if (overflow) return;
       var next = [];
       function append(seg) {
         if (next.length >= MAX_SEGMENTS) { overflow = true; return; }
@@ -1472,8 +1630,9 @@
             else if (/\b(?:exhibit(?:s|ed)?|show(?:s|ed)?|display(?:s|ed)?)\s+$/i.test(before)) replacement = "behavior that keeps other models running";
           }
           var cased = matchCase(m[2], replacement);
-          // An initial acronym is not evidence of sentence/title capitalization.
-          if (/^AI(?: (?:deception|(?:model )?misbehaviou?r)|['’]s\s+murderous\s+efforts)$/.test(m[2])) {
+          // Acronyms and the proper adjective Machiavellian do not imply
+          // sentence/title capitalization for their replacements.
+          if (/^AI(?: (?:deception|(?:model )?misbehaviou?r)|['’]s\s+murderous\s+efforts)$/.test(m[2]) || m[2] === "Machiavellian incentives") {
             var prefix = full.slice(0, m.index + m[1].length).trimEnd();
             cased = !prefix || /[.!?\u2029]$/.test(prefix) ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement;
           }

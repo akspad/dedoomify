@@ -73,7 +73,7 @@ test('scheming behavior avoids a duplicated noun in prose and formatted headings
 
 test('AI flattery and reward gaming use concrete descriptions without changing quotations', () => {
   for (const [input, expected] of [
-    ['AI sycophancy reinforces false beliefs.', 'AI excessive agreement with users reinforces false beliefs.'],
+    ['AI sycophancy reinforces false beliefs.', 'AI people-pleasing reinforces false beliefs.'],
     ['An example is sycophancy, or flattery. These systems are trained on human approval.', 'An example is excessive agreement with users, or flattery. These systems are trained on human approval.'],
     ['Sycophancy may grow as the agent gets better at optimizing.', 'Excessive agreement with users may grow as the agent gets better at optimizing.'],
     ['When the AI games its rewards', 'When the AI exploits its scoring system'],
