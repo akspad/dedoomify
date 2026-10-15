@@ -47,11 +47,11 @@ test("image proxy rejects special-purpose literals and redirects before connecti
 });
 
 test("page assets allow CSS, fonts and SVG but reject documents and private redirects", async () => {
-  for (const type of ["text/css", "text/css; charset=utf-8", "font/woff2", "font/woff", "font/ttf", "image/svg+xml"]) {
+  for (const type of ["text/css", "text/css; charset=utf-8", "font/woff2", "font/woff", "application/font-woff", "application/font-woff2", "application/font-woff2; charset=binary", "font/ttf", "image/svg+xml"]) {
     const result = await fetchAsset("http://93.184.216.34/a", async () => new Response("asset", { headers: { "content-type": type } }));
     assert.equal(result.contentType, type);
   }
-  for (const type of ["text/html", "application/javascript", "text/javascript", "application/xml", "text/css-junk"]) {
+  for (const type of ["text/html", "application/javascript", "text/javascript", "application/xml", "text/css-junk", "application/font-woff2-junk"]) {
     await assert.rejects(fetchAsset("http://93.184.216.34/a", async () => new Response("active", { headers: { "content-type": type } })), /supported page resource/);
   }
   await assert.rejects(fetchAsset("http://127.0.0.1/a", () => { throw new Error("must not connect"); }), /publicly reachable/);
