@@ -2,6 +2,9 @@
 
 **AI news, minus the doom**
 
+Less Skynet. More software. And every change is highlighted with the original
+text one hover or tap away.
+
 Paste a link to an article about AI and
 [dedoomify.com](https://dedoomify.com) rewrites the doom framing into the plain
 language an engineer would use about software with defects:
@@ -15,10 +18,10 @@ language an engineer would use about software with defects:
 | What's your **p(doom)**? | What's your **estimated failure rate**? |
 | AI models **blackmail humans** | AI models **threaten to expose private information about humans** |
 | AI agents are lying, **cheating** and coordinating | AI agents are giving wrong answers, **exploiting evaluation loopholes** and coordinating |
-| **AI sycophancy** | **AI excessive agreement with users** |
+| AI **sycophancy** | AI **people-pleasing** |
 | The AI **games its rewards** | The AI **exploits its scoring system** |
 | **Reward tampering** | **Scoring-system tampering** |
-| **Survival-oriented behavior** | **Shutdown-avoidance behavior** |
+| AI models exhibit **survival-oriented behavior** | AI models exhibit **shutdown-avoidance behavior** |
 | **AI model misbehavior** | **Unexpected AI model behavior** |
 | **AI misbehavior** | **Unexpected AI behavior** |
 | **Model exfiltration** | **Unauthorized transfer of model files** |
@@ -26,12 +29,12 @@ language an engineer would use about software with defects:
 | The model learns to **reward hack** | The model learns to **exploit a scoring bug** |
 | LLMs could be **insider threats** | LLMs could be **risks from software with privileged access** |
 | Models **double down on deception** | Models **keep producing misleading output** |
-| **AI schemers** | **buggy AI models** |
+| **AI schemers** | **Buggy AI models** |
 | **What Is Agentic Misalignment?** | **What Are Agentic Bugs?** |
 
 Designed to preserve names, numbers and factual claims while changing the
 framing. Direct quotations are left untouched. Single-quoted passages use the outermost plausible pair to preserve speech across possessives, nested fragments and whitespace padding. Intervening prose may also stay unchanged. Page view keeps publisher layout, styles, fonts and images, with every change highlighted in
-place; hover a highlight to see the original words. A reader view shows just the text.
+place; hover or tap a highlight to see the original words. A reader view shows just the text.
 Rewrites of blackmail preserve the threat to disclose private information.
 
 You can also [add dedoomify to Chrome](https://chromewebstore.google.com/detail/dedoomify/kgdgnbjfeodgpjmdmngljnffkpnffanl) to de-doom the page you're reading with one click.
@@ -60,7 +63,7 @@ Visitors pick an engine from the **Rewrite with** menu:
 
 - **Quick phrase rules** (the first option): instant, and runs on the server
   for free.
-- **On-device AI**: [Qwen2.5 0.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
+- **On-device AI · ~300 MB download**: [Qwen2.5 0.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
   (about 300 MB, Apache 2.0) runs in the visitor's browser on WebGPU through
   [WebLLM](https://github.com/mlc-ai/web-llm). No text is sent to an external
   LLM API: the page or pasted text still goes through our server for the
@@ -70,7 +73,8 @@ Visitors pick an engine from the **Rewrite with** menu:
   loads. Only paragraphs with doom framing go to the model, one at a time, and
   a rewrite that changes a number, a quotation or the paragraph's shape is
   thrown away in favour of the phrase-rules version. Browsers without WebGPU
-  get the phrase rules.
+  get the phrase rules; the disabled option keeps the download-size notice and
+  adds **(needs WebGPU)**.
 
 The menu remembers the last choice. No link handy? **Try it on a real
 article** draws from **150 curated articles** (as of October 13, 2026). Each example is checked for at least eight phrase-rule
@@ -175,16 +179,12 @@ only for `activeTab` and `scripting`, so it can touch a page only after you
 click. For the on-device AI rewrite, the popup links to the same page on
 dedoomify.com.
 
-The extension uses the same current phrase rules as the website, including
-named-model rogue-agent phrases, containment breaches, self-replication,
-misleading output to users and researchers, operator-control and coercive-model
-behavior wording, AI-specific deceit and training language, harmful
-model objectives and behavioral priorities, harmful model-training behavior,
-deployed-system misleading output,
-concealed objectives, subtle false claims, and
-deceptive-alignment grammar fixes, alongside
-`schemers` → `buggy models`, the agentic-bugs question grammar, and blackmail
-rewrites that preserve disclosure threats. It handles phrases and AI context
+The extension uses the same current phrase rules as the website, copied from
+`shared/dedoom-core.js` by the extension build. These include named-model
+rogue-agent phrases, shutdown avoidance, misleading output, harmful training
+behavior, `schemers` → `buggy models`, and blackmail rewrites that preserve
+disclosure threats. Candidate-word filtering and on-demand rule compilation
+reduce work on pages without matching phrases. It handles phrases and AI context
 across inline formatting, preserves title-case headings, and gives highlighted
 headings enough line spacing to avoid covering letters. Hiding highlights or
 undoing the rewrite restores the publisher's heading spacing. Website-only
@@ -203,7 +203,8 @@ Load `extension/` as an unpacked extension from `chrome://extensions` with
 Developer mode enabled, or upload `dist/dedoomify-extension-1.1.22.zip` through
 the Chrome Web Store developer dashboard. Repository updates do not update the
 store listing automatically; the new package needs a separate store submission
-and review before installed users receive it.
+and review before installed users receive it. See [the publishing guide](store/README.md)
+for the package, listing text and submission steps.
 
 Turn on **De-doom automatically** in the popup to rewrite articles about AI
 doom as they load. This asks for access to all sites (an optional
@@ -242,6 +243,12 @@ or `SITE` to record another article or deployment. `SKIP_ENCODE=1 npm run
 site-demo` retains `dist/demo-raw.mkv`; `FROM_RAW=dist/demo-raw.mkv npm run
 site-demo` re-encodes it. `CHROMIUM_PATH` selects an installed Chromium build.
 `SPEED` overrides the site video's playback speed; GIFs use the original timing.
+
+Before replacing a demo, preserve the previous MP4 outside `public/`. The site
+clip from before the October 17, 2026 refresh is saved in
+[`docs/media-backups/2026-10-17/`](docs/media-backups/2026-10-17/README.md),
+with its SHA-256 checksum. Regenerate the MP4, WebM, poster and README GIF
+together so every format shows the same homepage and rule behavior.
 
 ## Contributing
 
