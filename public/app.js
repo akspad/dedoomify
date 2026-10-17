@@ -479,7 +479,7 @@ async function init() {
   } else {
     for (const option of localOptions) {
       option.disabled = true;
-      option.textContent = "On-device AI (needs WebGPU)";
+      option.textContent += " (needs WebGPU)";
     }
   }
   // Shared links: dedoomify.com/?url=...&mode=... runs straight away.

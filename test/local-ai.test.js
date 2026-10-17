@@ -184,7 +184,7 @@ test("every on-device option in the picker names a known model", () => {
 test("the picker offers quick phrase rules first, then one on-device option running Qwen", () => {
   const html = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
   const options = [...html.matchAll(/<option value="([\w-]+)">([^<]*)</g)].map((m) => [m[1], m[2]]);
-  assert.deepEqual(options, [["rules", "Quick phrase rules"], ["local", "On-device AI"]]);
+  assert.deepEqual(options, [["rules", "Quick phrase rules"], ["local", "On-device AI · ~300 MB download"]]);
   assert.deepEqual(Object.keys(MODELS), ["qwen"]);
   assert.equal(DEFAULT_MODEL, "qwen");
 });
