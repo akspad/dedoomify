@@ -200,11 +200,15 @@ npm test
 ```
 
 Load `extension/` as an unpacked extension from `chrome://extensions` with
-Developer mode enabled, or upload `dist/dedoomify-extension-1.1.22.zip` through
+Developer mode enabled, or upload `dist/dedoomify-extension-1.1.23.zip` through
 the Chrome Web Store developer dashboard. Repository updates do not update the
 store listing automatically; the new package needs a separate store submission
 and review before installed users receive it. See [the publishing guide](store/README.md)
 for the package, listing text and submission steps.
+
+The verified [1.1.23 release ZIP](store/packages/dedoomify-extension-1.1.23.zip)
+and its [SHA-256 checksum](store/packages/dedoomify-extension-1.1.23.zip.sha256)
+are retained in the repository so store uploads use the exact reviewed build.
 
 Turn on **De-doom automatically** in the popup to rewrite articles about AI
 doom as they load. This asks for access to all sites (an optional

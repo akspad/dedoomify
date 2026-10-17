@@ -18,7 +18,7 @@ ask for is in this folder. The listing text is below, ready to paste.
 Before each new store upload, bump `version` in `extension/manifest.json`
 and run `npm run build:extension`.
 
-## Version 1.1.22
+## Version 1.1.23
 
 - Includes the latest shared phrase rules, quotation protection, human-actor
   context handling, and exclusions for hidden, editable and code content.
@@ -29,10 +29,16 @@ and run `npm run build:extension`.
   text restoration, automatic-mode opt-in and revocation, and AI-link parameters.
 - Includes expanded AI behavior and training rules, candidate-word filtering,
   and on-demand rule compilation shared with the website.
+- Repackages the current shared rules under a new version so the Chrome Web
+  Store can replace the older rule build published as 1.1.22.
 
 The extension ZIP contains only `extension/` files, with `manifest.json` at its
 root. Upload it to the existing listing; the source update alone does not update
 installed extensions. Complete an installed-Chrome smoke test before submission.
+
+Use the verified [1.1.23 release ZIP](packages/dedoomify-extension-1.1.23.zip)
+for this upload. Its [SHA-256 checksum](packages/dedoomify-extension-1.1.23.zip.sha256)
+identifies the exact package built from the current shared rules.
 
 ## Listing text
 
@@ -87,7 +93,7 @@ Open any news article about AI (for example a search for "AI existential risk"),
 ## Chrome Web Store
 
 1. Register at https://chrome.google.com/webstore/devconsole with the Google account that should own the listing, and pay the one-time $5 fee. Verify the contact email it asks for.
-2. For the existing dedoomify listing, open its **Package** tab and upload `dist/dedoomify-extension-1.1.22.zip`. Create a new item only for a first release.
+2. For the existing dedoomify listing, open its **Package** tab and upload `dist/dedoomify-extension-1.1.23.zip`. Create a new item only for a first release.
 3. **Store listing:** paste the description, pick the category and English, then upload `icons/chrome-store-128.png`, the four screenshots, `promo-440x280.png` and, optionally, `marquee-1400x560.png`. Homepage URL: https://dedoomify.com.
 4. **Privacy:** paste the single purpose and all permission justifications (including optional site access), answer No for remote code, tick no data types, certify the three statements, and enter https://dedoomify.com/privacy.html.
 5. **Distribution:** Free, Public, all regions.
