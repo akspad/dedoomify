@@ -4,6 +4,12 @@
   "outputDirectory": "public",
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "www.dedoomify.com" }],
+      "destination": "https://dedoomify.com/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "www.dedoomify.com" }],
       "destination": "https://dedoomify.com/:path*",
